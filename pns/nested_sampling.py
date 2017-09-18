@@ -8,37 +8,10 @@ import pns.maths_functions as mf
 import pns.analysis_utils as au
 
 
-# def sample_parameters(logx, settings, logl=None):
-#     """Generates parameters and derived parameters for arrays of logx coordinates."""
-#     # lp columns are: (logl, theta, derived parameters)
-#     p = np.zeros((logx.shape[0], settings.dims_to_sample))
-#     # if np.any(np.isnan(lp)):  # handle errors
-#     #    print("warning: nans in logls calculated from logx")
-#     #    lp[:, -1] = logx  # this is just so I can see logx when the error message prints
-#     #    ind = np.isnan(lp[:, 0])
-#     #    print(lp[ind, :])
-#     #    print("try calculating logl again")
-#     #    lp[:, 0] = settings.logl_given_logx(logx)
-#     #    print(lp[ind, :])
-#     #    print("try slightly changing the logx values and see if this fixes it")
-#     #    logx[ind] += np.log(np.random.random()) - np.log(np.random.random())
-#     #    lp[:, 0] = settings.logl_given_logx(logx)
-#     #    lp[:, -1] = logx  # this is just so I can see logx when the error message prints
-#     #    print(lp[ind, :])
-#     assert not np.any(np.isnan(p)), "nans in lp array! (see above for printed messages)"
-#     p = settings.sample_contours(logx)
-#     for i, param_name in enumerate(settings.derived_parameters):
-#         assert param_name == "logx" or param_name == "uniform", "derived parameter type " + str(param_name) + " is not supported"
-#         if param_name == "logx":
-#             lp[:, settings.dims_to_sample + 1 + i] = logx
-#         elif param_name == "uniform":
-#             lp[:, settings.dims_to_sample + 1 + i] = np.random.random(lp.shape[0])
-#     assert not np.any(np.isnan(lp)), "nans in lp array! lp=" + str(lp)
-#     return lp
-
-
 def generate_standard_run(nlive, settings, return_logl_min_max=False):
-    np.random.seed()  # needed to avoid repeated results when multiprocessing - see http://stackoverflow.com/questions/29854398/seeding-random-number-generators-in-parallel-programs
+    # Reset the random seed to avoid repeated results when multiprocessing. For more info see:
+    # http://stackoverflow.com/questions/29854398/seeding-random-number-generators-in-parallel-programs
+    np.random.seed()
     threads = [None] * nlive
     live = np.zeros((nlive, 3))
     live[:, 2] = np.log(np.random.random(live.shape[0]))
@@ -50,9 +23,7 @@ def generate_standard_run(nlive, settings, return_logl_min_max=False):
     logz_live = mf.log_sum_given_logs(live[:, 0]) + logx_i
     t = np.exp(-1.0 / nlive)
     logtrapz = np.log(0.5 * ((t ** -1) - t))  # factor for trapizium rule of geometric series
-    step = 0
     while logz_live - np.log(settings.zv_termination_fraction) > logz_dead:  # or logdelta > logz_dead:
-        step += 1
         # add to dead points
         dying_ind = np.where(live[:, 0] == live[:, 0].min())[0][0]
         if threads[dying_ind] is None:
@@ -69,11 +40,6 @@ def generate_standard_run(nlive, settings, return_logl_min_max=False):
         live[dying_ind, 1] = settings.r_given_logx(live[dying_ind, 2])
         live[dying_ind, 0] = settings.logl_given_r(live[dying_ind, 1])
         logz_live = mf.log_sum_given_logs(live[:, 0]) + logx_i - np.log(nlive)
-    # if not settings.standard_use_live_points:
-    #     for i, _ in enumerate(threads):
-    #         if threads[i] is not None:
-    #             threads[i] = sample_parameters(threads[i][:, 1], settings, logl=threads[i][:, 0])
-    # else:
     for i, _ in enumerate(threads):
         # add remaining live points to end of threads
         if threads[i] is None:
@@ -82,7 +48,7 @@ def generate_standard_run(nlive, settings, return_logl_min_max=False):
         else:
             threads[i] = np.vstack((threads[i], live[i, :]))
         # add parameters
-        threads[i] = np.hstack([threads[i], settings.sample_contours(threads[:, 2])])
+        threads[i] = np.hstack([threads[i], settings.sample_contours(threads[i][:, 2])])
     if return_logl_min_max:  # return data on threads for use as part of a dynamic run
         logl_min_max_list = []
         for i, _ in enumerate(threads):
@@ -94,7 +60,7 @@ def generate_standard_run(nlive, settings, return_logl_min_max=False):
         for i in range(1, nlive + 1):
             nlive_array[-i] = i
         return [{'nlive': nlive_array}, threads]
-        # return [{'nlive': nlive_array, "logz_scaled_dead": logz_dead - settings.logz_analytic}, threads]
+    # return [{'nlive': nlive_array, "logz_scaled_dead": logz_dead - settings.logz_analytic}, threads]
 
 
 # Single thread helper functions
@@ -127,4 +93,4 @@ def generate_single_thread(settings, logx_end, logx_start=0, keep_final_point=Tr
         lrx[:, 2] = np.asarray(logx_list)
         lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
         lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-        return np.hstack(lrx, settings.sample_contours(lrx[:, 2]))
+        return np.hstack([lrx, settings.sample_contours(lrx[:, 2])])

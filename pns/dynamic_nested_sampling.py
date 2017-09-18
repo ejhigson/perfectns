@@ -10,6 +10,18 @@ import pns.nested_sampling as ns
 # Make dynamic ns run:
 # --------------------
 
+def get_dynamic_settings(dynamic_zp_weight, settings):
+    assert dynamic_zp_weight >= 0 and dynamic_zp_weight <= 1, "dynamic_zp_weight = " + str(dynamic_zp_weight) + " must be in [0,1]"
+    dnsd = {
+        "nlive_1": settings.nlive_1,
+        "nlive_2": settings.nlive_2,
+        "n_calls_frac": settings.n_calls_frac,
+        "dynamic_keep_final_point": settings.dynamic_keep_final_point,
+    }
+    dnsd["importance_fraction"] = (settings.dynamic_fraction, settings.dynamic_fraction, dynamic_zp_weight)
+    return dnsd
+
+
 def generate_dynamic_run(nlive_const, dynamic_goal, settings, n_calls_max=None, tuned_dynamic_p=False):
     """
     Generate a dynamic nested sampling run.
@@ -20,7 +32,7 @@ def generate_dynamic_run(nlive_const, dynamic_goal, settings, n_calls_max=None, 
     """
     np.random.seed()  # needed to avoid repeated results when multiprocessing - see http://stackoverflow.com/questions/29854398/seeding-random-number-generators-in-parallel-programs
     # Step 1: run all the way through with limited number of threads
-    run = [settings.get_dynamic_settings(dynamic_goal)]
+    run = [get_dynamic_settings(dynamic_goal, settings)]
     threads, logl_min_max = ns.generate_standard_run(run[0]["nlive_1"], settings, return_logl_min_max=True)
     run.append(threads)
     run[0]['thread_logl_min_max'] = logl_min_max
@@ -103,40 +115,6 @@ def p_importance(lp, w, tuned_dynamic_p=False):
     else:
         return w / w.max()
 
-# def point_importance(logl, nlive, method, settings, simulate=False):
-#     if method == "z":
-#         method = "znoe"
-#     w = au.get_w(logl, nlive, settings, simulate=simulate)
-#     if method == "w":
-#         importance = w / w.max()
-#     elif method == "znz":
-#         importance = np.cumsum(w)
-#         importance = importance.max() - importance
-#         importance = importance / importance.max()
-#     elif method == "zno":
-#         importance = np.cumsum(w)
-#         importance = importance.max() - importance
-#         importance = importance / (nlive ** 1)
-#         importance = importance / importance.max()
-#     elif method == "znt":
-#         importance = np.cumsum(w)
-#         importance = importance.max() - importance
-#         importance = importance / (nlive ** 3)
-#         importance = importance / importance.max()
-#     elif method == "znoe":
-#         importance = np.cumsum(w)
-#         importance = importance.max() - importance
-#         importance = importance * ((nlive ** 2 - 3) * (nlive ** 1.5)) / (((nlive + 1) ** 3) * ((nlive + 2) ** 1.5))
-#         importance -= w * (nlive ** 0.5) / ((nlive + 2) ** 1.5)
-#         importance = importance / importance.max()
-#     elif method == "znte":
-#         importance = np.cumsum(w)
-#         importance = importance.max() - importance
-#         importance = importance * ((nlive ** 2 - 3) / ((nlive ** 0.5) * ((nlive + 1) ** 3) * ((nlive + 2) ** 1.5)))
-#         imp# ortance -= w / ((nlive ** 1.5) * (nlive + 2) ** 1.5)
-#         importance = importance / importance.max()
-#     return importance
-
 
 def logl_min_max_given_fraction(fraction, run, settings, tuned_dynamic_p=False):
     assert fraction[0] > 0. and fraction[0] < 1., "logl_min_max_given_fraction: importance_fraction = " + str(fraction) + " must have min max fractions in [0, 1]"
@@ -154,22 +132,22 @@ def logl_min_max_given_fraction(fraction, run, settings, tuned_dynamic_p=False):
         # use lookup to avoid float errors and to not need inverse function
         ind = np.where(lp[:, 0] == logl_min)[0]
         assert ind.shape[0] == 1, "Should be one unique match for logl=logl_min=" + str(logl_min) + ". Instead we have matches at indexes " + str(ind) + " of the lp array (shape " + str(lp.shape) + ")"
-        logx_min = lp[ind[0], 1 + settings.n_sample]
+        logx_min = lp[ind[0], 2]
     # where to start the additional threads:
     ind_end = np.where(importance > fraction[1])[0]
     if ind_end[-1] == lp[:, 0].shape[0] - 1:
         if settings.dynamic_keep_final_point:
             logl_max = lp[-1, 0]
-            logx_max = lp[-1, 1 + settings.n_sample]
+            logx_max = lp[-1, 2]
         else:
             # if this is the last point and we are not keeping final points we need to allow samples to go a bit further.
             # here we use the biggest shrinkage (smallest number) of 3 randomly generated shrinkage ratios to model what would happen if we were keeping points.
-            logx_max = lp[-1, 1 + settings.n_sample] + np.log(np.min(np.random.random(3)))
+            logx_max = lp[-1, 2] + np.log(np.min(np.random.random(3)))
             logl_max = settings.likelihood_prior.logl_given_logx(logx_max)
     else:
         logl_max = lp[:, 0][(ind_end[-1] + 1)]
         # use lookup to avoid float errors and to not need inverse function
         ind = np.where(lp[:, 0] == logl_max)[0]
         assert ind.shape[0] == 1, "Should be one unique match for logl=logl_min=" + str(logl_max) + ".\n Instead we have matches at indexes " + str(ind) + " of the lp array (shape " + str(lp.shape) + ")"
-        logx_max = lp[ind[0], 1 + settings.n_sample]
+        logx_max = lp[ind[0], 2]
     return [logl_min, logl_max], [logx_min, logx_max], n_calls

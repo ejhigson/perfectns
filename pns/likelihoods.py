@@ -3,7 +3,7 @@
 Object representing spherically symetric likelihoods.
 """
 
-import npns.maths_functions as mf
+import pns.maths_functions as mf
 
 
 class gaussian(object):

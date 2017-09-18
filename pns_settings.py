@@ -2,12 +2,12 @@
 """Defines a class to hold variables and functions describing the problem's likelihood and priors."""
 
 
-import npns.maths_functions as mf
-import npns.priors as priors
-import npns.likelihoods as likelihoods
+import pns.maths_functions as mf
+import pns.priors as priors
+import pns.likelihoods as likelihoods
 
 
-class NestedSamplingSettings:
+class PerfectNestedSamplingSettings:
 
     prior_scale = 10
     n_dim = 5
@@ -15,7 +15,6 @@ class NestedSamplingSettings:
     likelihood = likelihoods.gaussian(1)
     dims_to_sample = 1
     # nested sampling settings
-    derived_parameters = []  # "uniform"]  # these are added as extra columns in lp
     zv_termination_fraction = 0.0001  # do not write in standard form as it messes with file names
     # dynamic settings
     nlive_1 = 5
@@ -53,17 +52,6 @@ class NestedSamplingSettings:
         r = self.r_given_logx(logx)
         return mf.sample_nsphere_shells(r, self.n_dim, self.dims_to_sample)
         # return np.hstack((samples, np.reshape(logx, (logx.shape[0], 1))))
-
-    # def get_dynamic_settings(self, dynamic_zp_weight):
-    #     assert dynamic_zp_weight >= 0 and dynamic_zp_weight <= 1, "dynamic_zp_weight = " + str(dynamic_zp_weight) + " must be in [0,1]"
-    #     dnsd = {
-    #         "nlive_1": self.nlive_1,
-    #         "nlive_2": self.nlive_2,
-    #         "n_calls_frac": self.n_calls_frac,
-    #         "dynamic_keep_final_point": self.dynamic_keep_final_point,
-    #     }
-    #     dnsd["importance_fraction"] = (self.dynamic_fraction, self.dynamic_fraction, dynamic_zp_weight)
-    #     return dnsd
 
     # def get_settings_dict(self):
     #     """
