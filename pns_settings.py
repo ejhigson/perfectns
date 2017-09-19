@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """Defines a class to hold variables and functions describing the problem's likelihood and priors."""
 
+import copy
 import pns.maths_functions as mf
 import pns.priors as priors
 import pns.likelihoods as likelihoods
@@ -71,18 +72,20 @@ class PerfectNestedSamplingSettings(object):
             return self.likelihood.logz_analytic(self.prior, self.n_dim)
         except (AttributeError, AssertionError):
             print('No logz_analytic set up for ' + type(self.likelihood).__name__ + " likelihoods and " + type(self.prior).__name__ + " priors.")
-    # def get_settings_dict(self):
-    #     """
-    #     Returns a dictionary which contains all settings, including both class and instance variables.
-    #     This is needed as the __dict__ magic method does not give class variables.
-    #     """
-    #     members = [attr for attr in dir(self) if not callable(attr) and not attr.startswith("__")]
-    #     dict = {}
-    #     for i in members:
-    #         if not inspect.ismethod(getattr(self, i)) and i not in ["likelihood_prior", "nlive_1", "nlive_2", "n_calls_frac", "dynamic_fraction", "dynamic_keep_final_point"]:  # remove classes and methods that cannot be pickled
-    #             dict[i] = getattr(self, i)
-    #     return dict
-    #
+
+    def get_settings_dict(self):
+        """
+        Returns a dictionary which contains all settings, including both class and instance variables.
+        This is needed as the __dict__ magic method does not give class variables.
+        """
+        settings_dict = copy.deepcopy(self.__dict__)
+        # replace the likelihood and prior objects with information about them in the form of strings and dicts so the output can be saved with pickle
+        settings_dict['likelihood'] = type(self.likelihood).__name__
+        settings_dict['likelihood_args'] = self.likelihood.__dict__
+        settings_dict['prior'] = type(self.prior).__name__
+        settings_dict['prior_args'] = self.prior.__dict__
+        return settings_dict
+
 #    def set_var(self, dictionary):
 #        """Sets all variables to values from an input dictionary."""
 #        for key, value in dictionary.items():

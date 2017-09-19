@@ -57,11 +57,11 @@ def get_n_calls(ns_run):
 
 def get_lp_nlive(ns_run):
     lp = combine_lp_list(ns_run[1])
-    if 'nlive' in ns_run[0]:
-        nlive = ns_run[0]['nlive']
+    if 'nlive_array' in ns_run[0]:
+        nlive_array = ns_run[0]['nlive_array']
     else:
-        # if nlive is not already stored for the run, find it iteratively using the minimum and maximum logls of the slices
-        nlive = np.zeros(lp.shape[0])
+        # if nlive_array is not already stored for the run, find it iteratively using the minimum and maximum logls of the slices
+        nlive_array = np.zeros(lp.shape[0])
         assert len(ns_run[0]['thread_logl_min_max']) == len(ns_run[1]), "length of threads list not equal to length of logl_min_max list"
         for logl_mm in ns_run[0]['thread_logl_min_max']:
             if len(logl_mm) == 3:
@@ -70,25 +70,25 @@ def get_lp_nlive(ns_run):
                 incriment = 1
             if logl_mm[0] is None:
                 if logl_mm[1] is None:
-                    nlive += incriment
+                    nlive_array += incriment
                 else:
                     ind = np.where(lp[:, 0] <= logl_mm[1])[0]
-                    nlive[ind] += incriment
+                    nlive_array[ind] += incriment
             else:
                 if logl_mm[1] is None:
                     ind = np.where(lp[:, 0] > logl_mm[0])[0]
-                    nlive[ind] += incriment
+                    nlive_array[ind] += incriment
                 else:
                     ind = np.where((lp[:, 0] > logl_mm[0]) & (lp[:, 0] <= logl_mm[1]))[0]
-                    nlive[ind] += incriment
-        if nlive.min() < 1:
+                    nlive_array[ind] += incriment
+        if nlive_array.min() < 1:
             loglmax = np.zeros(len(ns_run[0]['thread_logl_min_max']))
             for i, lmm in enumerate(ns_run[0]['thread_logl_min_max']):
                 loglmax[i] = lmm[1]
             print(lp[-1, :], loglmax.max(), lp[-1, 0] == loglmax.max())
             print(lp[:, 0])
-            assert nlive.min() > 0, "nlive contains zeros: " + str(nlive) + "final logl_min_max = " + str(ns_run[0]['thread_logl_min_max'][-1]) + " and final logl is " + str(ns_run[1][-1][-1, 0]) + " and equality test=" + str(ns_run[1][-1][-1, 0] == ns_run[0]['thread_logl_min_max'][-1][-1])
-    return lp, nlive
+            assert nlive_array.min() > 0, "nlive_array contains zeros: " + str(nlive_array) + "final logl_min_max = " + str(ns_run[0]['thread_logl_min_max'][-1]) + " and final logl is " + str(ns_run[1][-1][-1, 0]) + " and equality test=" + str(ns_run[1][-1][-1, 0] == ns_run[0]['thread_logl_min_max'][-1][-1])
+    return lp, nlive_array
 
 
 def combine_lp_list(lp_list):

@@ -15,14 +15,14 @@ def perfect_nested_sampling(settings):
         return generate_dynamic_run(settings)
 
 
-def generate_standard_run(settings, nlive=None, return_logl_min_max=False):
-    if nlive is None:
-        nlive = settings.nlive
+def generate_standard_run(settings, nlive_const=None, return_logl_min_max=False):
+    if nlive_const is None:
+        nlive_const = settings.nlive
     # Reset the random seed to avoid repeated results when multiprocessing. For more info see:
     # http://stackoverflow.com/questions/29854398/seeding-random-number-generators-in-parallel-programs
     np.random.seed()
-    threads = [None] * nlive
-    live = np.zeros((nlive, 3))
+    threads = [None] * nlive_const
+    live = np.zeros((nlive_const, 3))
     live[:, 2] = np.log(np.random.random(live.shape[0]))
     live[:, 1] = settings.r_given_logx(live[:, 2])
     live[:, 0] = settings.logl_given_r(live[:, 1])
@@ -30,7 +30,7 @@ def generate_standard_run(settings, nlive=None, return_logl_min_max=False):
     logx_i = 0.0
     logz_dead = -np.inf
     logz_live = mf.log_sum_given_logs(live[:, 0]) + logx_i
-    t = np.exp(-1.0 / nlive)
+    t = np.exp(-1.0 / nlive_const)
     logtrapz = np.log(0.5 * ((t ** -1) - t))  # factor for trapizium rule of geometric series
     while logz_live - np.log(settings.zv_termination_fraction) > logz_dead:  # or logdelta > logz_dead:
         # add to dead points
@@ -42,13 +42,13 @@ def generate_standard_run(settings, nlive=None, return_logl_min_max=False):
         else:
             threads[dying_ind] = np.vstack((threads[dying_ind], live[dying_ind, :]))
         # update dead evidence estimates
-        logx_i += -1.0 / nlive
+        logx_i += -1.0 / nlive_const
         logz_dead = mf.log_sum_given_logs((logz_dead, live[dying_ind, 0] + logtrapz + logx_i))
         # add new point
         live[dying_ind, 2] += np.log(np.random.random())
         live[dying_ind, 1] = settings.r_given_logx(live[dying_ind, 2])
         live[dying_ind, 0] = settings.logl_given_r(live[dying_ind, 1])
-        logz_live = mf.log_sum_given_logs(live[:, 0]) + logx_i - np.log(nlive)
+        logz_live = mf.log_sum_given_logs(live[:, 0]) + logx_i - np.log(nlive_const)
     for i, _ in enumerate(threads):
         # add remaining live points to end of threads
         if threads[i] is None:
@@ -65,11 +65,10 @@ def generate_standard_run(settings, nlive=None, return_logl_min_max=False):
         return threads, logl_min_max_list
     else:  # return nlive vector for inclusion of live points in threads
         n_calls = au.get_n_calls(threads)
-        nlive_array = np.zeros(n_calls) + nlive
-        for i in range(1, nlive + 1):
+        nlive_array = np.zeros(n_calls) + nlive_const
+        for i in range(1, nlive_const + 1):
             nlive_array[-i] = i
-        return [{'nlive': nlive_array}, threads]
-    # return [{'nlive': nlive_array, "logz_scaled_dead": logz_dead - settings.logz_analytic}, threads]
+        return [{'nlive_array': nlive_array, 'settings': settings.get_settings_dict()}, threads]
 
 
 # Make dynamic ns run:
@@ -86,33 +85,33 @@ def generate_dynamic_run(settings):
     """
     np.random.seed()  # needed to avoid repeated results when multiprocessing - see http://stackoverflow.com/questions/29854398/seeding-random-number-generators-in-parallel-programs
     # Step 1: run all the way through with limited number of threads
-    run = [get_dynamic_settings(settings.dynamic_goal, settings)]
-    threads, logl_min_max = generate_standard_run(settings, nlive=run[0]["nlive_1"], return_logl_min_max=True)
+    run = [{'settings': settings.get_settings_dict()}]
+    threads, logl_min_max = generate_standard_run(settings, nlive_const=settings.nlive_1, return_logl_min_max=True)
     run.append(threads)
     run[0]['thread_logl_min_max'] = logl_min_max
     n_calls = au.get_n_calls(run)
     if settings.n_calls_max is None:
         # estimate number of likelihood calls available
-        n_calls_max = settings.nlive * n_calls / run[0]["nlive_1"]
+        n_calls_max = settings.nlive * n_calls / settings.nlive_1
         # reduce by small factor so dynamic ns uses fewer likelihood calls than normal ns
         # this factor is a function of the dynamic goal as typically evidence calculations have longer attitional threads than parameter estimation calculations
-        n_calls_max *= (settings.nlive - run[0]["nlive_2"] * (1.5 - 0.5 * settings.dynamic_goal)) / settings.nlive
+        n_calls_max *= (settings.nlive - settings.nlive_2 * (1.5 - 0.5 * settings.dynamic_goal)) / settings.nlive
     else:
         n_calls_max = settings.n_calls_max
     # Step 2: sample the peak until we run out of likelihood calls
     while n_calls < n_calls_max:
-        logl_min_max, logx_min_max, n_calls = logl_min_max_given_fraction(run[0]['importance_fraction'], run, settings)
+        logl_min_max, logx_min_max, n_calls = logl_min_max_given_fraction(run, settings)
         nlive_2_count = 0
         if settings.dynamic_keep_final_point:
             n_calls_itr = 0
-            while n_calls_itr < n_calls_max * run[0]['n_calls_frac'] or nlive_2_count < run[0]['nlive_2']:
+            while n_calls_itr < n_calls_max * settings.n_calls_frac or nlive_2_count < settings.nlive_2:
                 nlive_2_count += 1
                 run[1].append(generate_single_thread(settings, logx_min_max[1], logx_start=logx_min_max[0], keep_final_point=settings.dynamic_keep_final_point))
                 n_calls_itr += run[1][-1].shape[0]
                 run[0]['thread_logl_min_max'].append([logl_min_max[0], run[1][-1][-1, 0]])
         else:  # make many threads in a single array with a single logl_min_max to speed stuff up
             logx = []
-            while len(logx) < n_calls_max * run[0]['n_calls_frac'] or nlive_2_count < run[0]['nlive_2']:
+            while len(logx) < n_calls_max * settings.n_calls_frac or nlive_2_count < settings.nlive_2:
                 nlive_2_count += 1
                 logx += generate_thread_logx(logx_min_max[1], logx_start=logx_min_max[0], keep_final_point=settings.dynamic_keep_final_point)
             # make thread
@@ -123,8 +122,8 @@ def generate_dynamic_run(settings):
             run[1].append(np.hstack([lrx, settings.sample_contours(lrx[:, 2])]))
             logl_min_max.append(nlive_2_count)
             run[0]['thread_logl_min_max'].append(logl_min_max)
-    lp, nlive = au.get_lp_nlive(run)
-    run[0]['nlive'] = nlive
+    lp, nlive_array = au.get_lp_nlive(run)
+    run[0]['nlive_array'] = nlive_array
     return run
 
 
@@ -161,17 +160,6 @@ def generate_single_thread(settings, logx_end, logx_start=0, keep_final_point=Tr
 
 # Dynamic NS helper functions
 # ----------------
-
-def get_dynamic_settings(dynamic_zp_weight, settings):
-    assert dynamic_zp_weight >= 0 and dynamic_zp_weight <= 1, "dynamic_zp_weight = " + str(dynamic_zp_weight) + " must be in [0,1]"
-    dnsd = {
-        "nlive_1": settings.nlive_1,
-        "nlive_2": settings.nlive_2,
-        "n_calls_frac": settings.n_calls_frac,
-        "dynamic_keep_final_point": settings.dynamic_keep_final_point,
-    }
-    dnsd["importance_fraction"] = (settings.dynamic_fraction, settings.dynamic_fraction, dynamic_zp_weight)
-    return dnsd
 
 
 def point_importance(lp, nlive, dynamic_zp_weight, settings, simulate=False):
@@ -220,26 +208,24 @@ def p_importance(lp, w, tuned_dynamic_p=False):
         return w / w.max()
 
 
-def logl_min_max_given_fraction(fraction, run, settings):
-    assert fraction[0] > 0. and fraction[0] < 1., "logl_min_max_given_fraction: importance_fraction = " + str(fraction) + " must have min max fractions in [0, 1]"
-    assert fraction[1] > 0. and fraction[1] < 1., "logl_min_max_given_fraction: importance_fraction = " + str(fraction) + " must have min max fractions in [0, 1]"
+def logl_min_max_given_fraction(run, settings):
+    assert settings.dynamic_fraction > 0. and settings.dynamic_fraction < 1., "logl_min_max_given_fraction: settings.dynamic_fraction = " + str(settings.dynamic_fraction) + " must be in [0, 1]"
     lp, nlive = au.get_lp_nlive(run)
     n_calls = lp.shape[0]
-    importance = point_importance(lp, nlive, fraction[2], settings)
+    importance = point_importance(lp, nlive, settings.dynamic_fraction, settings)
     # where to start the additional threads:
-    ind_start = np.where(importance > fraction[0])[0]
-    if ind_start[0] == 0:  # start from sampling the whole prior
+    high_importance_inds = np.where(importance > settings.dynamic_fraction)[0]
+    if high_importance_inds[0] == 0:  # start from sampling the whole prior
         logl_min = None
         logx_min = 0
     else:
-        logl_min = lp[:, 0][ind_start[0] - 1]
+        logl_min = lp[:, 0][high_importance_inds[0] - 1]
         # use lookup to avoid float errors and to not need inverse function
         ind = np.where(lp[:, 0] == logl_min)[0]
         assert ind.shape[0] == 1, "Should be one unique match for logl=logl_min=" + str(logl_min) + ". Instead we have matches at indexes " + str(ind) + " of the lp array (shape " + str(lp.shape) + ")"
         logx_min = lp[ind[0], 2]
-    # where to start the additional threads:
-    ind_end = np.where(importance > fraction[1])[0]
-    if ind_end[-1] == lp[:, 0].shape[0] - 1:
+    # where to end the additional threads:
+    if high_importance_inds[-1] == lp[:, 0].shape[0] - 1:
         if settings.dynamic_keep_final_point:
             logl_max = lp[-1, 0]
             logx_max = lp[-1, 2]
@@ -249,7 +235,7 @@ def logl_min_max_given_fraction(fraction, run, settings):
             logx_max = lp[-1, 2] + np.log(np.min(np.random.random(3)))
             logl_max = settings.likelihood_prior.logl_given_logx(logx_max)
     else:
-        logl_max = lp[:, 0][(ind_end[-1] + 1)]
+        logl_max = lp[:, 0][(high_importance_inds[-1] + 1)]
         # use lookup to avoid float errors and to not need inverse function
         ind = np.where(lp[:, 0] == logl_max)[0]
         assert ind.shape[0] == 1, "Should be one unique match for logl=logl_min=" + str(logl_max) + ".\n Instead we have matches at indexes " + str(ind) + " of the lp array (shape " + str(lp.shape) + ")"
