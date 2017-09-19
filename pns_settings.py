@@ -1,27 +1,40 @@
 #!/usr/bin/python
 """Defines a class to hold variables and functions describing the problem's likelihood and priors."""
 
-import numpy as np
 import pns.maths_functions as mf
 import pns.priors as priors
 import pns.likelihoods as likelihoods
 
 
-class PerfectNestedSamplingSettings:
+class PerfectNestedSamplingSettings(object):
 
-    prior_scale = 10
-    n_dim = 5
-    prior = priors.uniform(10)
-    likelihood = likelihoods.gaussian(1)
-    dims_to_sample = 1
-    # nested sampling settings
-    zv_termination_fraction = 0.0001  # do not write in standard form as it messes with file names
-    # dynamic settings
-    nlive_1 = 5
-    nlive_2 = 1
-    n_calls_frac = 0
-    dynamic_fraction = 0.9
-    dynamic_keep_final_point = True
+    def __init__(self, **kwargs):
+
+        default_settings = {
+            # likelihood and prior settings
+            # -----------------------------
+            'n_dim': 5,
+            'prior': priors.uniform(10),
+            'likelihood': likelihoods.gaussian(1),
+            # calculation settings
+            # --------------------
+            'nlive': 100,
+            'dims_to_sample': 1,
+            'zv_termination_fraction': 0.0001,  # do not write in standard form as it messes with file names
+            'dynamic_goal': None,
+            # dynamic nested sampling settings - only used if dynamic_goal is not None
+            'nlive_1': 5,
+            'nlive_2': 1,
+            'n_calls_frac': 0,
+            'dynamic_fraction': 0.9,
+            'dynamic_keep_final_point': True,
+            # from func args
+            'tuned_dynamic_p': False,
+            'n_calls_max': None
+        }
+
+        for (setting_name, default_value) in default_settings.items():
+            setattr(self, setting_name, kwargs.get(setting_name, default_value))
 
     # functions of priors
 
@@ -54,12 +67,10 @@ class PerfectNestedSamplingSettings:
         # return np.hstack((samples, np.reshape(logx, (logx.shape[0], 1))))
 
     def logz_analytic(self):
-        if type(self.likelihood).__name__ == "gaussian" and type(self.prior).__name__ == "uniform":
-            return - mf.nsphere_logvol(self.n_dim, radius=self.prior.prior_scale) + mf.gaussian_logx_given_r(self.prior.prior_scale, self.likelihood.likelihood_scale, self.n_dim)
-        elif type(self.likelihood).__name__ == "gaussian" and type(self.prior).__name__ == "gaussian":
-            # See "Products and convolutions of Gaussian probability density functions" (P Bromiley, 2003) page 3 for a derivation of this result
-            self.logz_analytic = (-self.n_dim / 2.) * np.log(2 * np.pi * (self.likelihood.likelihood_scale ** 2 + self.prior.prior_scale ** 2))
-
+        try:
+            return self.likelihood.logz_analytic(self.prior, self.n_dim)
+        except (AttributeError, AssertionError):
+            print('No logz_analytic set up for ' + type(self.likelihood).__name__ + " likelihoods and " + type(self.prior).__name__ + " priors.")
     # def get_settings_dict(self):
     #     """
     #     Returns a dictionary which contains all settings, including both class and instance variables.

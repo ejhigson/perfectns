@@ -54,7 +54,7 @@ class logzEstimator(object):
     name = 'logz'
     latex_name = '$\log \mathcal{Z}$'
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         return mf.log_sum_given_logs(logw)
 
     def analytical(self, settings):
@@ -66,7 +66,7 @@ class zEstimator(object):
     name = 'z'
     latex_name = '$\mathcal{Z}$'
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         return np.exp(mf.log_sum_given_logs(logw))
 
     def analytical(self, settings):
@@ -78,7 +78,7 @@ class rEstimator:
     name = 'r'
     latex_name = '$|\\theta|$'
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         w_relative = np.exp(logw - logw.max())
         return (np.sum(w_relative * r) / np.sum(w_relative))
 
@@ -106,7 +106,7 @@ class rconfEstimator(object):
     def min(self, settings):
         return 0
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         # get sorted array of p1 values with their posterior weight
         wr = np.zeros((r.shape[0], 2))
         wr[:, 0] = np.exp(logw - logw.max())
@@ -129,7 +129,7 @@ class theta1Estimator(object):
         self.name = 'theta' + str(param_ind)
         self.latex_name = '$\\overline{\\theta_{\hat{' + str(param_ind) + '}}}$'
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         w_relative = np.exp(logw - logw.max())
         return (np.sum(w_relative * theta[:, self.param_ind - 1]) / np.sum(w_relative))
 
@@ -151,7 +151,7 @@ class theta1confEstimator(object):
         percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')  # format percent without trailing zeros as per http://stackoverflow.com/questions/2440692/formatting-floats-in-python-without-superfluous-zeros
         self.latex_name = '$\mathrm{C.I.}_{' + percent_str + '\%}(\\theta_{\hat{' + str(param_ind) + '}})$'
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         wp = np.zeros((r.shape[0], 2))
         wp[:, 0] = np.exp(logw - logw.max())
         wp[:, 1] = theta[:, self.param_ind - 1]
@@ -175,7 +175,7 @@ class theta1squaredEstimator:
         self.latex_name = '$\\overline{\\theta_{\hat{' + str(param_ind) + '}}}$'
         self.latex_name = '$\\overline{\\theta^2_{\hat{' + str(param_ind) + '}}}$'
 
-    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
         w_relative = np.exp(logw - logw.max())
         return (np.sum(w_relative * (theta[:, self.param_ind - 1] ** 2)) / np.sum(w_relative))
 
