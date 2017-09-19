@@ -20,6 +20,7 @@ class PerfectNestedSamplingSettings(object):
             # calculation settings
             # --------------------
             'nlive': 100,
+            'data_version': 'v01',
             'dims_to_sample': 1,
             'zv_termination_fraction': 0.0001,  # do not write in standard form as it messes with file names
             'dynamic_goal': None,
