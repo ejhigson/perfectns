@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """Defines a class to hold variables and functions describing the problem's likelihood and priors."""
 
-
+import numpy as np
 import pns.maths_functions as mf
 import pns.priors as priors
 import pns.likelihoods as likelihoods
@@ -52,6 +52,13 @@ class PerfectNestedSamplingSettings:
         r = self.r_given_logx(logx)
         return mf.sample_nsphere_shells(r, self.n_dim, self.dims_to_sample)
         # return np.hstack((samples, np.reshape(logx, (logx.shape[0], 1))))
+
+    def logz_analytic(self):
+        if type(self.likelihood).__name__ == "gaussian" and type(self.prior).__name__ == "uniform":
+            return - mf.nsphere_logvol(self.n_dim, radius=self.prior.prior_scale) + mf.gaussian_logx_given_r(self.prior.prior_scale, self.likelihood.likelihood_scale, self.n_dim)
+        elif type(self.likelihood).__name__ == "gaussian" and type(self.prior).__name__ == "gaussian":
+            # See "Products and convolutions of Gaussian probability density functions" (P Bromiley, 2003) page 3 for a derivation of this result
+            self.logz_analytic = (-self.n_dim / 2.) * np.log(2 * np.pi * (self.likelihood.likelihood_scale ** 2 + self.prior.prior_scale ** 2))
 
     # def get_settings_dict(self):
     #     """

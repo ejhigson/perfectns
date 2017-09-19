@@ -15,54 +15,29 @@ def check_integrand(logx, func, settings):
     """Helper function to return integrand L(X) X ftilde(X) for checking estimator values by numerical intergration."""
     # returns L(X) X ftilde(X) for integrating dlogx
     # NB this must be normalised by a factor V / Z
-    return np.exp(settings.likelihood_prior.logl_given_logx(logx) + logx) * func.ftilde(np.exp(logx), settings)
+    return np.exp(settings.logl_given_logx(logx) + logx) * func.ftilde(logx, settings)
 
 
-def check_estimator_values(funcs_list, settings, return_int_errors=False, force_integration=False):
+def check_estimator_values(funcs_list, settings, return_int_errors=False):
     output = np.zeros(len(funcs_list))
     errors = np.zeros(len(funcs_list))
     for i, f in enumerate(funcs_list):
-        # Check for discontinuities in the function:
-        # These can be given to scipy.integrate.quad using the points argument (default value is None).
-        if hasattr(f, "integrate_points"):
-            points = f.integrate_points(settings)
-        else:
-            points = None
-        # use the force_integration option to give the integration method priority over the analytic method
-        if force_integration:
+        try:
+            output[i] = f.analytical(settings)
+            # print(f.name + " from analytical")
+        except (AttributeError, AssertionError):
             try:
-                # we want (V / Z) int L(X) X ftilde(X)
+                # We want to calculate (V / Z) int L(X) X ftilde(X),
                 # where the V factor comes from integrating normalised distributions in arbitary prior volumes.
                 # See Keeton (2011) section on the canonical gaussian for more details.
                 logx_terminate = mf.analytic_logx_terminate(settings)
-                result = scipy.integrate.quad(check_integrand, logx_terminate, 0.0, args=(f, settings), points=points)
-                output[i] = result[0] / np.exp(settings.likelihood_prior.logz_analytic)
-                errors[i] = result[1] / np.exp(settings.likelihood_prior.logz_analytic)
+                result = scipy.integrate.quad(check_integrand, logx_terminate, 0.0, args=(f, settings))
+                output[i] = result[0] / np.exp(settings.logz_analytic())
+                errors[i] = result[1] / np.exp(settings.logz_analytic())
                 # print(f.name + " from integrating = " + str(result[0]) + " with tollerance " + str(result[1]))
             except (AttributeError, AssertionError):
-                try:
-                    output[i] = f.analytical(settings)
-                    # print(f.name + " from analytical")
-                except (AttributeError, AssertionError):
-                    output[i] = np.nan
-                    errors[i] = np.nan
-        else:
-            try:
-                output[i] = f.analytical(settings)
-                # print(f.name + " from analytical")
-            except (AttributeError, AssertionError):
-                try:
-                    # We want to calculate (V / Z) int L(X) X ftilde(X),
-                    # where the V factor comes from integrating normalised distributions in arbitary prior volumes.
-                    # See Keeton (2011) section on the canonical gaussian for more details.
-                    logx_terminate = mf.analytic_logx_terminate(settings)
-                    result = scipy.integrate.quad(check_integrand, logx_terminate, 0.0, args=(f, settings), points=points)
-                    output[i] = result[0] / np.exp(settings.likelihood_prior.logz_analytic)
-                    errors[i] = result[1] / np.exp(settings.likelihood_prior.logz_analytic)
-                    # print(f.name + " from integrating = " + str(result[0]) + " with tollerance " + str(result[1]))
-                except (AttributeError, AssertionError):
-                    output[i] = np.nan
-                    errors[i] = np.nan
+                output[i] = np.nan
+                errors[i] = np.nan
     if return_int_errors:
         return output, errors
     else:
@@ -76,17 +51,26 @@ def check_estimator_values(funcs_list, settings, return_int_errors=False, force_
 
 class logzEstimator(object):
 
-    name = 'z_scaled'
+    name = 'logz'
     latex_name = '$\log \mathcal{Z}$'
 
     def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
         return mf.log_sum_given_logs(logw)
 
     def analytical(self, settings):
-        try:
-                return settings.logz_analytic
-        except AttributeError:
-            return None
+        return settings.logz_analytic()
+
+
+class zEstimator(object):
+
+    name = 'z'
+    latex_name = '$\mathcal{Z}$'
+
+    def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
+        return np.exp(mf.log_sum_given_logs(logw))
+
+    def analytical(self, settings):
+        return np.exp(settings.logz_analytic())
 
 
 class rEstimator:
@@ -103,6 +87,9 @@ class rEstimator:
 
     def min(self, settings):
         return 0
+
+    def ftilde(self, logx, settings):
+        return settings.r_given_logx(logx)
 
 
 class rconfEstimator(object):
@@ -149,6 +136,9 @@ class theta1Estimator(object):
     def analytical(self, settings):
         return 0.
 
+    def ftilde(self, logx, settings):
+        return np.zeros(logx.shape)
+
 
 class theta1confEstimator(object):
 
@@ -188,3 +178,8 @@ class theta1squaredEstimator:
     def estimator(self, settings, logw=None, logl=None, r=None, theta=None):
         w_relative = np.exp(logw - logw.max())
         return (np.sum(w_relative * (theta[:, self.param_ind - 1] ** 2)) / np.sum(w_relative))
+
+    def ftilde(self, logx, settings):
+        # by symmetry at each (hyper)spherical isolikelihood contour:
+        r = settings.r_given_logx(logx)
+        return r ** 2 / settings.n_dim

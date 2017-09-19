@@ -6,25 +6,56 @@ import numpy as np
 import scipy
 import scipy.stats
 import scipy.special
-
+import mpmath
 
 # Maths functions
 
-# def analytic_logx_terminate(settings):
-#     """Find logx_terminate analytically by assuming all likelihood at very low X approximately equals the maximum likelihood.
-#     This approximation breaks down in very high dimensions."""
-#     logl_max = settings.likelihood_prior.logl_given_r(0)  # use r=0 rather than logx = -np.inf as the latter causes numerical problems
-#     return logx_terminate_bound(logl_max, settings.zv_termination_fraction, settings.likelihood_prior.logz_analytic)
-#
-#
-# def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
-#     """
-#     Find a lower bound logx_terminate analytically by assuming all likelihood at very low X approximately equals the maximum likelihood.
-#     This approximation breaks down in very high dimensions and the true logx terminate required will be larger.
-#     We want Z_term = zv_termination_fraction * Z_analytic = int_0^Xterm L(X) dX approx= Xterm L_max
-#     so logx_term = log(zv_termination_fraction) + log(Z_analytic) - logl_max
-#     """
-#     return np.log(zv_termination_fraction) + logz_analytic - logl_max
+
+def scipy_gaussian_r_given_logx(logx, sigma, n_dim):
+    exponent = scipy.special.gammaincinv(n_dim / 2., np.exp(logx))
+    return np.sqrt(2 * exponent * sigma ** 2)
+
+
+def scipy_gaussian_logx_given_r(r, sigma, n_dim):
+    exponent = 0.5 * (r / sigma) ** 2
+    return np.log(scipy.special.gammainc(n_dim / 2., exponent))  # - scipy.special.gammaln(n_dim / 2.)
+
+
+def mpmath_gaussian_logx_given_r(r, sigma, n_dim):
+    exponent = 0.5 * (r / sigma) ** 2
+    return float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=exponent, regularized=True)))
+
+
+def gaussian_r_given_logx(logx, shrinkage_ratio, n_dim):
+    r = scipy_gaussian_r_given_logx(logx, shrinkage_ratio, n_dim)
+    return r
+
+
+def gaussian_logx_given_r(r, sigma, n_dim):
+    if isinstance(r, np.ndarray):  # needed to ensure output is numpy array
+        logx = np.zeros(r.shape)
+        for i, r_i in enumerate(r):
+            logx[i] = mpmath_gaussian_logx_given_r(r_i, sigma, n_dim)
+        return logx
+    else:
+        return mpmath_gaussian_logx_given_r(r, sigma, n_dim)
+
+
+def analytic_logx_terminate(settings):
+    """Find logx_terminate analytically by assuming all likelihood at very low X approximately equals the maximum likelihood.
+    This approximation breaks down in very high dimensions."""
+    logl_max = settings.logl_given_r(0)  # use r=0 rather than logx = -np.inf as the latter causes numerical problems
+    return logx_terminate_bound(logl_max, settings.zv_termination_fraction, settings.logz_analytic())
+
+
+def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
+    """
+    Find a lower bound logx_terminate analytically by assuming all likelihood at very low X approximately equals the maximum likelihood.
+    This approximation breaks down in very high dimensions and the true logx terminate required will be larger.
+    We want Z_term = zv_termination_fraction * Z_analytic = int_0^Xterm L(X) dX approx= Xterm L_max
+    so logx_term = log(zv_termination_fraction) + log(Z_analytic) - logl_max
+    """
+    return np.log(zv_termination_fraction) + logz_analytic - logl_max
 
 
 def sample_nsphere_shells_beta(r, n_dim, n_sample, mu=0):
