@@ -57,7 +57,9 @@ def generate_standard_run(settings, nlive_const=None, return_logl_min_max=False)
         else:
             threads[i] = np.vstack((threads[i], live[i, :]))
         # add parameters
-        threads[i] = np.hstack([threads[i], settings.sample_contours(threads[i][:, 2])])
+        threads[i] = np.hstack([threads[i],
+            mf.sample_nsphere_shells(threads[i][:, 1], settings.n_dim,
+                settings.dims_to_sample)])
     if return_logl_min_max:  # return data on threads for use as part of a dynamic run
         logl_min_max_list = []
         for i, _ in enumerate(threads):
@@ -119,7 +121,7 @@ def generate_dynamic_run(settings):
             lrx[:, 2] = np.asarray(logx)
             lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
             lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-            run[1].append(np.hstack([lrx, settings.sample_contours(lrx[:, 2])]))
+            run[1].append(np.hstack([lrx, mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim, settings.dims_to_sample)]))
             logl_min_max.append(nlive_2_count)
             run[0]['thread_logl_min_max'].append(logl_min_max)
     lp, nlive_array = au.get_lp_nlive(run)

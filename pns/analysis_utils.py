@@ -3,8 +3,6 @@
 
 import numpy as np
 import random  # for shuffling lists
-# perfect nested sampling modules
-# import pns.utils as utils
 import pns.maths_functions as mf
 
 
@@ -44,14 +42,9 @@ def get_logw(logl, nlive_array, simulate=False):
 def get_n_calls(ns_run):
     """Returns the number of likelihood calls in a nested sampling run"""
     n_calls = 0
-    if isinstance(ns_run[0], np.ndarray):  # true if nlive constant (ns_run is list of threads)
-        for thread in ns_run:
-            if thread is not None:
-                n_calls += thread.shape[0]
-    elif isinstance(ns_run[0], dict):  # true for dynamic ns
-        for thread in ns_run[1]:
-            if thread is not None:
-                n_calls += thread.shape[0]
+    for thread in ns_run[1]:
+        if thread is not None:
+            n_calls += thread.shape[0]
     return n_calls
 
 
