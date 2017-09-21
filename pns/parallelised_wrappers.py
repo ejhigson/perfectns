@@ -5,35 +5,35 @@ import time
 import concurrent.futures
 import numpy as np
 from tqdm import tqdm
+# from functools import wraps
 # perfect nested sampling modules
 import pns.maths_functions as mf
 import pns.nested_sampling as ns
+import pns.save_load_utils as slu
 
 
 # Parallelised wrappers
 # ---------------------
-# def generate_dynamic_run(dynamic_goal, settings, nlive_const=None, n_calls_max=None):
 
-def generate_runs(settings, n_repeat, tqdm_leave=True, print_time=True, n_process=None, parallelise=True):
-    if print_time:
-        start_time = time.time()
+@slu.timing_decorator
+def generate_runs(settings, n_repeat, tqdm_leave=True, n_process=None,
+                  parallelise=True):
     run_list = []
     if parallelise is False:
         print("Warning: generate_runs not parallelised!")
         for i in tqdm(range(n_repeat), leave=tqdm_leave):
             run_list.append(ns.perfect_nested_sampling(settings))
     else:
-        pool = concurrent.futures.ProcessPoolExecutor(max_workers=n_process)  # if n_process is None this defaults to num processors of machine * 5
+        # if n_process is None this defaults to num processors of machine * 5
+        pool = concurrent.futures.ProcessPoolExecutor(max_workers=n_process)
         futures = []
         for i in range(n_repeat):
-                futures.append(pool.submit(ns.perfect_nested_sampling, settings))
-        for i, result in tqdm(enumerate(concurrent.futures.as_completed(futures)), leave=tqdm_leave, total=len(futures)):
-                run_list.append(result.result())
+            futures.append(pool.submit(ns.perfect_nested_sampling, settings))
+        for i, result in tqdm(enumerate(concurrent.futures.as_completed(futures)),
+                              leave=tqdm_leave, total=len(futures)):
+            run_list.append(result.result())
         del futures
         del pool
-    if print_time:
-        end_time = time.time()
-        print("generate_runs took %.3f seconds" % (end_time - start_time))
     return run_list
 
 
@@ -41,6 +41,7 @@ def generate_runs(settings, n_repeat, tqdm_leave=True, print_time=True, n_proces
 # ----------------------------------
 
 
+@timing_decorator
 def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     """
     Performs input analysis function on a list of nested sampling runs.
@@ -49,14 +50,12 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     n_process = kwargs.get('n_process', None)
     parallelise = kwargs.get('parallelise', True)
     use_tqdm = kwargs.get('use_tqdm', True)
-    # use_tqdm = kwargs.get('use_tqdm', utils.in_ipython())  # defaults to using tqdm if in ipython and not otherwise
     tqdm_leave = kwargs.get('tqdm_leave', False)
-    print_time = kwargs.get('print_time', True)
     return_list = kwargs.get('return_list', False)
     results_list = []
-    start_time = time.time()
     if parallelise:
-        pool = concurrent.futures.ProcessPoolExecutor(max_workers=n_process)  # if n_process is None this defaults to num processors of machine * 5
+        # if n_process is None this defaults to num processors of machine * 5
+        pool = concurrent.futures.ProcessPoolExecutor(max_workers=n_process)
         futures = []
         for i in range(len(run_list)):
             futures.append(pool.submit(single_run_func, run_list[i], estimator_list, **kwargs))
@@ -76,9 +75,6 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         else:
             for i in range(len(run_list)):
                 results_list.append(single_run_func(run_list[i], estimator_list, **kwargs))
-    if print_time:
-        end_time = time.time()
-        print(single_run_func.__name__ + " took %.3f seconds" % (end_time - start_time))
     if return_list:
         return results_list
     else:

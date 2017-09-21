@@ -58,15 +58,18 @@ def generate_standard_run(settings, nlive_const=None, return_logl_min_max=False)
             threads[i] = np.vstack((threads[i], live[i, :]))
         # add parameters
         threads[i] = np.hstack([threads[i],
-            mf.sample_nsphere_shells(threads[i][:, 1], settings.n_dim,
-                settings.dims_to_sample)])
+                                mf.sample_nsphere_shells(threads[i][:, 1],
+                                                         settings.n_dim,
+                                                         settings.dims_to_sample)])
     if return_logl_min_max:  # return data on threads for use as part of a dynamic run
         logl_min_max_list = []
         for i, _ in enumerate(threads):
             logl_min_max_list.append([None, live[i, 0]])
         return threads, logl_min_max_list
     else:  # return nlive vector for inclusion of live points in threads
-        n_calls = au.get_n_calls(threads)
+        n_calls = 0
+        for t in threads:
+            n_calls += t.shape[0]
         nlive_array = np.zeros(n_calls) + nlive_const
         for i in range(1, nlive_const + 1):
             nlive_array[-i] = i
@@ -121,7 +124,8 @@ def generate_dynamic_run(settings):
             lrx[:, 2] = np.asarray(logx)
             lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
             lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-            run[1].append(np.hstack([lrx, mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim, settings.dims_to_sample)]))
+            theta = mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim, settings.dims_to_sample)
+            run[1].append(np.hstack([lrx, theta]))
             logl_min_max.append(nlive_2_count)
             run[0]['thread_logl_min_max'].append(logl_min_max)
     lp, nlive_array = au.get_lp_nlive(run)
@@ -157,7 +161,10 @@ def generate_single_thread(settings, logx_end, logx_start=0, keep_final_point=Tr
         lrx[:, 2] = np.asarray(logx_list)
         lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
         lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-        return np.hstack([lrx, settings.sample_contours(lrx[:, 2])])
+        theta = mf.sample_nsphere_shells(lrx[:, 1],
+                                         settings.n_dim,
+                                         settings.dims_to_sample)
+        return np.hstack([lrx, theta])
 
 
 # Dynamic NS helper functions
