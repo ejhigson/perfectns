@@ -58,7 +58,7 @@ def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
     return np.log(zv_termination_fraction) + logz_analytic - logl_max
 
 
-def sample_nsphere_shells_beta(r, n_dim, n_sample, mu=0):
+def sample_nsphere_shells_beta(r, n_dim, n_sample):
     # sample single parameters on n_dim-dimensional sphere independently
     # as described in section 4 of my errors in nested sampling paper
     # NB this will not look correct when plotted in many dimensions as the radius of n points independently sampled on the radius R hypersphere do not nessesarily have a radius r!
@@ -66,14 +66,10 @@ def sample_nsphere_shells_beta(r, n_dim, n_sample, mu=0):
     thetas *= (-1) ** (np.random.randint(0, 2, size=thetas.shape))  # randomly select + or -
     for i in range(n_sample):
         thetas[:, i] *= r
-        if isinstance(mu, float) or isinstance(mu, int):
-            thetas[:, i] += mu
-        else:
-            thetas[:, i] += mu[i]
     return thetas
 
 
-def sample_nsphere_shells(r, n_dim, n_sample, mu=0):
+def sample_nsphere_shells(r, n_dim, n_sample):
     assert n_sample <= n_dim, "so far only set up for nsample <= ndim"
     # sample single parameters on n_dim-dimensional sphere independently
     # as described in section 4 of my errors in nested sampling paper
@@ -83,10 +79,6 @@ def sample_nsphere_shells(r, n_dim, n_sample, mu=0):
     thetas = thetas[:, :n_sample]
     for i in range(n_sample):
         thetas[:, i] *= r
-        if isinstance(mu, float) or isinstance(mu, int):
-            thetas[:, i] += mu
-        else:
-            thetas[:, i] += mu[i]
     return thetas
 
 

@@ -8,6 +8,17 @@ import pickle
 
 # Saving and loading functions with pickle:
 
+def timeFunc(func):
+
+    def time(*args, **kw):
+        t_start = time.time()
+        result = method(*args, **kw)
+        t_end = time.time()
+        print('%r (%r, %r) %2.2f sec' % \
+              (method.__name__, args, kw, t_end - t_start))
+        return result
+    return timed
+
 
 def data_save_name(n_repeats, settings):
     save_name = settings.data_version + "_" + str(settings.n_dim) + "d_"
