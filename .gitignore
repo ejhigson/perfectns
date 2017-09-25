@@ -1,6 +1,7 @@
 # EH stuff
 *.txt
 data
+archive
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

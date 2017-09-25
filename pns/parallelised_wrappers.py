@@ -4,9 +4,7 @@
 import concurrent.futures
 import numpy as np
 from tqdm import tqdm
-# from functools import wraps
 # perfect nested sampling modules
-import pns.maths_functions as mf
 import pns.nested_sampling as ns
 import pns.save_load_utils as slu
 
@@ -52,7 +50,6 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     n_process = kwargs.get('n_process', None)
     parallelise = kwargs.get('parallelise', True)
     tqdm_leave = kwargs.get('tqdm_leave', False)
-    return_list = kwargs.get('return_list', False)
     results_list = []
     if parallelise:
         # if n_process is None this defaults to num processors of machine * 5
@@ -71,14 +68,10 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         for i in tqdm(range(len(run_list)), leave=tqdm_leave):
             results_list.append(single_run_func(run_list[i],
                                                 estimator_list, **kwargs))
-    if return_list:
-        return results_list
-    else:
-        all_values = np.zeros((len(estimator_list), len(run_list)))
-        for i, result in enumerate(results_list):
-            all_values[:, i] = result
-        stats = mf.stats_rows(all_values)
-        return stats, all_values
+    all_values = np.zeros((len(estimator_list), len(run_list)))
+    for i, result in enumerate(results_list):
+        all_values[:, i] = result
+    return all_values
 
 
 def get_run_data(settings, n_repeat, tqdm_leave=False, n_process=None,
@@ -102,7 +95,7 @@ def get_run_data(settings, n_repeat, tqdm_leave=False, n_process=None,
                 print(settings.get_settings_dict())
             else:
                 print("Loaded settings =")
-                print(data[0][0])
+                print(data[0][0]['settings'])
                 print("are not equal to current settings =")
                 print(settings.get_settings_dict())
                 del data

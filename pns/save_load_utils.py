@@ -27,14 +27,18 @@ def timing_decorator(func):
     return wrapper
 
 
-def data_save_name(settings, n_repeats):
+def data_save_name(settings, n_repeats, override_dg=None):
     """
     Make a standard save name format for data with a given set of settings.
     """
-    save_name = settings.data_version + "_" + str(settings.n_dim) + "d"
-    save_name += "_dg" + str(settings.dynamic_goal)
+    save_name = settings.data_version + "_dg"
+    if override_dg is not None:
+        save_name += override_dg
+    else:
+        save_name += "_dg" + str(settings.dynamic_goal)
+    save_name += "_" + str(settings.n_dim) + "d"
     # add likelihood and prior info
-    save_name += type(settings.likelihood).__name__
+    save_name += "_" + type(settings.likelihood).__name__
     save_name += str(settings.likelihood.likelihood_scale)
     save_name += "_" + type(settings.prior).__name__
     save_name += str(settings.prior.prior_scale)
@@ -54,7 +58,7 @@ def data_save_name(settings, n_repeats):
 
 
 @timing_decorator
-def pickle_save(data, name, path="data/", extension=".txt"):
+def pickle_save(data, name, path="data/", extension=".dat"):
     """Saves object with pickle,  appending name with the time file exists."""
     filename = path + name + extension
     if os.path.isfile(filename):
@@ -68,7 +72,7 @@ def pickle_save(data, name, path="data/", extension=".txt"):
 
 
 @timing_decorator
-def pickle_load(name, path="data/", extension=".txt"):
+def pickle_load(name, path="data/", extension=".dat"):
     """Load data with pickle."""
     filename = path + name + extension
     infile = open(filename, 'rb')

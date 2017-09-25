@@ -40,12 +40,12 @@ class PerfectNestedSamplingSettings(object):
         default_settings = {
             # likelihood and prior settings
             # -----------------------------
-            'n_dim': 5,
-            'prior': priors.uniform(10),
+            'n_dim': 10,
+            'prior': priors.gaussian(10),
             'likelihood': likelihoods.gaussian(1),
             # calculation settings
             # --------------------
-            'nlive': 100,
+            'nlive': 200,
             'data_version': 'v01',
             'dims_to_sample': 1,
             'zv_termination_fraction': 0.0001,
@@ -53,7 +53,7 @@ class PerfectNestedSamplingSettings(object):
             # only used if dynamic_goal is not None.
             'dynamic_goal': None,
             'nlive_1': 5,
-            'nlive_2': 1,
+            'nlive_2': 2,
             'n_calls_frac': 0,
             'dynamic_fraction': 0.9,
             'dynamic_keep_final_point': True,

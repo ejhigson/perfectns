@@ -3,6 +3,7 @@
 
 
 import numpy as np
+import pandas as pd
 import scipy
 import scipy.stats
 import scipy.special
@@ -42,18 +43,29 @@ def gaussian_logx_given_r(r, sigma, n_dim):
 
 
 def analytic_logx_terminate(settings):
-    """Find logx_terminate analytically by assuming all likelihood at very low X approximately equals the maximum likelihood.
-    This approximation breaks down in very high dimensions."""
-    logl_max = settings.logl_given_r(0)  # use r=0 rather than logx = -np.inf as the latter causes numerical problems
-    return logx_terminate_bound(logl_max, settings.zv_termination_fraction, settings.logz_analytic())
+    """
+    Find logx_terminate analytically by assuming all likelihood at very low
+    X approximately equals the maximum likelihood.
+    This approximation breaks down in very high dimensions.
+    """
+    # use r=0 rather than logx=-np.inf as the latter causes numerical problems
+    logl_max = settings.logl_given_r(0)
+    return logx_terminate_bound(logl_max, settings.zv_termination_fraction,
+                                settings.logz_analytic())
 
 
 def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
     """
-    Find a lower bound logx_terminate analytically by assuming all likelihood at very low X approximately equals the maximum likelihood.
-    This approximation breaks down in very high dimensions and the true logx terminate required will be larger.
-    We want Z_term = zv_termination_fraction * Z_analytic = int_0^Xterm L(X) dX approx= Xterm L_max
-    so logx_term = log(zv_termination_fraction) + log(Z_analytic) - logl_max
+    Find a lower bound logx_terminate analytically by assuming all likelihood
+    at very low X approximately equals the maximum likelihood. This
+    approximation breaks down in very high dimensions and the true logx
+    terminate required will be larger.
+    We want:
+    Z_term = zv_termination_fraction * Z_analytic
+           = int_0^Xterm L(X) dX
+           approx= Xterm L_max,
+    so
+    logx_term = log(zv_termination_fraction) + log(Z_analytic) - logl_max
     """
     return np.log(zv_termination_fraction) + logz_analytic - logl_max
 
@@ -61,9 +73,13 @@ def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
 def sample_nsphere_shells_beta(r, n_dim, n_sample):
     # sample single parameters on n_dim-dimensional sphere independently
     # as described in section 4 of my errors in nested sampling paper
-    # NB this will not look correct when plotted in many dimensions as the radius of n points independently sampled on the radius R hypersphere do not nessesarily have a radius r!
-    thetas = np.sqrt(np.random.beta(0.5, (n_dim - 1) * 0.5, size=(r.shape[0], n_sample)))
-    thetas *= (-1) ** (np.random.randint(0, 2, size=thetas.shape))  # randomly select + or -
+    # NB this will not look correct when plotted in many dimensions as the
+    # radius of n points independently sampled on the radius R hypersphere do
+    # not nessesarily have a radius r!
+    thetas = np.sqrt(np.random.beta(0.5, (n_dim - 1) * 0.5,
+                                    size=(r.shape[0], n_sample)))
+    # randomly select + or -
+    thetas *= (-1) ** (np.random.randint(0, 2, size=thetas.shape))
     for i in range(n_sample):
         thetas[:, i] *= r
     return thetas
@@ -84,8 +100,10 @@ def sample_nsphere_shells(r, n_dim, n_sample):
 
 def nsphere_r_given_logx(logx, r_max, n_dim):
     """
-    Finds r assuming the prior is an n-dimensional sphere co-centred with a spherically symetric likelihood.
-    This will return an answer of the same type (float or numpy array) as the input {logx}.
+    Finds r assuming the prior is an n-dimensional sphere co-centred with a
+    spherically symetric likelihood.
+    This will return an answer of the same type (float or numpy array) as the
+    input {logx}.
     """
     r = np.exp(logx / n_dim) * r_max
     return r
@@ -279,93 +297,106 @@ def log_subtract(loga, logb):
     Returns log(a-b) given loga and logb.
     See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/ for more details.
     """
-    assert loga >= logb, "log_subtract: a-b is negative for loga=" + str(loga) + " and logb=" + str(logb)
+    assert loga >= logb, "log_subtract: a-b is negative for loga=" + str(loga) + \
+                         " and logb=" + str(logb)
     return loga + np.log(1 - np.exp(logb - loga))
 
 
 # Stats functions:
 
 
-def stats_rows(array, reduce_std=1.0):
-    """Get the mean, std, skew and kurtosis of a 1d array or of each row of a 2d array"""
-    # Reduce std argument reduces the standard deviation by a factor of
-    # 1/sqrt(reduce_std) - this is used for estimating stds on the mean.
-    assert array.ndim == 1 or array.ndim == 2,  "Input must be a 1 or 2d array"
-    if array.ndim == 1:
-        stats_output = np.zeros(4)
-        stats_output[0] = np.mean(array)
-        stats_output[1] = np.std(array, ddof=1)
-        stats_output[2] = scipy.stats.skew(array, bias=False)
-        stats_output[3] = scipy.stats.kurtosis(array)
-        # reduce std for use in splitting
-        stats_output[1] = stats_output[1] / np.sqrt(float(reduce_std))
-    elif array.ndim == 2:
-        stats_output = np.zeros((array.shape[0], 4))
-        for i in range(0, array.shape[0]):
-            stats_output[i, 0] = np.mean(array[i, :])
-            stats_output[i, 1] = np.std(array[i, :], ddof=1)
-            stats_output[i, 2] = scipy.stats.skew(array[i, :], bias=False)
-            stats_output[i, 3] = scipy.stats.kurtosis(array[i, :])
-        # reduce std for use in splitting
-        stats_output[:, 1] = stats_output[:, 1] / np.sqrt(float(reduce_std))
-    return stats_output
-
-
-def sigma_given_cdf(cdf):
-    """Returns sigma from median given an array of cdf values \in [0,1]"""
-    # commented out 23/3/17 # assert -0.0001 <= cdf and cdf <= 1.0001, "cdf=" + str(cdf) + " must be between 1 and 0"
-    # commented out 23/3/17 # if cdf >= 1.0 or cdf <= 0.0:
-    # commented out 23/3/17 #     return -100.0
-    # commented out 23/3/17 # else:
-    # The error function is defined in [-1,+1] mapping to [-inf,+inf].
-    # We want to map a CDF to the number of sigma from the median - i.e. from [0,+1] to [0,+inf].
-    # Hence we need the argument (2*cdf - 1), and to take abs to get a positive answer.
-    sigma_temp = abs(scipy.special.erfinv((cdf * 2) - 1))
-    # erf is definted in terms of
-    # int e^(-t^2)
-    # which corresponds to a gaussian with sigma = 1/sqrt(2). So we must multiply sigma_temp by sqrt(2)
-    return np.sqrt(2) * sigma_temp
-
-
-def kde_cdf_given_values(x, support):
+def get_df_row_summary(results_array, row_names):
     """
-    Uses kernel density estimation to output an array of cdf values given some data points x and a support.
-
-    Positional arguments:
-    x -- array of data point values.
-    support -- array of values on which to calculate the cdf.
+    Make a panda data frame of the mean and std devs of a table of results.
     """
-    bandwidth = 1.06 * x.std() * x.size ** (-1 / 5.)
-    kernels = []
-    for x_i in x:
-        kernel = scipy.stats.norm(x_i, bandwidth).pdf(support)
-        kernels.append(kernel)
-    density = np.sum(kernels, axis=0)
-    density /= scipy.integrate.trapz(density, support)
-    cdf = np.zeros(density.shape[0])
-    cdf[0] = density[0]
-    for i in range(1, density.shape[0]):
-        cdf[i] = cdf[i - 1] + density[i]
-    cdf = cdf / np.sum(density)
-    # adjust for rounding errors
-    assert cdf.max() <= 1.0001, "cdf must be approx <= 1.0. cdf=" + str(cdf) + ", density=" + str(density)
-    cdf[np.where(cdf > 1.0)] = 1.0
-    return cdf
+    assert results_array.shape[0] == len(row_names)
+    means = []
+    stds = []
+    for i in range(results_array.shape[0]):
+        means.append(np.mean(results_array[i, :]))
+        # use ddof=1 to specify that this is a sample standard deviation
+        stds.append(np.std(results_array[i, :], ddof=1))
+    # make the data frame
+    df = pd.DataFrame([means, stds], columns=row_names, index=['mean', 'std'])
+    # add uncertainties
+    num_cals = results_array.shape[1]
+    df.loc['mean_unc'] = df.loc['mean'] / np.sqrt(num_cals)
+    df.loc['std_unc'] = df.loc['std'] * np.sqrt(2 / (num_cals - 1))
+    return df.sort_index()
 
 
-def n_std_difference(values_1, sigmas_1, values_2, sigmas_2):
-    """
-    Gives the number of standard deviations difference between two floats or 1d arrays.
-    Assumes the errors are uncorrelated.
-    """
-    sigmas = np.sqrt(sigmas_1 ** 2 + sigmas_2 ** 2)
-    return (values_1 - values_2) / sigmas
+# def stats_rows(array, reduce_std=1.0):
+#     """
+#     Get the mean, std, skew and kurtosis of a 1d array or of each row of a 2d
+#     array.
+#     """
+#     # Reduce std argument reduces the standard deviation by a factor of
+#     # 1/sqrt(reduce_std) - this is used for estimating stds on the mean.
+#     assert array.ndim == 1 or array.ndim == 2,  "Input must be 1 or 2d array"
+#     if array.ndim == 1:
+#         stats_output = np.zeros(4)
+#         stats_output[0] = np.mean(array)
+#         stats_output[1] = np.std(array, ddof=1)
+#         stats_output[2] = scipy.stats.skew(array, bias=False)
+#         stats_output[3] = scipy.stats.kurtosis(array)
+#         # reduce std for use in splitting
+#         stats_output[1] = stats_output[1] / np.sqrt(float(reduce_std))
+#     elif array.ndim == 2:
+#         stats_output = np.zeros((array.shape[0], 4))
+#         for i in range(0, array.shape[0]):
+#             stats_output[i, 0] = np.mean(array[i, :])
+#             stats_output[i, 1] = np.std(array[i, :], ddof=1)
+#             stats_output[i, 2] = scipy.stats.skew(array[i, :], bias=False)
+#             stats_output[i, 3] = scipy.stats.kurtosis(array[i, :])
+#         # reduce std for use in splitting
+#         stats_output[:, 1] = stats_output[:, 1] / np.sqrt(float(reduce_std))
+#     return stats_output
+
+
+# def kde_cdf_given_values(x, support):
+#     """
+#     Uses kernel density estimation to output an array of cdf values given
+#     some data points x and a support.
+#
+#     Positional arguments:
+#     x -- array of data point values.
+#     support -- array of values on which to calculate the cdf.
+#     """
+#     bandwidth = 1.06 * x.std() * x.size ** (-1 / 5.)
+#     kernels = []
+#     for x_i in x:
+#         kernel = scipy.stats.norm(x_i, bandwidth).pdf(support)
+#         kernels.append(kernel)
+#     density = np.sum(kernels, axis=0)
+#     density /= scipy.integrate.trapz(density, support)
+#     cdf = np.zeros(density.shape[0])
+#     cdf[0] = density[0]
+#     for i in range(1, density.shape[0]):
+#         cdf[i] = cdf[i - 1] + density[i]
+#     cdf = cdf / np.sum(density)
+#     # adjust for rounding errors
+#     assert cdf.max() <= 1.0001, ("cdf must be approx <= 1.0. cdf=" +
+#                                  str(cdf) + ", density=" + str(density))
+#     cdf[np.where(cdf > 1.0)] = 1.0
+#     return cdf
+#
+#
+# def n_std_difference(values_1, sigmas_1, values_2, sigmas_2):
+#     """
+#     Gives the number of standard deviations difference between two floats or
+#     1d arrays.
+#     Assumes the errors are uncorrelated.
+#     """
+#     sigmas = np.sqrt(sigmas_1 ** 2 + sigmas_2 ** 2)
+#     return (values_1 - values_2) / sigmas
 
 
 def array_ratio_std(values_n, sigmas_n, values_d, sigmas_d):
     """
-    Gives error on the ratio of 2 floats or 2 1dimensional arrays given their values and errors assuming the errors are uncorrelated.
-    The sqare root of the variance formulae here is used http://stats.stackexchange.com/questions/19576/variance-of-the-reciprocal-ii/19580#19580
-    This assumes covariance = 0. _n and _d denote the numerator and denominator.
+    Gives error on the ratio of 2 floats or 2 1dimensional arrays given their
+    values and errors assuming the errors are uncorrelated.
+    This assumes covariance = 0. _n and _d denote the numerator and
+    denominator.
     """
-    return (values_n / values_d) * np.sqrt((sigmas_n / values_n) ** 2 + (sigmas_d / values_d) ** 2)
+    return (values_n / values_d) * (((sigmas_n / values_n) ** 2 +
+                                     (sigmas_d / values_d) ** 2)) ** 0.5

@@ -1,5 +1,8 @@
 #!/usr/bin/python
-"""Contains classes representing estimators f(theta) for use on nested sampling output and analytical analysis."""
+"""
+Contains classes representing estimators f(theta) for use on nested sampling
+output and analytical analysis.
+"""
 
 import numpy as np
 import scipy
@@ -12,10 +15,14 @@ import pns.maths_functions as mf
 
 
 def check_integrand(logx, func, settings):
-    """Helper function to return integrand L(X) X ftilde(X) for checking estimator values by numerical intergration."""
+    """
+    Helper function to return integrand L(X) X ftilde(X) for checking
+    estimator values by numerical intergration.
+    """
     # returns L(X) X ftilde(X) for integrating dlogx
     # NB this must be normalised by a factor V / Z
-    return np.exp(settings.logl_given_logx(logx) + logx) * func.ftilde(logx, settings)
+    return (np.exp(settings.logl_given_logx(logx) + logx)
+            * func.ftilde(logx, settings))
 
 
 def check_estimator_values(funcs_list, settings, return_int_errors=False):
@@ -28,13 +35,17 @@ def check_estimator_values(funcs_list, settings, return_int_errors=False):
         except (AttributeError, AssertionError):
             try:
                 # We want to calculate (V / Z) int L(X) X ftilde(X),
-                # where the V factor comes from integrating normalised distributions in arbitary prior volumes.
-                # See Keeton (2011) section on the canonical gaussian for more details.
+                # where the V factor comes from integrating normalised
+                # distributions in arbitary prior volumes.
+                # See Keeton (2011) section on the canonical gaussian for more
+                # details.
                 logx_terminate = mf.analytic_logx_terminate(settings)
-                result = scipy.integrate.quad(check_integrand, logx_terminate, 0.0, args=(f, settings))
+                result = scipy.integrate.quad(check_integrand, logx_terminate,
+                                              0.0, args=(f, settings))
                 output[i] = result[0] / np.exp(settings.logz_analytic())
                 errors[i] = result[1] / np.exp(settings.logz_analytic())
-                # print(f.name + " from integrating = " + str(result[0]) + " with tollerance " + str(result[1]))
+                # print(f.name + " from integrating = " + str(result[0]) + "
+                # with tollerance " + str(result[1]))
             except (AttributeError, AssertionError):
                 output[i] = np.nan
                 errors[i] = np.nan
@@ -73,6 +84,15 @@ class zEstimator(object):
         return np.exp(settings.logz_analytic())
 
 
+class n_samplesEstimator(object):
+
+    name = 'n_samples'
+    latex_name = '\# samples'
+
+    def estimator(self, logw=None, logl=None, r=None, theta=None):
+        return logw.shape[0]
+
+
 class rEstimator:
 
     name = 'r'
@@ -95,12 +115,13 @@ class rEstimator:
 class rconfEstimator(object):
 
     def __init__(self, fraction):
-        assert fraction < 1.0, "confidence interval fraction = " + str(fraction) + " must be < 1.0"
-        assert fraction > 0, "confidence interval fraction = " + str(fraction) + " must be > 0"
+        assert fraction < 1.0 and fraction > 0, ("conf interval fraction = " +
+                                                 str(fraction) +
+                                                 " must be between 0 and 1")
         self.name = 'rconf_' + str(fraction)
         self.fraction = fraction
-        # self.latex_name = '$\Theta_{P(|\\theta_{\hat{1}}|<\Theta)=' + str(fraction * 100) + '\%}$'
-        percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')  # format percent without trailing zeros as per http://stackoverflow.com/questions/2440692/formatting-floats-in-python-without-superfluous-zeros
+        # format percent without trailing zeros
+        percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
         self.latex_name = '$\mathrm{C.I.}_{' + percent_str + '\%}(|\\theta|)$'
 
     def min(self, settings):
@@ -127,11 +148,13 @@ class theta1Estimator(object):
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
         self.name = 'theta' + str(param_ind)
-        self.latex_name = '$\\overline{\\theta_{\hat{' + str(param_ind) + '}}}$'
+        self.latex_name = ('$\\overline{\\theta_{\hat{' + str(param_ind) +
+                           '}}}$')
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
         w_relative = np.exp(logw - logw.max())
-        return (np.sum(w_relative * theta[:, self.param_ind - 1]) / np.sum(w_relative))
+        return ((np.sum(w_relative * theta[:, self.param_ind - 1])
+                / np.sum(w_relative)))
 
     def analytical(self, settings):
         return 0.
@@ -143,13 +166,16 @@ class theta1Estimator(object):
 class theta1confEstimator(object):
 
     def __init__(self, fraction, param_ind=1):
-        assert fraction < 1.0, "confidence interval fraction = " + str(fraction) + " must be < 1.0"
-        assert fraction > 0, "confidence interval fraction = " + str(fraction) + " must be > 0"
+        assert fraction < 1.0 and fraction > 0, ("conf interval fraction = " +
+                                                 str(fraction) +
+                                                 " must be between 0 and 1")
         self.param_ind = param_ind
         self.name = 'theta' + str(param_ind) + 'conf_' + str(fraction)
         self.fraction = fraction
-        percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')  # format percent without trailing zeros as per http://stackoverflow.com/questions/2440692/formatting-floats-in-python-without-superfluous-zeros
-        self.latex_name = '$\mathrm{C.I.}_{' + percent_str + '\%}(\\theta_{\hat{' + str(param_ind) + '}})$'
+        # format percent without trailing zeros
+        percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
+        self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
+                           '\%}(\\theta_{\hat{' + str(param_ind) + '}})$')
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
         wp = np.zeros((r.shape[0], 2))
@@ -167,17 +193,17 @@ class theta1confEstimator(object):
 
 
 class theta1squaredEstimator:
-    # N.B. this is var about the likelihood mean and is therefore not affected by the mean
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
         self.name = 'theta' + str(param_ind) + 'squared'
-        self.latex_name = '$\\overline{\\theta_{\hat{' + str(param_ind) + '}}}$'
-        self.latex_name = '$\\overline{\\theta^2_{\hat{' + str(param_ind) + '}}}$'
+        self.latex_name = ('$\\overline{\\theta^2_{\hat{' + str(param_ind) +
+                           '}}}$')
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
         w_relative = np.exp(logw - logw.max())
-        return (np.sum(w_relative * (theta[:, self.param_ind - 1] ** 2)) / np.sum(w_relative))
+        return ((np.sum(w_relative * (theta[:, self.param_ind - 1] ** 2)) /
+                np.sum(w_relative)))
 
     def ftilde(self, logx, settings):
         # by symmetry at each (hyper)spherical isolikelihood contour:
