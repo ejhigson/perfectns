@@ -11,14 +11,20 @@ import pns.maths_functions as mf
 
 
 def get_logx(logl, nlive_array, simulate=False):
-    """Returns a logx vector showing the expected or simulated logx positions of points."""
+    """
+    Returns a logx vector showing the expected or simulated logx positions of
+    points.
+    """
     logx = np.zeros(logl.shape[0])
-    assert isinstance(nlive_array, np.ndarray), "warning! nlive = " + str(nlive_array) + " is not an array"
-    assert nlive_array.min() > 0, "nlive_array contains zeros: " + str(nlive_array)
+    assert isinstance(nlive_array, np.ndarray), "nlive = " + \
+        str(nlive_array) + " must be a numpy array"
+    assert nlive_array.min() > 0, "nlive_array contains zeros! " +  \
+        "nlive=" + str(nlive_array)
     if simulate:
         logx[0] = np.log(np.random.random()) / nlive_array[0]
         for i, _ in enumerate(logx[1:]):
-            logx[i + 1] = logx[i] + (np.log(np.random.random()) / nlive_array[i + 1])
+            logx[i + 1] = logx[i] + (np.log(np.random.random()
+                                     / nlive_array[i + 1]))
     else:
         logx[0] = -1.0 / nlive_array[0]
         for i, _ in enumerate(logx[1:]):
@@ -32,9 +38,13 @@ def get_logw(logl, nlive_array, simulate=False):
     logx_inc_start[1:] = get_logx(logl, nlive_array, simulate=simulate)
     logw = np.zeros(logl.shape[0])
     for i, _ in enumerate(logw[:-1]):
-        logw[i] = np.log(0.5) + mf.log_subtract(logx_inc_start[i], logx_inc_start[i + 2])
-    logw[0] = mf.log_sum_given_logs([logw[0], np.log(0.5) + mf.log_subtract(logx_inc_start[0], logx_inc_start[1])])  # assign extra prior vol outside the first point to the first point logw[0]
-    logw[-1] = logw[-2]  # approximate the final prior volume as equal to the one before
+        logw[i] = np.log(0.5) + mf.log_subtract(logx_inc_start[i],
+                                                logx_inc_start[i + 2])
+    # assign extra prior vol outside the first point to the first point logw[0]
+    logw[0] = mf.log_sum_given_logs([logw[0], np.log(0.5) +
+                                     mf.log_subtract(logx_inc_start[0],
+                                                     logx_inc_start[1])])
+    logw[-1] = logw[-2]  # approximate elenent as equal to the one before
     logw += logl
     return logw
 
@@ -53,9 +63,11 @@ def get_lp_nlive(ns_run):
     if 'nlive_array' in ns_run[0]:
         nlive_array = ns_run[0]['nlive_array']
     else:
-        # if nlive_array is not already stored for the run, find it iteratively using the minimum and maximum logls of the slices
+        # if nlive_array is not already stored for the run, find it iteratively
+        # using the minimum and maximum logls of the slices
         nlive_array = np.zeros(lp.shape[0])
-        assert len(ns_run[0]['thread_logl_min_max']) == len(ns_run[1]), "length of threads list not equal to length of logl_min_max list"
+        assert len(ns_run[0]['thread_logl_min_max']) == len(ns_run[1]), \
+            "length of threads list not equal to length of logl_min_max list"
         for logl_mm in ns_run[0]['thread_logl_min_max']:
             if len(logl_mm) == 3:
                 incriment = logl_mm[2]
@@ -72,7 +84,8 @@ def get_lp_nlive(ns_run):
                     ind = np.where(lp[:, 0] > logl_mm[0])[0]
                     nlive_array[ind] += incriment
                 else:
-                    ind = np.where((lp[:, 0] > logl_mm[0]) & (lp[:, 0] <= logl_mm[1]))[0]
+                    ind = np.where((lp[:, 0] > logl_mm[0]) &
+                                   (lp[:, 0] <= logl_mm[1]))[0]
                     nlive_array[ind] += incriment
         if nlive_array.min() < 1:
             loglmax = np.zeros(len(ns_run[0]['thread_logl_min_max']))
@@ -80,7 +93,8 @@ def get_lp_nlive(ns_run):
                 loglmax[i] = lmm[1]
             print(lp[-1, :], loglmax.max(), lp[-1, 0] == loglmax.max())
             print(lp[:, 0])
-            assert nlive_array.min() > 0, "nlive_array contains zeros: " + str(nlive_array) + "final logl_min_max = " + str(ns_run[0]['thread_logl_min_max'][-1]) + " and final logl is " + str(ns_run[1][-1][-1, 0]) + " and equality test=" + str(ns_run[1][-1][-1, 0] == ns_run[0]['thread_logl_min_max'][-1][-1])
+            assert nlive_array.min() > 0, \
+                ("nlive_array contains zeros: " + str(nlive_array))
     return lp, nlive_array
 
 
@@ -100,7 +114,8 @@ def combine_lp_list(lp_list):
 def get_estimators(lrxp, logw, estimator_list):
     output = np.zeros(len(estimator_list))
     for i, f in enumerate(estimator_list):
-        output[i] = f.estimator(logw=logw, logl=lrxp[:, 0], r=lrxp[:, 1], theta=lrxp[:, 3:])
+        output[i] = f.estimator(logw=logw, logl=lrxp[:, 0], r=lrxp[:, 1],
+                                theta=lrxp[:, 3:])
     return output
 
 
@@ -120,10 +135,12 @@ def run_estimators(ns_run, estimator_list, **kwargs):
 
 
 def run_std_simulate(ns_run, estimator_list, **kwargs):
-    # NB simulate must be True and analytical_w must be False so these are not taken from kwargs
-    n_simulate = kwargs["n_simulate"]  # No default value - if not specified should return an error.
+    # NB simulate must be True and analytical_w must be False so these are not
+    # taken from kwargs
+    n_simulate = kwargs["n_simulate"]  # No default, must specify
     return_values = kwargs.get('return_values', False)
-    assert return_values is True or return_values is False, "return_values = " + str(return_values) + " must be True or False"
+    assert return_values is True or return_values is False, \
+        "return_values = " + str(return_values) + " must be True or False"
     all_values = np.zeros((len(estimator_list), n_simulate))
     lp, nlive = get_lp_nlive(ns_run)
     for i in range(0, n_simulate):
@@ -137,12 +154,12 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
 
 
 def run_std_bootstrap(ns_run, estimator_list, **kwargs):
-    # assert isinstance(ns_run[0], np.ndarray), "So far only set up for nlive = constant"
     simulate = kwargs.get('simulate', False)
-    n_simulate = kwargs["n_simulate"]  # No default value - if not specified should return an error.
+    n_simulate = kwargs["n_simulate"]  # No default, must specify
     return_values = kwargs.get('return_values', False)
     credible_interval = kwargs.get('credible_interval', False)
-    assert return_values is True or return_values is False, "return_values = " + str(return_values) + " must be True or False"
+    assert return_values is True or return_values is False, \
+        "return_values = " + str(return_values) + " must be True or False"
     bootstrap_values = np.zeros((len(estimator_list), n_simulate))
     if isinstance(ns_run[0], np.ndarray):  # run is just a list of threads
         threads = ns_run
@@ -170,7 +187,8 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
                     threads_temp.append(threads[ind])
                 # now resample the remaining threads
                 for j in range(ns_run[0]["nlive_1"], len(threads)):
-                    ind = random.randint(ns_run[0]["nlive_1"], len(threads) - 1)
+                    ind = random.randint(ns_run[0]["nlive_1"],
+                                         len(threads) - 1)
                     threads_temp.append(threads[ind])
             else:  # standard run
                 for j in range(len(threads)):
