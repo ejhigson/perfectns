@@ -82,7 +82,7 @@ def get_run_data(settings, n_repeat, tqdm_leave=False, n_process=None,
     save_name = slu.data_save_name(settings, n_repeat)
     print("get_run_data: " + save_name)
     if load:
-        print("Loading threads")
+        # print("Loading threads")
         try:
             data = slu.pickle_load(save_name)
         except OSError:  # "FileNotFoundError is a subclass of OSError
@@ -91,8 +91,8 @@ def get_run_data(settings, n_repeat, tqdm_leave=False, n_process=None,
         else:
             # ensure the loaded settings match the current settings
             if settings.get_settings_dict() == data[0][0]['settings']:
-                print("Loaded settings = current settings =\n")
-                print(settings.get_settings_dict())
+                print("Loaded settings = current settings")
+                # print(settings.get_settings_dict())
             else:
                 print("Loaded settings =")
                 print(data[0][0]['settings'])

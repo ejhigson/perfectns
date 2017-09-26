@@ -19,12 +19,14 @@ def scipy_gaussian_r_given_logx(logx, sigma, n_dim):
 
 def scipy_gaussian_logx_given_r(r, sigma, n_dim):
     exponent = 0.5 * (r / sigma) ** 2
-    return np.log(scipy.special.gammainc(n_dim / 2., exponent))  # - scipy.special.gammaln(n_dim / 2.)
+    # - scipy.special.gammaln(n_dim / 2.)
+    return np.log(scipy.special.gammainc(n_dim / 2., exponent))
 
 
 def mpmath_gaussian_logx_given_r(r, sigma, n_dim):
     exponent = 0.5 * (r / sigma) ** 2
-    return float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=exponent, regularized=True)))
+    return float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=exponent,
+                                            regularized=True)))
 
 
 def gaussian_r_given_logx(logx, shrinkage_ratio, n_dim):
@@ -111,8 +113,10 @@ def nsphere_r_given_logx(logx, r_max, n_dim):
 
 def nsphere_logx_given_r(r, r_max, n_dim):
     """
-    Finds logx assuming the prior is an n-dimensional sphere co-centred with a spherically symetric likelihood.
-    This will return an answer of the same type (float or numpy array) as the input {r}.
+    Finds logx assuming the prior is an n-dimensional sphere co-centred with a
+    spherically symetric likelihood.
+    This will return an answer of the same type (float or numpy array) as the
+    input {r}.
     """
     logx = (np.log(r) - np.log(r_max)) * n_dim
     return logx
@@ -121,17 +125,25 @@ def nsphere_logx_given_r(r, r_max, n_dim):
 def nsphere_vol(dim, radius=1.0):
     """Returns hypervolume of a unit nsphere of specified dimension."""
     # From https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
-    return ((np.pi ** (dim / 2.0)) / scipy.special.gamma((dim / 2.0) + 1.0)) * (radius ** dim)
+    const = ((np.pi ** (dim / 2.0)) / scipy.special.gamma((dim / 2.0) + 1.0))
+    return const * (radius ** dim)
 
 
 def nsphere_logvol(dim, radius=1.0):
-    """Returns the natural log of the hypervolume of a unit nsphere of specified dimension. Useful for very high dimensions."""
+    """
+    Returns the natural log of the hypervolume of a unit nsphere of specified
+    dimension. Useful for very high dimensions.
+    """
     # From https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
-    return (np.log(radius) * dim) + (np.log(np.pi) * (dim / 2.0)) - (scipy.special.gammaln((dim / 2.0) + 1.0))
+    return ((np.log(radius) * dim) + (np.log(np.pi) * (dim / 2.0)) -
+            (scipy.special.gammaln((dim / 2.0) + 1.0)))
 
 
 def log_gaussian_given_r(r, sigma, n_dim):
-    """Returns the natural log of a normalised,  uncorrelated gaussian with equal variance in all n_dim dimensions."""
+    """
+    Returns the natural log of a normalised,  uncorrelated gaussian with equal
+    variance in all n_dim dimensions.
+    """
     logl = -0.5 * ((r ** 2) / (sigma ** 2))
     # normalise
     logl -= n_dim * np.log(sigma)
@@ -140,7 +152,10 @@ def log_gaussian_given_r(r, sigma, n_dim):
 
 
 def log_laplace_given_r(r, sigma, n_dim):
-    """Returns the natural log of a normalised,  uncorrelated laplacian with equal variance in all n_dim dimensions."""
+    """
+    Returns the natural log of a normalised,  uncorrelated laplacian with equal
+    variance in all n_dim dimensions.
+    """
     logl = np.log(scipy.special.k0(np.sqrt(2) * r / sigma))
     # normalise
     logl -= n_dim * np.log(sigma)
@@ -151,7 +166,9 @@ def log_laplace_given_r(r, sigma, n_dim):
 
 
 def log_bessel_given_r(r, sigma_in, n_dim, q):
-    """Returns the natural log of a normalised,  uncorrelated bessel with equal variance in all n_dim dimensions.
+    """
+    Returns the natural log of a normalised,  uncorrelated bessel with equal
+    variance in all n_dim dimensions.
     Equals Laplace for q=0 and sigma_in = 1 / sqrt(2)
     """
     sigma = sigma_in
@@ -170,10 +187,10 @@ def log_logistic_given_r(r, sigma, n_dim):
     logl = -0.5 * ((r ** 2) / (sigma ** 2))
     if isinstance(r, np.ndarray):
         for i, r_i in enumerate(r):
-            logl[i] -= 2 * log_sum_given_logs(np.asarray([0.0, -0.5 * ((r_i ** 2) / (sigma ** 2))]))
+            logl[i] -= 2 * log_sum_given_logs([0.0, -0.5 * ((r_i ** 2) /
+                                                            (sigma ** 2))])
     else:
-        logl -= 2 * log_sum_given_logs(np.asarray([0.0, -0.5 * ((r ** 2) / (sigma ** 2))]))
-
+        logl -= 2 * log_sum_given_logs([0.0, -0.5 * ((r ** 2) / (sigma ** 2))])
     # normalise
     logl -= n_dim * np.log(sigma)
     logl -= np.log(2 * np.pi) * (n_dim / 2.0)
@@ -181,7 +198,10 @@ def log_logistic_given_r(r, sigma, n_dim):
 
 
 def r_given_log_logistic(logl, sigma, n_dim):
-    """Returns the radius of a given logl for a logistic function. NB not normalised."""
+    """
+    Returns the radius of a given logl for a logistic function. NB not
+    normalised.
+    """
     # remove normalisation constant
     c = logl + n_dim * np.log(sigma)
     c += np.log(2 * np.pi) * (n_dim / 2.0)
@@ -229,7 +249,10 @@ def r_given_log_exp_power(logl, sigma, n_dim, b=0.5):
 
 
 def r_given_log_gaussian(logl, sigma, n_dim):
-    """Returns the radius of a given logl for a normalised,  uncorrelated gaussian with equal variance in all n_dim dimensions."""
+    """
+    Returns the radius of a given logl for a normalised,  uncorrelated gaussian
+    with equal variance in all n_dim dimensions.
+    """
     # remove normalisation constant
     exponent = logl + n_dim * np.log(sigma)
     exponent += np.log(2 * np.pi) * (n_dim / 2.0)
@@ -239,8 +262,10 @@ def r_given_log_gaussian(logl, sigma, n_dim):
 
 
 def log_cauchy_given_r(r, sigma, n_dim):
-    """Returns the natural log of a normalised,  uncorrelated Cauchy distribution with 1 degree of freedom."""
-    # see https://en.wikipedia.org/wiki/Cauchy_distribution#Multivariate_Cauchy_distribution
+    """
+    Returns the natural log of a normalised,  uncorrelated Cauchy distribution
+    with 1 degree of freedom.
+    """
     # NB gamma(0.5) = sqrt(pi)
     logl = (-(1 + n_dim) / 2) * np.log(1 + ((r ** 2) / (sigma ** 2)))
     logl += scipy.special.gammaln((1.0 + n_dim) / 2.0)
@@ -250,7 +275,10 @@ def log_cauchy_given_r(r, sigma, n_dim):
 
 
 def r_given_log_cauchy(logl, sigma, n_dim):
-    """Returns the radius for a given logl of a normalised,  uncorrelated Cauchy distribution with 1 degree of freedom."""
+    """
+    Returns the radius for a given logl of a normalised,  uncorrelated
+    Cauchy distribution with 1 degree of freedom.
+    """
     exponent = logl
     # remove normalisation constant
     exponent -= scipy.special.gammaln((1.0 + n_dim) / 2.0)
@@ -268,7 +296,8 @@ def entropy_num_samples(w):
     """
     Return the entropy of a set of weighted samples from their weights.
     This takes the absolute value of weights first.
-    If np.sum(w) is not 1 the function rerenormalises it to 1 for the calculation.
+    If np.sum(w) is not 1 the function rerenormalises it to 1 for the
+    calculation.
     """
     if w.shape[0] == 0:
         return 0
@@ -282,8 +311,10 @@ def entropy_num_samples(w):
 
 def log_sum_given_logs(logs):
     """
-    Returns the log of the sum of values given a list, touple or np array of values.
-    See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/ for more details.
+    Returns the log of the sum of values given a list, touple or np array of
+    values.
+    See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/
+    for more details.
     """
     if isinstance(logs, tuple) or isinstance(logs, list):
         logs = np.asarray(logs)
@@ -295,17 +326,18 @@ def log_sum_given_logs(logs):
 def log_subtract(loga, logb):
     """
     Returns log(a-b) given loga and logb.
-    See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/ for more details.
+    See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/
+    for more details.
     """
-    assert loga >= logb, "log_subtract: a-b is negative for loga=" + str(loga) + \
-                         " and logb=" + str(logb)
+    assert loga >= logb, "log_subtract: a-b is negative for loga=" + \
+                         str(loga) + " and logb=" + str(logb)
     return loga + np.log(1 - np.exp(logb - loga))
 
 
 # Stats functions:
 
 
-def get_df_row_summary(results_array, row_names):
+def get_df_row_summary(results_array, row_names, uncs_as_rows=True):
     """
     Make a panda data frame of the mean and std devs of a table of results.
     """
@@ -320,9 +352,18 @@ def get_df_row_summary(results_array, row_names):
     df = pd.DataFrame([means, stds], columns=row_names, index=['mean', 'std'])
     # add uncertainties
     num_cals = results_array.shape[1]
-    df.loc['mean_unc'] = df.loc['mean'] / np.sqrt(num_cals)
-    df.loc['std_unc'] = df.loc['std'] * np.sqrt(2 / (num_cals - 1))
-    return df.sort_index()
+    mean_unc = df.loc['mean'] / np.sqrt(num_cals)
+    std_unc = df.loc['std'] * np.sqrt(2 / (num_cals - 1))
+    if uncs_as_rows:
+        df.loc['mean_unc'] = mean_unc
+        df.loc['std_unc'] = std_unc
+        return df
+    else:
+        # include uncertainties as columns
+        df_unc = pd.DataFrame([mean_unc, std_unc], columns=row_names,
+                              index=['mean', 'std'])
+        df_unc = df_unc.add_suffix('_unc')
+        return pd.concat([df, df_unc], axis=1)
 
 
 # def stats_rows(array, reduce_std=1.0):

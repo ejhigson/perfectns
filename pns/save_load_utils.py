@@ -27,25 +27,28 @@ def timing_decorator(func):
     return wrapper
 
 
-def data_save_name(settings, n_repeats, override_dg=None):
+def data_save_name(settings, n_repeats, dynamic_test=None):
     """
     Make a standard save name format for data with a given set of settings.
+    dynamic_test is a list of dynamic goals used for dynamic test results, and
+    is used to specify a new save name pattern.
     """
-    save_name = settings.data_version + "_dg"
-    if override_dg is not None:
-        save_name += override_dg
+    if dynamic_test is not None:
+        save_name = "dynamic_test_" + settings.data_version
+        for dg in dynamic_test:
+            save_name += "_" + str(dg)
     else:
-        save_name += "_dg" + str(settings.dynamic_goal)
+        save_name = settings.data_version + "_dg" + str(settings.dynamic_goal)
     save_name += "_" + str(settings.n_dim) + "d"
     # add likelihood and prior info
     save_name += "_" + type(settings.likelihood).__name__
     save_name += str(settings.likelihood.likelihood_scale)
     save_name += "_" + type(settings.prior).__name__
     save_name += str(settings.prior.prior_scale)
-    save_name += str(settings.zv_termination_fraction) + "term"
+    save_name += "_" + str(settings.zv_termination_fraction) + "term"
     save_name += "_" + str(n_repeats) + "reps"
     save_name += "_" + str(settings.nlive) + "nlive"
-    if settings.dynamic_goal is not None:
+    if settings.dynamic_goal is not None or dynamic_test is not None:
         save_name += "_" + str(settings.nlive_1) + "nlive1"
         save_name += "_" + str(settings.nlive_2) + "nlive2"
     if settings.n_calls_max is not None and settings.nlive is None:

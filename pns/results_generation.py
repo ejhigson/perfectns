@@ -15,6 +15,10 @@ import pns.estimators as e
 def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
                         load=True, save=True, parallelise=True,
                         reduce_n_calls_max_frac=0.02):
+    """
+    Generate results using different dynamic goals and output a pandas data
+    frame containing standard deviations and performance gains.
+    """
     values_list = []
     # get info on the number of samples too
     funcs_list = [e.n_samplesEstimator()] + funcs_list_in
@@ -24,6 +28,7 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
         func_names.append(func.name)
     for i, dynamic_goal in enumerate(dynamic_goals):
         settings.dynamic_goal = dynamic_goal
+        print("dynamic_goal = " + str(settings.dynamic_goal))
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
         values = pw.func_on_runs(au.run_estimators, run_list, funcs_list)
@@ -39,22 +44,31 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
         del run_list
     # analyse data
     # ------------
-    for key in df_dict:
-        # find performance gain (proportional to ratio of errors squared)
-        std_ratio = df_dict[None].loc["std"] / df_dict[key].loc["std"]
+    # find performance gain (proportional to ratio of errors squared)
+    for key, df in df_dict.items():
+        std_ratio = df_dict[None].loc["std"] / df.loc["std"]
         std_ratio_unc = mf.array_ratio_std(df_dict[None].loc["std"],
                                            df_dict[None].loc["std_unc"],
-                                           df_dict[key].loc["std"],
-                                           df_dict[key].loc["std_unc"])
+                                           df.loc["std"],
+                                           df.loc["std_unc"])
         df_dict[key].loc["gain"] = std_ratio ** 2
         df_dict[key].loc["gain_unc"] = 2 * std_ratio * std_ratio_unc
-    for key in df_dict:
+    # make uncertainties appear in seperate columns
+    calc_names = ['mean', 'std', 'gain']  # also controls row order
+    for key, df in df_dict.items():
+        df_values = df.loc[calc_names]
+        df_uncs = df.loc[[s + "_unc" for s in calc_names]]
+        # strip "_unc" suffix from row indexes
+        df_uncs.rename(lambda s: s[:-4], inplace=True)
+        # add "_unc" suffix to columns
+        df_uncs = df_uncs.add_suffix('_unc')
+        df_dict[key] = pd.concat([df_values, df_uncs], axis=1)
+        df_dict[key] = df_dict[key].reindex_axis(sorted(df_dict[key].columns),
+                                                 axis=1)
         df_dict[key]["dynamic_goal"] = [key] * df_dict[key].shape[0]
-        df_dict[key]["calc_type"] = df_dict[key].index
     results = pd.concat(df_dict.values())
     # make the calc column catagorical with a custom ordering
-    order = ["mean", "mean_unc", "std", "std_unc", "gain", "gain_unc"]
-    results['calc_type'] = pd.Categorical(results['calc_type'], order)
+    results['calc_type'] = pd.Categorical(results.index, calc_names)
     results.sort_values(["calc_type", "dynamic_goal"], inplace=True)
     # put the dynamic goal column first
     cols = list(results)

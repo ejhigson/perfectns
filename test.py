@@ -6,12 +6,13 @@ nested_sampling(settings).
 """
 
 import numpy as np
+import pandas as pd
 import pns_settings
 import pns.estimators as e
-# import pns.save_load_utils as slu
-# import pns.analysis_utils as au
-# import pns.parallelised_wrappers as pw
-# import pns.maths_functions as mf
+import pns.save_load_utils as slu
+import pns.analysis_utils as au
+import pns.parallelised_wrappers as pw
+import pns.maths_functions as mf
 import pns.save_load_utils as slu
 import pns.results_generation as rg
 settings = pns_settings.PerfectNestedSamplingSettings()
@@ -44,14 +45,22 @@ print(e.check_estimator_values(estimator_list, settings))
 # d_df = mf.get_df_row_summary(values, e_names)
 # print(d_df)
 
-n_repeats = 500
+n_repeats = 250
 dynamic_goals = [None, 0, 0.25, 1]
-
-dr = rg.get_dynamic_results(n_repeats, dynamic_goals, estimator_list, settings)
-
+load = False
 override_dg = "dynamic_results"
 for dg in dynamic_goals:
     override_dg += "_" + str(dg)
+save_name = slu.data_save_name(settings, n_repeats, dynamic_test=dynamic_goals)
 
-save_name = slu.data_save_name(settings, n_repeats, override_dg=override_dg)
-dr.to_pickle('data/' + save_name + '.dat')
+# run
+
+if load:
+    load_name = 'data/v01_dgdynamic_results_None_0_0_25_1_10d_gaussian1_' \
+        'gaussian100_0001term_500reps_200nlive_5nlive1_2nlive2.dat'
+    dr = pd.read_pickle(load_name)
+else:
+    dr = rg.get_dynamic_results(n_repeats, dynamic_goals, estimator_list,
+                                settings)
+    dr.to_pickle('data/' + save_name + '.dat')
+
