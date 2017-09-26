@@ -107,4 +107,4 @@ def get_run_data(settings, n_repeat, tqdm_leave=False, n_process=None,
         if save:
             print("Saving runs")
             slu.pickle_save(data, save_name)
-    return data[1:]
+    return data

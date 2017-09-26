@@ -1,5 +1,8 @@
 # EH stuff
 *.txt
+*.dat
+*.pdf
+plots
 data
 archive
 
