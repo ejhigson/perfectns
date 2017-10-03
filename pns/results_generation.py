@@ -70,8 +70,11 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
     # make the calc column catagorical with a custom ordering
     results['calc_type'] = pd.Categorical(results.index, calc_names)
     results.sort_values(["calc_type", "dynamic_goal"], inplace=True)
+    del results['calc_type']
     # put the dynamic goal column first
     cols = list(results)
     cols.insert(0, cols.pop(cols.index('dynamic_goal')))
+    cols.insert(1, cols.pop(cols.index('n_samples')))
+    cols.insert(2, cols.pop(cols.index('n_samples_unc')))
     results = results.loc[:, cols]
     return results

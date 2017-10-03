@@ -10,10 +10,9 @@ import pandas as pd
 import pns_settings
 import pns.estimators as e
 import pns.save_load_utils as slu
-import pns.analysis_utils as au
-import pns.parallelised_wrappers as pw
-import pns.maths_functions as mf
-import pns.save_load_utils as slu
+# import pns.analysis_utils as au
+# import pns.parallelised_wrappers as pw
+# import pns.maths_functions as mf
 import pns.results_generation as rg
 settings = pns_settings.PerfectNestedSamplingSettings()
 np.set_printoptions(precision=5, suppress=True, linewidth=400)
@@ -21,8 +20,8 @@ np.set_printoptions(precision=5, suppress=True, linewidth=400)
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1confEstimator(0.84),
-                  e.theta1squaredEstimator(),
-                  e.rconfEstimator(0.84)]
+                  # e.rconfEstimator(0.84)
+                  e.theta1squaredEstimator()]
 
 e_names = []
 for est in estimator_list:
@@ -45,7 +44,7 @@ print(e.check_estimator_values(estimator_list, settings))
 # d_df = mf.get_df_row_summary(values, e_names)
 # print(d_df)
 
-n_repeats = 250
+n_repeats = 25
 dynamic_goals = [None, 0, 0.25, 1]
 load = False
 override_dg = "dynamic_results"
@@ -64,3 +63,4 @@ else:
                                 settings)
     dr.to_pickle('data/' + save_name + '.dat')
 
+print(dr)
