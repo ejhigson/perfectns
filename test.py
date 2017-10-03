@@ -46,18 +46,14 @@ print(e.check_estimator_values(estimator_list, settings))
 
 n_repeats = 25
 dynamic_goals = [None, 0, 0.25, 1]
-load = False
-override_dg = "dynamic_results"
-for dg in dynamic_goals:
-    override_dg += "_" + str(dg)
+load_results = True
 save_name = slu.data_save_name(settings, n_repeats, dynamic_test=dynamic_goals)
 
 # run
-
-if load:
-    load_name = 'data/v01_dgdynamic_results_None_0_0_25_1_10d_gaussian1_' \
-        'gaussian100_0001term_500reps_200nlive_5nlive1_2nlive2.dat'
-    dr = pd.read_pickle(load_name)
+print( "hello")
+if load_results:
+    print("loading results")
+    dr = pd.read_pickle('data/' + save_name + '.dat')
 else:
     dr = rg.get_dynamic_results(n_repeats, dynamic_goals, estimator_list,
                                 settings)
