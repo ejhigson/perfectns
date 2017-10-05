@@ -15,7 +15,7 @@ import pns.save_load_utils as slu
 import pns.results_generation as rg
 import pns.likelihoods as likelihoods
 settings = pns_settings.PerfectNestedSamplingSettings()
-settings.likelihood = likelihoods.exp_power(likelihood_scale=1, power=0.5)
+# settings.likelihood = likelihoods.exp_power(likelihood_scale=1, power=2)
 pd.set_option('display.width', 200)
 
 estimator_list = [e.logzEstimator(),
@@ -45,7 +45,7 @@ print("True est values")
 # d_df = mf.get_df_row_summary(values, e_names)
 # print(d_df)
 
-n_repeats = 500
+n_repeats = 2000
 dynamic_goals = [None, 0, 0.25, 1]
 load_results = True
 save_name = slu.data_save_name(settings, n_repeats, dynamic_test=dynamic_goals)
