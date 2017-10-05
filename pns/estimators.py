@@ -40,6 +40,8 @@ def check_estimator_values(funcs_list, settings, return_int_errors=False):
                 # See Keeton (2011) section on the canonical gaussian for more
                 # details.
                 logx_terminate = mf.analytic_logx_terminate(settings)
+                assert logx_terminate is not None, \
+                    "logx_terminate function not set up for current settings"
                 result = scipy.integrate.quad(check_integrand, logx_terminate,
                                               0.0, args=(f, settings))
                 output[i] = result[0] / np.exp(settings.logz_analytic())
@@ -118,7 +120,7 @@ class rconfEstimator(object):
         assert fraction < 1.0 and fraction > 0, ("conf interval fraction = " +
                                                  str(fraction) +
                                                  " must be between 0 and 1")
-        self.name = 'rconf_' + str(fraction)
+        self.name = 'rc_' + str(fraction)
         self.fraction = fraction
         # format percent without trailing zeros
         percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
@@ -147,7 +149,7 @@ class theta1Estimator(object):
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
-        self.name = 'theta' + str(param_ind)
+        self.name = 't' + str(param_ind)
         self.latex_name = ('$\\overline{\\theta_{\hat{' + str(param_ind) +
                            '}}}$')
 
@@ -170,7 +172,7 @@ class theta1confEstimator(object):
                                                  str(fraction) +
                                                  " must be between 0 and 1")
         self.param_ind = param_ind
-        self.name = 'theta' + str(param_ind) + 'conf_' + str(fraction)
+        self.name = 't' + str(param_ind) + 'c_' + str(fraction)
         self.fraction = fraction
         # format percent without trailing zeros
         percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
@@ -196,7 +198,7 @@ class theta1squaredEstimator:
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
-        self.name = 'theta' + str(param_ind) + 'squared'
+        self.name = 't' + str(param_ind) + 'squ'
         self.latex_name = ('$\\overline{\\theta^2_{\hat{' + str(param_ind) +
                            '}}}$')
 

@@ -14,7 +14,7 @@ import pns.estimators as e
 
 def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
                         load=True, save=True, parallelise=True,
-                        reduce_n_calls_max_frac=0.02):
+                        reduce_n_calls_max_frac=0.02, tuned_dynamic_ps=None):
     """
     Generate results using different dynamic goals and output a pandas data
     frame containing standard deviations and performance gains.
@@ -28,12 +28,20 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
         func_names.append(func.name)
     for i, dynamic_goal in enumerate(dynamic_goals):
         settings.dynamic_goal = dynamic_goal
+        if tuned_dynamic_ps is not None:
+            settings.tuned_dynamic_p = tuned_dynamic_ps[i]
         print("dynamic_goal = " + str(settings.dynamic_goal))
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
         values = pw.func_on_runs(au.run_estimators, run_list, funcs_list)
+        if dynamic_goal is None:
+            key_i = "standard"
+        else:
+            key_i = "dyn " + str(settings.dynamic_goal)
+            if settings.tuned_dynamic_p is True:
+                key_i += " tuned"
         df = mf.get_df_row_summary(values, func_names)
-        df_dict[dynamic_goal] = df
+        df_dict[key_i] = df
         if (settings.dynamic_goal is None and settings.n_calls_max is None
                 and i == 0):
             n_calls_max = int(df['n_samples']['mean'] *
@@ -46,9 +54,9 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_list_in, settings,
     # ------------
     # find performance gain (proportional to ratio of errors squared)
     for key, df in df_dict.items():
-        std_ratio = df_dict[None].loc["std"] / df.loc["std"]
-        std_ratio_unc = mf.array_ratio_std(df_dict[None].loc["std"],
-                                           df_dict[None].loc["std_unc"],
+        std_ratio = df_dict["standard"].loc["std"] / df.loc["std"]
+        std_ratio_unc = mf.array_ratio_std(df_dict["standard"].loc["std"],
+                                           df_dict["standard"].loc["std_unc"],
                                            df.loc["std"],
                                            df.loc["std_unc"])
         df_dict[key].loc["gain"] = std_ratio ** 2

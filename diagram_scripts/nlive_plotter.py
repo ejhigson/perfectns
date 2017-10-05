@@ -13,12 +13,14 @@ import pns.estimators as e
 import pns.parallelised_wrappers as pw
 import pns_settings
 # import matplotlib.patches as mpatches
+import pns.likelihoods as likelihoods
 settings = pns_settings.PerfectNestedSamplingSettings()
 np.core.arrayprint._line_width = 400
 np.set_printoptions(precision=5, suppress=True)
 
 # settings
 # --------
+settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
 n_run = 10
 settings.nlive = 200
 settings.nlive_2 = 1
@@ -132,7 +134,8 @@ for g, goal in enumerate(dynamic_goals):
 # find analytic w
 xmin = np.floor(logx_min.min())
 logx = np.linspace(xmin, xmax, nbin)
-w_an = np.exp(logx + settings.logl_given_logx(logx) + settings.logz_analytic())
+logw_an = logx + settings.logl_given_logx(logx)
+w_an = np.exp(logw_an - logw_an.max())
 w_an /= np.trapz(w_an, x=logx)
 # set limits
 if type(settings.likelihood).__name__ == "gaussian" and settings.n_dim == 10:
@@ -165,7 +168,7 @@ w_an_c *= np.mean(integrals[n_run:2 * n_run])
 ax.plot(logx, w_an_c, linewidth=1.5, linestyle="--", dashes=(2, 3), label="posterior mass remaining", color='darkblue')
 if any(tuned_dynamic_p):
     # plot tuned mass
-    w_tuned = w_an * settings.likelihood_prior.r_given_logx(logx) * np.sqrt(1.0 / settings.n_dim)
+    w_tuned = w_an * settings.r_given_logx(logx) * np.sqrt(1.0 / settings.n_dim)
     # remove any nans or infs as they screw up normalisation
     w_tuned[~np.isfinite(w_tuned)] = 0.0
     w_tuned /= np.trapz(w_tuned, x=logx)

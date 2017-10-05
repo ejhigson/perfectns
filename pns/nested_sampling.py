@@ -233,24 +233,19 @@ def z_importance(w, nlive, exact=False):
     return importance / importance.max()
 
 
-def p_importance(lp, w, tuned_dynamic_p=False):
-    if tuned_dynamic_p is True:
-        f = lp[:, 1]
+def p_importance(lrxp, w, tuned_dynamic_p=False, tuning_type='theta1'):
+    if tuned_dynamic_p is False:
+        return w / w.max()
+    else:
+        assert tuning_type == 'theta1', 'so far only set up for theta1'
+        if tuning_type == 'theta1':
+            # extract theta1 values from lrxp
+            f = lrxp[:, 3]
+        # calculate importance in proportion to difference between f values and
+        # the calculation mean.
         fabs = np.absolute(f - (np.sum(f * w) / np.sum(w)))
         importance = fabs * w
-        # n = int(np.ceil(w.shape[0] / 100.0))
-        # importance = np.zeros(w.shape[0])
-        # for i, _ in enumerate(importance):
-        #     nmin = i - n
-        #     nmax = i + n + 1
-        #     if nmin < 0:
-        #         nmin = 0
-        #     if nmax > importance.shape[0] - 1:
-        #         nmax = importance.shape[0] - 1
-        #     importance[i] = np.mean(fabs[nmin:nmax]) * w[i]
         return importance / importance.max()
-    else:
-        return w / w.max()
 
 
 def logl_min_max_given_fraction(run, settings):

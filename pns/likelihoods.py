@@ -59,3 +59,19 @@ class exp_power(object):
     def r_given_logl(self, logl, n_dim):
         return mf.r_given_log_exp_power(logl, self.likelihood_scale,
                                         n_dim, b=self.power)
+
+
+class cauchy(object):
+
+    """Spherically symetric exponential power likelihood."""
+
+    def __init__(self, likelihood_scale=1):
+        self.likelihood_scale = likelihood_scale
+
+    def logl_given_r(self, r, n_dim):
+        return mf.log_cauchy_given_r(r, self.likelihood_scale, n_dim)
+
+    # Optional functions
+
+    def r_given_logl(self, logl, n_dim):
+        return mf.r_given_log_cauchy(logl, self.likelihood_scale, n_dim)

@@ -52,8 +52,9 @@ def analytic_logx_terminate(settings):
     """
     # use r=0 rather than logx=-np.inf as the latter causes numerical problems
     logl_max = settings.logl_given_r(0)
-    return logx_terminate_bound(logl_max, settings.zv_termination_fraction,
-                                settings.logz_analytic())
+    if settings.logz_analytic() is not None:
+        return logx_terminate_bound(logl_max, settings.zv_termination_fraction,
+                                    settings.logz_analytic())
 
 
 def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
