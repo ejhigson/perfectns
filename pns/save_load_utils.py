@@ -42,7 +42,9 @@ def data_save_name(settings, n_repeats, dynamic_test=None):
     save_name += "_" + str(settings.n_dim) + "d"
     # add likelihood and prior info
     save_name += "_" + type(settings.likelihood).__name__
-    save_name += str(settings.likelihood.likelihood_scale)
+    if type(settings.likelihood).__name__ == "exp_power":
+        save_name += "_" + str(settings.likelihood.power)
+    save_name += "_" + str(settings.likelihood.likelihood_scale)
     save_name += "_" + type(settings.prior).__name__
     save_name += str(settings.prior.prior_scale)
     save_name += "_" + str(settings.zv_termination_fraction) + "term"

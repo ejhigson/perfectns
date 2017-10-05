@@ -40,3 +40,22 @@ class gaussian(object):
             return (-n_dim / 2.) * np.log(2 * np.pi *
                                           (self.likelihood_scale ** 2 +
                                            prior.prior_scale ** 2))
+
+
+class exp_power(object):
+
+    """Spherically symetric exponential power likelihood."""
+
+    def __init__(self, likelihood_scale=1, power=2):
+        self.likelihood_scale = likelihood_scale
+        self.power = power
+
+    def logl_given_r(self, r, n_dim):
+        return mf.log_exp_power_given_r(r, self.likelihood_scale,
+                                        n_dim, b=self.power)
+
+    # Optional functions
+
+    def r_given_logl(self, logl, n_dim):
+        return mf.r_given_log_exp_power(logl, self.likelihood_scale,
+                                        n_dim, b=self.power)
