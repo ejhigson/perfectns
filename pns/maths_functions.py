@@ -338,7 +338,7 @@ def log_subtract(loga, logb):
 # Stats functions:
 
 
-def get_df_row_summary(results_array, row_names, uncs_as_rows=True):
+def get_df_row_summary(results_array, row_names):
     """
     Make a panda data frame of the mean and std devs of a table of results.
     """
@@ -355,18 +355,41 @@ def get_df_row_summary(results_array, row_names, uncs_as_rows=True):
     num_cals = results_array.shape[1]
     mean_unc = df.loc['mean'] / np.sqrt(num_cals)
     std_unc = df.loc['std'] * np.sqrt(2 / (num_cals - 1))
-    if uncs_as_rows:
-        df.loc['mean_unc'] = mean_unc
-        df.loc['std_unc'] = std_unc
-        return df
-    else:
-        # include uncertainties as columns
-        df_unc = pd.DataFrame([mean_unc, std_unc], columns=row_names,
-                              index=['mean', 'std'])
-        df_unc = df_unc.add_suffix('_unc')
-        return pd.concat([df, df_unc], axis=1)
+    df.loc['mean_unc'] = mean_unc
+    df.loc['std_unc'] = std_unc
+    return df
 
 
+def df_unc_rows_to_cols(df_in, row_names):
+    """
+    Transforms a data frame of the form
+
+            rI   rII  rIII
+    rA
+    rA_unc
+    rB
+    rB_unc
+
+    To the form
+
+            cA   cA_unc   cB   cB_unc   cC   cC_unc
+    rA
+    rB
+    """
+    df_values = df_in.loc[row_names]
+    df_uncs = df_in.loc[[s + "_unc" for s in row_names]]
+    # strip "_unc" suffix from row indexes
+    df_uncs.rename(lambda s: s[:-4], inplace=True)
+    # add "_unc" suffix to columns
+    df_uncs = df_uncs.add_suffix('_unc')
+    df_out = pd.concat([df_values, df_uncs], axis=1)
+    # put columns of joined data frame in right order
+    col_in = list(df_in)
+    col_out = []
+    for c in col_in:
+        col_out.append(c)
+        col_out.append(c + '_unc')
+    return df_out[col_out]
 # def stats_rows(array, reduce_std=1.0):
 #     """
 #     Get the mean, std, skew and kurtosis of a 1d array or of each row of a 2d

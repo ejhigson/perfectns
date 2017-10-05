@@ -15,6 +15,22 @@ def get_logx(logl, nlive_array, simulate=False):
     Returns a logx vector showing the expected or simulated logx positions of
     points.
     """
+    assert isinstance(nlive_array, np.ndarray), \
+        "nlive_array = " + str(nlive_array) + " must be a numpy array"
+    assert nlive_array.min() > 0, \
+        "nlive_array contains zeros! nlive_array = " + str(nlive_array)
+    if simulate:
+        logx_steps = np.log(np.random.random(nlive_array.shape)) / nlive_array
+    else:
+        logx_steps = -1 * (nlive_array ** -1)
+    return np.cumsum(logx_steps)
+
+
+def get_logx_old(logl, nlive_array, simulate=False):
+    """
+    Returns a logx vector showing the expected or simulated logx positions of
+    points.
+    """
     logx = np.zeros(logl.shape[0])
     assert isinstance(nlive_array, np.ndarray), "nlive = " + \
         str(nlive_array) + " must be a numpy array"
@@ -23,8 +39,8 @@ def get_logx(logl, nlive_array, simulate=False):
     if simulate:
         logx[0] = np.log(np.random.random()) / nlive_array[0]
         for i, _ in enumerate(logx[1:]):
-            logx[i + 1] = logx[i] + (np.log(np.random.random()
-                                     / nlive_array[i + 1]))
+            logx[i + 1] = logx[i] + (np.log(np.random.random()) /
+                                     nlive_array[i + 1])
     else:
         logx[0] = -1.0 / nlive_array[0]
         for i, _ in enumerate(logx[1:]):
@@ -38,8 +54,8 @@ def get_logw(logl, nlive_array, simulate=False):
     logx_inc_start[1:] = get_logx(logl, nlive_array, simulate=simulate)
     logw = np.zeros(logl.shape[0])
     for i, _ in enumerate(logw[:-1]):
-        logw[i] = np.log(0.5) + mf.log_subtract(logx_inc_start[i],
-                                                logx_inc_start[i + 2])
+        logw[i] = mf.log_subtract(logx_inc_start[i], logx_inc_start[i + 2])
+    logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
     # assign extra prior vol outside the first point to the first point logw[0]
     logw[0] = mf.log_sum_given_logs([logw[0], np.log(0.5) +
                                      mf.log_subtract(logx_inc_start[0],
@@ -139,18 +155,18 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
     # taken from kwargs
     n_simulate = kwargs["n_simulate"]  # No default, must specify
     return_values = kwargs.get('return_values', False)
-    assert return_values is True or return_values is False, \
-        "return_values = " + str(return_values) + " must be True or False"
     all_values = np.zeros((len(estimator_list), n_simulate))
     lp, nlive = get_lp_nlive(ns_run)
     for i in range(0, n_simulate):
             logw = get_logw(lp[:, 0], nlive, simulate=True)
             all_values[:, i] = get_estimators(lp, logw, estimator_list)
-    stats = mf.stats_rows(all_values)
-    if return_values is False:
-        return stats[:, 1]
-    elif return_values is True:
-        return stats[:, 1], all_values
+    stds = np.zeros(all_values.shape[0])
+    for i, _ in enumerate(stds):
+        stds[i] = np.std(all_values[i, :], ddof=1)
+    if return_values:
+        return stds, all_values
+    else:
+        return stds
 
 
 def run_std_bootstrap(ns_run, estimator_list, **kwargs):

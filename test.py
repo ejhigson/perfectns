@@ -8,23 +8,24 @@ nested_sampling(settings).
 import pandas as pd
 import pns_settings
 import pns.estimators as e
-import pns.save_load_utils as slu
-# import pns.analysis_utils as au
-# import pns.parallelised_wrappers as pw
-# import pns.maths_functions as mf
-import pns.results_generation as rg
+import pns.analysis_utils as au
+import pns.parallelised_wrappers as pw
+import pns.maths_functions as mf
 import pns.likelihoods as likelihoods
 settings = pns_settings.PerfectNestedSamplingSettings()
 # settings.likelihood = likelihoods.exp_power(likelihood_scale=1, power=2)
-settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
+# settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
+settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 pd.set_option('display.width', 200)
 
+# settings
+# --------
+n_repeats = 100
+settings.n_dim = 3
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
-                  e.theta1confEstimator(0.84),
-                  # e.rconfEstimator(0.84)
-                  e.theta1squaredEstimator()]
-
+                  e.theta1squaredEstimator(),
+                  e.theta1confEstimator(0.84)]
 e_names = []
 for est in estimator_list:
     e_names.append(est.name)
@@ -32,12 +33,18 @@ for est in estimator_list:
 print("True est values")
 print(e.check_estimator_values(estimator_list, settings))
 
-# print("Standard NS Run")
-# s_run_list = pw.get_run_data(settings, 10)
-# values = pw.func_on_runs(au.run_estimators, s_run_list, estimator_list)
-# s_df = mf.get_df_row_summary(values, e_names)
-# print(s_df)
-
+print("Standard NS Run")
+s_run_list = pw.get_run_data(settings, n_repeats)
+rep_values = pw.func_on_runs(au.run_estimators, s_run_list, estimator_list)
+rep_df = mf.get_df_row_summary(rep_values, e_names)
+results = pd.DataFrame([rep_df.loc['std'], rep_df.loc['std_unc']],
+                       index=['repeats std', 'repeats std_unc'])
+sim_values = pw.func_on_runs(au.run_std_simulate, s_run_list, estimator_list,
+                             n_simulate=50)
+sim_df = mf.get_df_row_summary(sim_values, e_names)
+results.loc['sim std'] = sim_df.loc['mean']
+results.loc['sim std_unc'] = sim_df.loc['mean_unc']
+print(results)
 # # print("Dynamic NS Run")
 # import pns.parallelised_wrappers as pw
 # import pns.analysis_utils as au
@@ -48,27 +55,20 @@ print(e.check_estimator_values(estimator_list, settings))
 # d_df = mf.get_df_row_summary(values, e_names)
 # print(d_df)
 
-n_repeats = 500
-dynamic_goals = [None, 0, 0.25, 1]
-tuned_dynamic_ps = [False] * len(dynamic_goals)
-if type(settings.likelihood).__name__ == "cauchy":
-    dynamic_goals = [None, 0, 1, 1]
-    tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
-load_results = True
-save_name = slu.data_save_name(settings, n_repeats, dynamic_test=dynamic_goals)
-save_file = 'data/' + save_name + '.dat'
-
-
-if load_results:
-    try:
-        dr = pd.read_pickle('data/' + save_name + '.dat')
-        print("Loading results from file:\n" + save_file)
-    except OSError:
-        load_results = False
-if not load_results:
-    dr = rg.get_dynamic_results(n_repeats, dynamic_goals, estimator_list,
-                                settings, tuned_dynamic_ps=tuned_dynamic_ps)
-    dr.to_pickle(save_file)
-    print("Results saved to:\n" + save_file)
-
-print(dr)
+# load_results = True
+# save_name = slu.data_save_name(settings, n_repeats)
+# save_file = 'data/' + save_name + '.dat'
+#
+# if load_results:
+#     try:
+#         dr = pd.read_pickle('data/' + save_name + '.dat')
+#         print("Loading results from file:\n" + save_file)
+#     except OSError:
+#         load_results = False
+# if not load_results:
+#     dr = rg.get_dynamic_results(n_repeats, dynamic_goals, estimator_list,
+#                                 settings, tuned_dynamic_ps=tuned_dynamic_ps)
+#     dr.to_pickle(save_file)
+#     print("Results saved to:\n" + save_file)
+#
+# print(dr)
