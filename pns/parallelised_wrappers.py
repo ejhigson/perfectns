@@ -51,6 +51,8 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     parallelise = kwargs.get('parallelise', True)
     tqdm_leave = kwargs.get('tqdm_leave', False)
     results_list = []
+    print("func_on_runs: calculating " + single_run_func.__name__ + " for " +
+          str(len(run_list)) + " runs")
     if parallelise:
         # if n_process is None this defaults to num processors of machine * 5
         pool = concurrent.futures.ProcessPoolExecutor(max_workers=n_process)

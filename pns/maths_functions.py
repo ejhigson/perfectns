@@ -360,28 +360,41 @@ def get_df_row_summary(results_array, row_names):
     return df
 
 
-def df_unc_rows_to_cols(df_in, row_names):
+def df_unc_rows_to_cols(df_in):
     """
-    Transforms a data frame of the form
+    Transforms a pandas data frame with uncertainties stored in extra rows
+    (with row names suffixed with "_unc" to one with uncertainteis sored in
+    columns (suffixed with "_unc").
 
-            rI   rII  rIII
+    I.e. data frame of the form
+
+            cI   cII  cIII
     rA
     rA_unc
     rB
     rB_unc
 
-    To the form
+    is transformed to the form
 
-            cA   cA_unc   cB   cB_unc   cC   cC_unc
+            cI   cI_unc   cII   cII_unc   cIII   cIII_unc
     rA
     rB
     """
+    row_names = []
+    unc_names = []
+    for name in list(df_in.index.values):
+        if name[-4:] != "_unc":
+            row_names.append(name)
+        else:
+            unc_names.append(name)
     df_values = df_in.loc[row_names]
-    df_uncs = df_in.loc[[s + "_unc" for s in row_names]]
+    df_uncs = df_in.loc[unc_names]
     # strip "_unc" suffix from row indexes
     df_uncs.rename(lambda s: s[:-4], inplace=True)
-    # add "_unc" suffix to columns
+    # add "_unc" suffix to columns containing uncertainties
     df_uncs = df_uncs.add_suffix('_unc')
+    # Join values and uncertaintes (if uncertaintes not provided they are
+    # listed as "NaN"
     df_out = pd.concat([df_values, df_uncs], axis=1)
     # put columns of joined data frame in right order
     col_in = list(df_in)
@@ -389,7 +402,9 @@ def df_unc_rows_to_cols(df_in, row_names):
     for c in col_in:
         col_out.append(c)
         col_out.append(c + '_unc')
-    return df_out[col_out]
+    df_out = df_out[col_out]
+    # return df_out with rows in same order as input
+    return df_out.loc[row_names]
 # def stats_rows(array, reduce_std=1.0):
 #     """
 #     Get the mean, std, skew and kurtosis of a 1d array or of each row of a 2d

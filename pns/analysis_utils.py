@@ -26,29 +26,10 @@ def get_logx(nlive_array, simulate=False):
     return np.cumsum(logx_steps)
 
 
-def get_logx_old(logl, nlive_array, simulate=False):
-    """
-    Returns a logx vector showing the expected or simulated logx positions of
-    points.
-    """
-    logx = np.zeros(logl.shape[0])
-    assert isinstance(nlive_array, np.ndarray), "nlive = " + \
-        str(nlive_array) + " must be a numpy array"
-    assert nlive_array.min() > 0, "nlive_array contains zeros! " +  \
-        "nlive=" + str(nlive_array)
-    if simulate:
-        logx[0] = np.log(np.random.random()) / nlive_array[0]
-        for i, _ in enumerate(logx[1:]):
-            logx[i + 1] = logx[i] + (np.log(np.random.random()) /
-                                     nlive_array[i + 1])
-    else:
-        logx[0] = -1.0 / nlive_array[0]
-        for i, _ in enumerate(logx[1:]):
-            logx[i + 1] = logx[i] - 1.0 / nlive_array[i + 1]
-    return logx
-
-
 def get_logw(logl, nlive_array, simulate=False):
+    """
+    tbc
+    """
     logx_inc_start = np.zeros(logl.shape[0] + 1)
     # find X value for each point
     logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
@@ -66,7 +47,9 @@ def get_logw(logl, nlive_array, simulate=False):
 
 
 def get_n_calls(ns_run):
-    """Returns the number of likelihood calls in a nested sampling run"""
+    """
+    Returns the number of likelihood calls in a nested sampling run.
+    """
     n_calls = 0
     for thread in ns_run[1]:
         if thread is not None:
@@ -75,7 +58,10 @@ def get_n_calls(ns_run):
 
 
 def get_lp_nlive(ns_run):
-    lp = combine_lp_list(ns_run[1])
+    """
+    tbc
+    """
+    lp = vstack_sort_array_list(ns_run[1])
     if 'nlive_array' in ns_run[0]:
         nlive_array = ns_run[0]['nlive_array']
     elif 'thread_logl_min_max' not in ns_run[0]:  # standard run
@@ -125,20 +111,28 @@ def get_lp_nlive(ns_run):
     return lp, nlive_array
 
 
-def combine_lp_list(lp_list):
+def vstack_sort_array_list(array_list):
+    """
+    Merges a list of np arrays into a single array using vstack. Ommits list
+    elements with value None (these are used to represent dynamic nested
+    sampling threads with do not contain a single live point.
+    """
     output = None
-    for i in range(len(lp_list)):
-        if lp_list[i] is not None:
+    for array in array_list:
+        if array is not None:
             if output is not None:
-                output = np.vstack((output, lp_list[i]))
+                output = np.vstack((output, array))
             else:
-                output = lp_list[i]
+                output = array
     if output is not None:
-        output = output[np.argsort(output[:,  0])]
+        output = output[np.argsort(output[:, 0])]
     return output
 
 
 def get_estimators(lrxp, logw, estimator_list):
+    """
+    tbc
+    """
     output = np.zeros(len(estimator_list))
     for i, f in enumerate(estimator_list):
         output[i] = f.estimator(logw=logw, logl=lrxp[:, 0], r=lrxp[:, 1],
@@ -152,6 +146,9 @@ def get_estimators(lrxp, logw, estimator_list):
 
 
 def run_estimators(ns_run, estimator_list, **kwargs):
+    """
+    Calculates values of list of estimators for a single nested sampling run.
+    """
     simulate = kwargs.get('simulate', False)
     lrxp, nlive = get_lp_nlive(ns_run)
     logw = get_logw(lrxp[:, 0], nlive, simulate=simulate)
@@ -162,6 +159,10 @@ def run_estimators(ns_run, estimator_list, **kwargs):
 
 
 def run_std_simulate(ns_run, estimator_list, **kwargs):
+    """
+    Calculates simulated weight standard deviation estimates for a single
+    nested sampling run.
+    """
     # NB simulate must be True and analytical_w must be False so these are not
     # taken from kwargs
     n_simulate = kwargs["n_simulate"]  # No default, must specify
@@ -169,8 +170,8 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
     all_values = np.zeros((len(estimator_list), n_simulate))
     lp, nlive = get_lp_nlive(ns_run)
     for i in range(0, n_simulate):
-            logw = get_logw(lp[:, 0], nlive, simulate=True)
-            all_values[:, i] = get_estimators(lp, logw, estimator_list)
+        logw = get_logw(lp[:, 0], nlive, simulate=True)
+        all_values[:, i] = get_estimators(lp, logw, estimator_list)
     stds = np.zeros(all_values.shape[0])
     for i, _ in enumerate(stds):
         stds[i] = np.std(all_values[i, :], ddof=1)
@@ -180,77 +181,80 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
         return stds
 
 
-def run_std_bootstrap(ns_run, estimator_list, **kwargs):
-    simulate = kwargs.get('simulate', False)
-    n_simulate = kwargs["n_simulate"]  # No default, must specify
-    return_values = kwargs.get('return_values', False)
-    credible_int = kwargs.get('credible_int', False)
-    assert return_values is True or return_values is False, \
-        "return_values = " + str(return_values) + " must be True or False"
-    bs_values = np.zeros((len(estimator_list), n_simulate))
-    threads = ns_run[1]
-    for i in range(0, n_simulate):
-        threads_temp = []
+def bootstrap_resample_run(ns_run):
+    """
+    Bootstrap resamples threads of nested sampling run, returning a new
+    (resampled) nested sampling run.
+    """
+    threads_temp = []
+    if ns_run[0]['settings']['dynamic_goal'] is not None:  # dynamic run
+        assert 'thread_logl_min_max' in ns_run[0], \
+            "dynamic ns run does not contain thread_logl_min_max!"
         logl_min_max_temp = []
-        #     ns_run_temp = []
-        # elif "thread_logl_min_max" in ns_run[0]:  # dynamic ns_run
-        #     ns_run_temp = [{"thread_logl_min_max": []}, []]
-        # else:  # standard ns run with live points included
-        #     ns_run_temp = [{"nlive": ns_run[0]["nlive"]}, []]
-        # run is just list of threads
-        if ns_run[0]['settings']['dynamic_goal'] is not None:  # dynamic run
-            assert 'thread_logl_min_max' in ns_run[0], \
-                "dynamic ns run does not contain thread_logl_min_max!"
-            # first resample initial threads going all the way through the run
-            for j in range(0, ns_run[0]['settings']["nlive_1"]):
-                ind = random.randint(0, ns_run[0]['settings']["nlive_1"] - 1)
-                threads_temp.append(threads[ind])
-                logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
-            # now resample the remaining threads
-            for j in range(ns_run[0]['settings']["nlive_1"], len(threads)):
-                ind = random.randint(ns_run[0]['settings']["nlive_1"],
-                                     len(threads) - 1)
-                threads_temp.append(threads[ind])
-                logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
-            ns_run_temp = [{"thread_logl_min_max": logl_min_max_temp,
-                            "settings": ns_run[0]['settings']},
-                           threads_temp]
-        else:  # standard run
-            assert 'thread_logl_min_max' not in ns_run[0], \
-                "standard ns run contains thread_logl_min_max!"
-            for j in range(len(threads)):
-                ind = random.randint(0, len(threads) - 1)
-                threads_temp.append(threads[ind])
-            ns_run_temp = [{"settings": ns_run[0]['settings']},
-                           threads_temp]
-        lp_temp, nlive_temp = get_lp_nlive(ns_run_temp)
-        logw_temp = get_logw(lp_temp[:, 0], nlive_temp, simulate=simulate)
-        bs_values[:, i] = get_estimators(lp_temp, logw_temp, estimator_list)
+        # first resample initial threads going all the way through the run
+        for _ in range(0, ns_run[0]['settings']["nlive_1"]):
+            ind = random.randint(0, ns_run[0]['settings']["nlive_1"] - 1)
+            threads_temp.append(ns_run[1][ind])
+            logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
+        # now resample the remaining threads
+        for _ in range(ns_run[0]['settings']["nlive_1"], len(ns_run[1])):
+            ind = random.randint(ns_run[0]['settings']["nlive_1"],
+                                 len(ns_run[1]) - 1)
+            threads_temp.append(ns_run[1][ind])
+            logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
+        ns_run_temp = [{"thread_logl_min_max": logl_min_max_temp,
+                        "settings": ns_run[0]['settings']},
+                       threads_temp]
+    else:  # standard run
+        assert 'thread_logl_min_max' not in ns_run[0], \
+            "standard ns run contains thread_logl_min_max!"
+        for _ in range(len(ns_run[1])):
+            ind = random.randint(0, len(ns_run[1]) - 1)
+            threads_temp.append(ns_run[1][ind])
+        ns_run_temp = [{"settings": ns_run[0]['settings']}, threads_temp]
+    return ns_run_temp
+
+
+def run_std_bootstrap(ns_run, estimator_list, **kwargs):
+    """
+    Calculates bootstrap standard deviation estimates
+    for a single nested sampling run.
+    """
+    n_simulate = kwargs["n_simulate"]  # No default, must specify
+    bs_values = np.zeros((len(estimator_list), n_simulate))
+    for i in range(0, n_simulate):
+        ns_run_temp = bootstrap_resample_run(ns_run)
+        bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
         del ns_run_temp
-    if credible_int is False:
-        stds = np.zeros(bs_values.shape[0])
-        for i, _ in enumerate(stds):
-            stds[i] = np.std(bs_values[i, :], ddof=1)
-        return stds
-    else:
-        # estimate specificed confidence interval
-        # formulae for alpha CI on estimator T = 2 T(x) - G^{-1}(T(x*))
-        # where G is the CDF of the bootstrap resamples
-        assert min(credible_int, 1. - credible_int) * n_simulate > 1, \
-            "n_simulate=" + str(n_simulate) + " is not big enough to" \
-            "calculate the bootstrap " + str(credible_int) + " CI"
-        lp, nlive = get_lp_nlive(ns_run)
-        # the expected values must NOT be simulated
-        logw = get_logw(lp[:, 0], nlive, simulate=False)
-        expected_estimators = get_estimators(lp, logw, estimator_list)
-        output = expected_estimators * 2
-        cdf = ((np.asarray(range(bs_values.shape[1])) + 0.5) /
-               bs_values.shape[1])
-        for i, _ in enumerate(output):
-            output[i] -= np.interp(1. - credible_int, cdf,
-                                   np.sort(bs_values[i, :]))
-        # print(bs_values, credible_int, cdf, output)
-    if return_values is False:
-        return output
-    elif return_values is True:
-        return output, bs_values
+    stds = np.zeros(bs_values.shape[0])
+    for j, _ in enumerate(stds):
+        stds[j] = np.std(bs_values[j, :], ddof=1)
+    return stds
+
+
+def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
+    """
+    Calculates bootstrap confidence interval estimates for a single nested
+    sampling run.
+    """
+    n_simulate = kwargs["n_simulate"]  # No default, must specify
+    cred_int = kwargs["cred_int"]   # No default, must specify
+    assert min(cred_int, 1. - cred_int) * n_simulate > 1, \
+        "n_simulate = " + str(n_simulate) + " is not big enough to " \
+        "calculate the bootstrap " + str(cred_int) + " CI"
+    bs_values = np.zeros((len(estimator_list), n_simulate))
+    for i in range(0, n_simulate):
+        ns_run_temp = bootstrap_resample_run(ns_run)
+        bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
+        del ns_run_temp
+    # estimate specificed confidence intervals
+    # formulae for alpha CI on estimator T = 2 T(x) - G^{-1}(T(x*))
+    # where G is the CDF of the bootstrap resamples
+    expected_estimators = run_estimators(ns_run, estimator_list)
+    cdf = ((np.asarray(range(bs_values.shape[1])) + 0.5) /
+           bs_values.shape[1])
+    ci_output = expected_estimators * 2
+    for i, _ in enumerate(ci_output):
+        ci_output[i] -= np.interp(1. - cred_int, cdf,
+                                  np.sort(bs_values[i, :]))
+    return ci_output

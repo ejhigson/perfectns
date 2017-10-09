@@ -6,6 +6,7 @@ nested_sampling(settings).
 """
 
 import pandas as pd
+import numpy as np
 import pns_settings
 import pns.estimators as e
 import pns.analysis_utils as au
@@ -22,8 +23,10 @@ pd.set_option('display.width', 200)
 # --------
 n_repeats = 2000
 n_simulate = 50
+n_simulate_ci = n_simulate * 4
 settings.dynamic_goal = 1
 settings.n_dim = 3
+cred_int = 0.95
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
@@ -35,36 +38,49 @@ for est in estimator_list:
 print("True est values")
 print(e.check_estimator_values(estimator_list, settings))
 
-print("Standard NS Run")
-s_run_list = pw.get_run_data(settings, n_repeats)
+run_list = pw.get_run_data(settings, n_repeats)
 # get std from repeats
-rep_values = pw.func_on_runs(au.run_estimators, s_run_list, estimator_list)
+rep_values = pw.func_on_runs(au.run_estimators, run_list, estimator_list)
 rep_df = mf.get_df_row_summary(rep_values, e_names)
-results = pd.DataFrame([rep_df.loc['std'], rep_df.loc['std_unc']],
-                       index=['repeats std', 'repeats std_unc'])
-# get std from bootstrap estimate
-bs_values = pw.func_on_runs(au.run_std_bootstrap, s_run_list, estimator_list,
-                            n_simulate=n_simulate)
+# results = pd.DataFrame([rep_df.loc['std'], rep_df.loc['std_unc']],
+#                        index=['repeats std', 'repeats std_unc'])
+results = rep_df.set_index('repeats ' + rep_df.index.astype(str))
+# get bootstrap std estimate
+bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
+                            estimator_list, n_simulate=n_simulate)
 bs_df = mf.get_df_row_summary(bs_values, e_names)
 results.loc['bs std'] = bs_df.loc['mean']
 results.loc['bs std_unc'] = bs_df.loc['mean_unc']
-# get std from simulation estimate
-sim_values = pw.func_on_runs(au.run_std_simulate, s_run_list, estimator_list,
-                             n_simulate=n_simulate)
-sim_df = mf.get_df_row_summary(sim_values, e_names)
-results.loc['sim std'] = sim_df.loc['mean']
-results.loc['sim std_unc'] = sim_df.loc['mean_unc']
-results = mf.df_unc_rows_to_cols(results, ["repeats std", "bs std", "sim std"])
+# get bootstrap CI estimates
+bs_cis = pw.func_on_runs(au.run_ci_bootstrap, run_list, estimator_list,
+                         n_simulate=n_simulate_ci, cred_int=cred_int)
+bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
+results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
+results.loc['bs ' + str(cred_int) + ' CI_unc'] = bs_ci_df.loc['mean_unc']
+# add +- 1 std coverage
+max_value = rep_df.loc['mean'].values + results.loc['bs std'].values
+min_value = rep_df.loc['mean'].values - results.loc['bs std'].values
+coverage = np.zeros(rep_values.shape[0])
+for i, _ in enumerate(coverage):
+    ind = np.where((rep_values[i, :] > min_value[i]) &
+                   (rep_values[i, :] < max_value[i]))
+    coverage[i] = ind[0].shape[0] / rep_values.shape[1]
+results.loc['bs +-1std cov'] = coverage
+# add conf interval coverage
+max_value = results.loc['bs ' + str(cred_int) + ' CI'].values
+ci_coverage = np.zeros(rep_values.shape[0])
+for i, _ in enumerate(coverage):
+    ind = np.where(rep_values[i, :] < max_value[i])
+    ci_coverage[i] = ind[0].shape[0] / rep_values.shape[1]
+results.loc['bs ' + str(cred_int) + ' CI cov'] = ci_coverage
+# # get std from simulation estimate
+# sim_values = pw.func_on_runs(au.run_std_simulate, run_list, estimator_list,
+#                              n_simulate=n_simulate)
+# sim_df = mf.get_df_row_summary(sim_values, e_names)
+# results.loc['sim std'] = sim_df.loc['mean']
+# results.loc['sim std_unc'] = sim_df.loc['mean_unc']
+results = mf.df_unc_rows_to_cols(results)
 print(results)
-# # print("Dynamic NS Run")
-# import pns.parallelised_wrappers as pw
-# import pns.analysis_utils as au
-# import pns.maths_functions as mf
-# settings.dynamic_goal = 1
-# d_run_list = pw.get_run_data(settings, 10)
-# values = pw.func_on_runs(au.run_estimators, d_run_list, estimator_list)
-# d_df = mf.get_df_row_summary(values, e_names)
-# print(d_df)
 
 # load_results = True
 # save_name = slu.data_save_name(settings, n_repeats)
