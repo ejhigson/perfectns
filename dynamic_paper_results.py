@@ -16,14 +16,19 @@ import pns.likelihoods as likelihoods
 settings = pns_settings.PerfectNestedSamplingSettings()
 pd.set_option('display.width', 200)
 
+
+# Which results do you want to run?
+# ---------------------------------
+run_bootstrap_results = True
+run_dynamic_results = False
 # Shared settings
 # --------
-settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
-n_runs = 10
+settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
+n_runs = 2000
 load = True
 save = True
 settings.n_dim = 3
-settings.dynamic_goal = 1
+settings.dynamic_goal = None
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
@@ -34,7 +39,6 @@ print(e.check_estimator_values(estimator_list, settings))
 
 # dynamic results
 # ---------------
-run_dynamic_results = True
 dynamic_goals = [None, 0, 0.25, 1]
 tuned_dynamic_ps = [False] * len(dynamic_goals)
 if type(settings.likelihood).__name__ == "cauchy":
@@ -49,9 +53,10 @@ if run_dynamic_results:
 
 # bootstrap results
 # -----------------
-run_bootstrap_results = True
-n_simulate = 50
-n_simulate_ci = n_simulate * 4
+n_simulate = 200
+n_simulate_ci = 1000
+n_run_ci = 100
+add_sim_method = True
 cred_int = 0.95
 e_names = []
 for est in estimator_list:
@@ -61,5 +66,7 @@ if run_bootstrap_results:
     bootstrap_results = rg.get_bootstrap_results(n_runs, n_simulate,
                                                  estimator_list, settings,
                                                  n_simulate_ci=n_simulate_ci,
+                                                 add_sim_method=add_sim_method,
+                                                 n_run_ci=n_run_ci,
                                                  cred_int=cred_int)
     print(bootstrap_results)

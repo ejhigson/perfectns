@@ -354,7 +354,7 @@ def get_df_row_summary(results_array, row_names):
     # add uncertainties
     num_cals = results_array.shape[1]
     mean_unc = df.loc['mean'] / np.sqrt(num_cals)
-    std_unc = df.loc['std'] * np.sqrt(2 / (num_cals - 1))
+    std_unc = df.loc['std'] * np.sqrt(1 / (2 * (num_cals - 1)))
     df.loc['mean_unc'] = mean_unc
     df.loc['std_unc'] = std_unc
     return df

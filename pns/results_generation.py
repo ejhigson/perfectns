@@ -109,7 +109,9 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     """
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
+    add_sim_method = kwargs.get('add_sim_method', False)
     n_simulate_ci = kwargs.get('n_simulate_ci', n_simulate)
+    n_run_ci = kwargs.get('n_run_ci', n_run)
     cred_int = kwargs.get('cred_int', 0.95)
     # make save_name
     extra_root = "bootstrap_results_" + str(n_simulate) + "nsim"
@@ -139,9 +141,17 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     bs_df = mf.get_df_row_summary(bs_values, e_names)
     results.loc['bs std'] = bs_df.loc['mean']
     results.loc['bs std_unc'] = bs_df.loc['mean_unc']
+    if add_sim_method:
+        # get std from simulation estimate
+        sim_values = pw.func_on_runs(au.run_std_simulate, run_list,
+                                     estimator_list, n_simulate=n_simulate)
+        sim_df = mf.get_df_row_summary(sim_values, e_names)
+        results.loc['sim std'] = sim_df.loc['mean']
+        results.loc['sim std_unc'] = sim_df.loc['mean_unc']
     # get bootstrap CI estimates
-    bs_cis = pw.func_on_runs(au.run_ci_bootstrap, run_list, estimator_list,
-                             n_simulate=n_simulate_ci, cred_int=cred_int)
+    bs_cis = pw.func_on_runs(au.run_ci_bootstrap, run_list[:n_run_ci],
+                             estimator_list, n_simulate=n_simulate_ci,
+                             cred_int=cred_int)
     bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
     results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
     results.loc['bs ' + str(cred_int) + ' CI_unc'] = bs_ci_df.loc['mean_unc']
@@ -161,12 +171,6 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         ind = np.where(rep_values[i, :] < max_value[i])
         ci_coverage[i] = ind[0].shape[0] / rep_values.shape[1]
     results.loc['bs ' + str(cred_int) + ' CI cov'] = ci_coverage
-    # # get std from simulation estimate
-    # sim_values = pw.func_on_runs(au.run_std_simulate, run_list,
-    #                              estimator_list, n_simulate=n_simulate)
-    # sim_df = mf.get_df_row_summary(sim_values, e_names)
-    # results.loc['sim std'] = sim_df.loc['mean']
-    # results.loc['sim std_unc'] = sim_df.loc['mean_unc']
     results = mf.df_unc_rows_to_cols(results)
     if save:
         results.to_pickle(save_file)
