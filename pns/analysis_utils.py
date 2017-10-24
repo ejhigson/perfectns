@@ -108,6 +108,37 @@ def get_nlive(run_dict, logl):
     return nlive_array
 
 
+def merge_nlive(logl_a, nlive_a, logl_b, nlive_b):
+    """
+    merged is an array of the form:
+    logl, nlive from a or b, is a(=1) or b(=0), nlive of a at this l, nlive of
+    b at this logl
+    """
+    ln_a = np.zeros((logl_a.shape[0], 5))
+    ln_b = np.zeros((logl_b.shape[0], 5))
+    ln_a[:, 0] = logl_a
+    ln_a[:, 1] = nlive_a
+    ln_a[:, 2] = 1
+    ln_b[:, 0] = logl_b
+    ln_b[:, 1] = nlive_b
+    merged = np.vstack((ln_a, ln_b))
+    merged = merged[np.argsort(merged[:, 0])]
+    # iterate upwards. For a points, nlive b is inchanged and nlive a is
+    # updated (and vica versa)
+    if merged[-1, 2] == 1:
+        merged[-1, 3] = merged[-1, 1]
+    else:
+        merged[-1, 4] = merged[-1, 1]
+    for i in range(2, merged.shape[0] + 1):
+        if merged[-i, 2] == 1:
+            merged[-i, 3] = merged[-i, 1]
+            merged[-i, 4] = merged[1 - i, 4]
+        else:
+            merged[-i, 3] = merged[1 - i, 3]
+            merged[-i, 4] = merged[-i, 1]
+    return merged[:, 3] + merged[:, 4]
+
+
 def vstack_sort_array_list(array_list):
     """
     Merges a list of np arrays into a single array using vstack. Ommits list
