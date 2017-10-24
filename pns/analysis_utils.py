@@ -3,6 +3,7 @@
 
 import random
 import numpy as np
+import scipy.misc  # for scipy.misc.logsumexp
 import pns.maths_functions as mf
 
 
@@ -38,9 +39,9 @@ def get_logw(logl, nlive_array, simulate=False):
         logw[i] = mf.log_subtract(logx_inc_start[i], logx_inc_start[i + 2])
     logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
     # assign extra prior vol outside the first point to the first point logw[0]
-    logw[0] = mf.log_sum_given_logs([logw[0], np.log(0.5) +
-                                     mf.log_subtract(logx_inc_start[0],
-                                                     logx_inc_start[1])])
+    logw[0] = scipy.misc.logsumexp([logw[0], np.log(0.5) +
+                                    mf.log_subtract(logx_inc_start[0],
+                                                    logx_inc_start[1])])
     logw[-1] = logw[-2]  # approximate elenent as equal to the one before
     logw += logl
     return logw

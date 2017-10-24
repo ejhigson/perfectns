@@ -7,6 +7,7 @@ import pandas as pd
 import scipy
 import scipy.stats
 import scipy.special
+import scipy.misc  # for logsumexp
 import mpmath
 
 # Maths functions
@@ -188,10 +189,10 @@ def log_logistic_given_r(r, sigma, n_dim):
     logl = -0.5 * ((r ** 2) / (sigma ** 2))
     if isinstance(r, np.ndarray):
         for i, r_i in enumerate(r):
-            logl[i] -= 2 * log_sum_given_logs([0.0, -0.5 * ((r_i ** 2) /
+            logl[i] -= 2 * scipy.misc.logsumexp([0.0, -0.5 * ((r_i ** 2) /
                                                             (sigma ** 2))])
     else:
-        logl -= 2 * log_sum_given_logs([0.0, -0.5 * ((r ** 2) / (sigma ** 2))])
+        logl -= 2 * scipy.misc.logsumexp([0.0, -0.5 * ((r ** 2) / (sigma ** 2))])
     # normalise
     logl -= n_dim * np.log(sigma)
     logl -= np.log(2 * np.pi) * (n_dim / 2.0)
@@ -308,20 +309,6 @@ def entropy_num_samples(w):
         w = w / np.sum(w)
         w = w[np.where(w > 0)]
         return np.exp((-1.0) * np.sum(w * np.log(w)))
-
-
-def log_sum_given_logs(logs):
-    """
-    Returns the log of the sum of values given a list, touple or np array of
-    values.
-    See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/
-    for more details.
-    """
-    if isinstance(logs, tuple) or isinstance(logs, list):
-        logs = np.asarray(logs)
-    logsum = logs.max()
-    logsum += np.log(np.sum(np.exp(logs - logs.max())))
-    return logsum
 
 
 def log_subtract(loga, logb):

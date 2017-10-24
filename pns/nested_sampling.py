@@ -2,6 +2,7 @@
 """Generates nested sampling runs and threads."""
 
 import numpy as np
+import scipy.misc  # for scipy.misc.logsumexp
 import copy
 # perfect nested sampling modules
 import pns.maths_functions as mf
@@ -29,7 +30,7 @@ def generate_standard_run(settings, nlive_const=None,
     # termination condition variables
     logx_i = 0.0
     logz_dead = -np.inf
-    logz_live = mf.log_sum_given_logs(live[:, 0]) + logx_i
+    logz_live = scipy.misc.logsumexp(live[:, 0]) + logx_i
     t = np.exp(-1.0 / nlive_const)
     # Calculate factor for trapizium rule of geometric series
     logtrapz = np.log(0.5 * ((t ** -1) - t))
@@ -48,13 +49,13 @@ def generate_standard_run(settings, nlive_const=None,
                                            live[dying_ind, :]))
         # update dead evidence estimates
         logx_i += -1.0 / nlive_const
-        logz_dead = mf.log_sum_given_logs((logz_dead, live[dying_ind, 0] +
-                                           logtrapz + logx_i))
+        logz_dead = scipy.misc.logsumexp((logz_dead, live[dying_ind, 0] +
+                                          logtrapz + logx_i))
         # add new point
         live[dying_ind, 2] += np.log(np.random.random())
         live[dying_ind, 1] = settings.r_given_logx(live[dying_ind, 2])
         live[dying_ind, 0] = settings.logl_given_r(live[dying_ind, 1])
-        logz_live = (mf.log_sum_given_logs(live[:, 0]) + logx_i -
+        logz_live = (scipy.misc.logsumexp(live[:, 0]) + logx_i -
                      np.log(nlive_const))
     for i, _ in enumerate(threads):
         # add remaining live points to end of threads

@@ -18,6 +18,7 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     """
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
+    save_dir = kwargs.get('save_dir', 'data')
     parallelise = kwargs.get('parallelise', True)
     reduce_n_calls_max_frac = kwargs.get('reduce_n_calls_max_frac', 0.02)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
@@ -25,9 +26,9 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     extra_root = "dynamic_test"
     for dg in dynamic_goals:
         extra_root += "_" + str(dg)
-    save_file = slu.data_save_name(settings, n_run, extra_root=extra_root,
+    save_root = slu.data_save_name(settings, n_run, extra_root=extra_root,
                                    include_dg=False)
-    save_file = 'data/' + save_file + '.dat'
+    save_file = save_dir + '/' + save_root + '.dat'
     # try loading results
     if load:
         try:
@@ -97,8 +98,13 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     cols.insert(2, cols.pop(cols.index('n_samples_unc')))
     results = results.loc[:, cols]
     if save:
+        # save the results data frame
         results.to_pickle(save_file)
         print("Results saved to:\n" + save_file)
+        # save results in latex format
+        latex_save_file = save_dir + '/' + save_root + "_latex.txt"
+        with open(latex_save_file, "w") as text_file:
+            print(results.to_latex(), file=text_file)
     return results
 
 
@@ -109,14 +115,15 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     """
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
+    save_dir = kwargs.get('save_dir', 'data')
     add_sim_method = kwargs.get('add_sim_method', False)
     n_simulate_ci = kwargs.get('n_simulate_ci', n_simulate)
     n_run_ci = kwargs.get('n_run_ci', n_run)
     cred_int = kwargs.get('cred_int', 0.95)
     # make save_name
     extra_root = "bootstrap_results_" + str(n_simulate) + "nsim"
-    save_file = slu.data_save_name(settings, n_run, extra_root=extra_root)
-    save_file = 'data/' + save_file + '.dat'
+    save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
+    save_file = save_dir + '/' + save_root + '.dat'
     # try loading results
     if load:
         try:
@@ -173,6 +180,11 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results.loc['bs ' + str(cred_int) + ' CI cov'] = ci_coverage
     results = mf.df_unc_rows_to_cols(results)
     if save:
+        # save the results data frame
         results.to_pickle(save_file)
         print("Results saved to:\n" + save_file)
+        # save results in latex format
+        latex_save_file = save_dir + '/' + save_root + "_latex.txt"
+        with open(latex_save_file, "w") as text_file:
+            print(results.to_latex(), file=text_file)
     return results

@@ -6,6 +6,7 @@ output and analytical analysis.
 
 import numpy as np
 import scipy
+import scipy.misc  # for scipy.misc.logsumexp
 # perfect nested sampling modules
 import pns.maths_functions as mf
 
@@ -68,7 +69,7 @@ class logzEstimator(object):
     latex_name = '$\log \mathcal{Z}$'
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
-        return mf.log_sum_given_logs(logw)
+        return scipy.misc.logsumexp(logw)
 
     def analytical(self, settings):
         return settings.logz_analytic()
@@ -80,7 +81,7 @@ class zEstimator(object):
     latex_name = '$\mathcal{Z}$'
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
-        return np.exp(mf.log_sum_given_logs(logw))
+        return np.exp(scipy.misc.logsumexp(logw))
 
     def analytical(self, settings):
         return np.exp(settings.logz_analytic())

@@ -19,16 +19,15 @@ pd.set_option('display.width', 200)
 
 # Which results do you want to run?
 # ---------------------------------
-run_bootstrap_results = True
-run_dynamic_results = False
+run_bootstrap_results = False
+run_dynamic_results = True
 # Shared settings
 # --------
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 2000
+n_runs = 100
 load = True
 save = True
 settings.n_dim = 3
-settings.dynamic_goal = None
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
@@ -56,7 +55,8 @@ if run_dynamic_results:
 n_simulate = 200
 n_simulate_ci = 1000
 n_run_ci = 100
-add_sim_method = True
+add_sim_method = False
+settings.dynamic_goal = None
 cred_int = 0.95
 e_names = []
 for est in estimator_list:
