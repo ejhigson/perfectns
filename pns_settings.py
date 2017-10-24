@@ -42,6 +42,7 @@ class PerfectNestedSamplingSettings(object):
             # -----------------------------
             'n_dim': 10,
             'prior': priors.gaussian(10),
+            # 'prior': priors.gaussian_cached(10, n_dim=10),
             'likelihood': likelihoods.gaussian(1),
             # calculation settings
             # --------------------

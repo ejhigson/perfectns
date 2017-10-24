@@ -23,8 +23,8 @@ pd.set_option('display.width', 200)
 n_run = 10
 n_simulate = 50
 n_simulate_ci = n_simulate * 4
-settings.dynamic_goal = None
-settings.n_dim = 10
+settings.dynamic_goal = 1
+settings.n_dim = 50
 cred_int = 0.95
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),

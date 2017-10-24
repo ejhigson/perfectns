@@ -102,6 +102,8 @@ def generate_dynamic_run(settings):
     An entry "[none, none]" is a thread which runs over the whole range X=0 to
     X=X_terminate.
     """
+    assert 1 >= settings.dynamic_goal >= 1, "dynamic_goal = " + \
+        str(settings.dynamic_goal) + " should be between 0 and 1"
     np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: run all the way through with limited number of threads
     run = [{'settings': settings.get_settings_dict()}]
@@ -155,8 +157,8 @@ def generate_dynamic_run(settings):
             run[1].append(np.hstack([lrx, theta]))
             logl_min_max.append(nlive_2_count)
             run[0]['thread_logl_min_max'].append(logl_min_max)
-    lp, nlive_array = au.get_lp_nlive(run)
-    run[0]['nlive_array'] = nlive_array
+    lrxp = au.vstack_sort_array_list(run[1])
+    run[0]['nlive_array'] = au.get_nlive(run[0], lrxp[:, 0])
     return run
 
 
@@ -253,43 +255,44 @@ def logl_min_max_given_fraction(run, settings):
     assert settings.dynamic_fraction > 0. and settings.dynamic_fraction < 1., \
         "logl_min_max_given_fraction: settings.dynamic_fraction = " + \
         str(settings.dynamic_fraction) + " must be in [0, 1]"
-    lp, nlive = au.get_lp_nlive(run)
-    n_calls = lp.shape[0]
-    importance = point_importance(lp, nlive, settings)
+    lrxp = au.vstack_sort_array_list(run[1])
+    nlive = au.get_nlive(run[0], lrxp[:, 0])
+    n_calls = lrxp.shape[0]
+    importance = point_importance(lrxp, nlive, settings)
     # where to start the additional threads:
     high_importance_inds = np.where(importance > settings.dynamic_fraction)[0]
     if high_importance_inds[0] == 0:  # start from sampling the whole prior
         logl_min = None
         logx_min = 0
     else:
-        logl_min = lp[:, 0][high_importance_inds[0] - 1]
+        logl_min = lrxp[:, 0][high_importance_inds[0] - 1]
         # use lookup to avoid float errors and to not need inverse function
-        ind = np.where(lp[:, 0] == logl_min)[0]
+        ind = np.where(lrxp[:, 0] == logl_min)[0]
         assert ind.shape[0] == 1, \
             "Should be one unique match for logl=logl_min=" + str(logl_min) + \
             ". Instead we have matches at indexes " + str(ind) + \
-            " of the lp array (shape " + str(lp.shape) + ")"
-        logx_min = lp[ind[0], 2]
+            " of the lrxp array (shape " + str(lrxp.shape) + ")"
+        logx_min = lrxp[ind[0], 2]
     # where to end the additional threads:
-    if high_importance_inds[-1] == lp[:, 0].shape[0] - 1:
+    if high_importance_inds[-1] == lrxp[:, 0].shape[0] - 1:
         if settings.dynamic_keep_final_point:
-            logl_max = lp[-1, 0]
-            logx_max = lp[-1, 2]
+            logl_max = lrxp[-1, 0]
+            logx_max = lrxp[-1, 2]
         else:
             # If this is the last point and we are not keeping final points
             # then allow samples to go a bit further.
             # Here we use the biggest shrinkage (smallest number) of 3 randomly
             # generated shrinkage ratios to model what would happen if we were
             # keeping points.
-            logx_max = lp[-1, 2] + np.log(np.min(np.random.random(3)))
+            logx_max = lrxp[-1, 2] + np.log(np.min(np.random.random(3)))
             logl_max = settings.likelihood_prior.logl_given_logx(logx_max)
     else:
-        logl_max = lp[:, 0][(high_importance_inds[-1] + 1)]
+        logl_max = lrxp[:, 0][(high_importance_inds[-1] + 1)]
         # use lookup to avoid float errors and to not need inverse function
-        ind = np.where(lp[:, 0] == logl_max)[0]
+        ind = np.where(lrxp[:, 0] == logl_max)[0]
         assert ind.shape[0] == 1, \
             "Should be one unique match for logl=logl_max=" + str(logl_max) + \
             ".\n Instead we have matches at indexes " + str(ind) + \
-            " of the lp array (shape " + str(lp.shape) + ")"
-        logx_max = lp[ind[0], 2]
+            " of the lrxp array (shape " + str(lrxp.shape) + ")"
+        logx_max = lrxp[ind[0], 2]
     return [logl_min, logl_max], [logx_min, logx_max], n_calls

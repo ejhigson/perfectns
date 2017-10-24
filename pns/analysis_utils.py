@@ -4,6 +4,7 @@
 import random
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
+# from numba import jit
 import pns.maths_functions as mf
 
 
@@ -32,17 +33,17 @@ def get_logw(logl, nlive_array, simulate=False):
     tbc
     """
     logx_inc_start = np.zeros(logl.shape[0] + 1)
-    # find X value for each point
+    # find X value for each point (start is at logX=0)
     logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
     logw = np.zeros(logl.shape[0])
-    for i, _ in enumerate(logw[:-1]):
-        logw[i] = mf.log_subtract(logx_inc_start[i], logx_inc_start[i + 2])
+    # vectorized trapezium rule:
+    logw[:-1] = mf.log_subtract(logx_inc_start[:-2], logx_inc_start[2:])
     logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
-    # assign extra prior vol outside the first point to the first point logw[0]
+    # assign all prior volume between X=0 and the first point to logw[0]
     logw[0] = scipy.misc.logsumexp([logw[0], np.log(0.5) +
                                     mf.log_subtract(logx_inc_start[0],
                                                     logx_inc_start[1])])
-    logw[-1] = logw[-2]  # approximate elenent as equal to the one before
+    logw[-1] = logw[-2]  # approximate final element as equal to the one before
     logw += logl
     return logw
 
@@ -58,30 +59,25 @@ def get_n_calls(ns_run):
     return n_calls
 
 
-def get_lp_nlive(ns_run):
+def get_nlive(run_dict, logl):
     """
     tbc
     """
-    lp = vstack_sort_array_list(ns_run[1])
-    if 'nlive_array' in ns_run[0]:
-        nlive_array = ns_run[0]['nlive_array']
-    elif 'thread_logl_min_max' not in ns_run[0]:  # standard run
-        assert ns_run[0]['settings']['dynamic_goal'] is None, \
+    if 'nlive_array' in run_dict:
+        nlive_array = run_dict['nlive_array']
+    elif 'thread_logl_min_max' not in run_dict:  # standard run
+        assert run_dict['settings']['dynamic_goal'] is None, \
             "dynamic ns run does not contain thread_logl_min_max!"
-        assert len(ns_run[1]) == ns_run[0]['settings']['nlive'], \
-            "nlive != number of threads"
-        nlive_array = np.zeros(lp.shape[0]) + ns_run[0]['settings']['nlive']
-        for i in range(1, ns_run[0]['settings']['nlive']):
+        nlive_array = np.zeros(logl.shape[0]) + run_dict['settings']['nlive']
+        for i in range(1, run_dict['settings']['nlive']):
             nlive_array[-i] = i
     else:  # dynamic run
-        assert ns_run[0]['settings']['dynamic_goal'] is not None, \
+        assert run_dict['settings']['dynamic_goal'] is not None, \
             "standard ns run contains thread_logl_min_max!"
         # if nlive_array is not already stored for the run, find it iteratively
         # using the minimum and maximum logls of the slices
-        nlive_array = np.zeros(lp.shape[0])
-        assert len(ns_run[0]['thread_logl_min_max']) == len(ns_run[1]), \
-            "length of threads list not equal to length of logl_min_max list"
-        for logl_mm in ns_run[0]['thread_logl_min_max']:
+        nlive_array = np.zeros(logl.shape[0])
+        for logl_mm in run_dict['thread_logl_min_max']:
             if len(logl_mm) == 3:
                 incriment = logl_mm[2]
             else:
@@ -90,26 +86,26 @@ def get_lp_nlive(ns_run):
                 if logl_mm[1] is None:
                     nlive_array += incriment
                 else:
-                    ind = np.where(lp[:, 0] <= logl_mm[1])[0]
+                    ind = np.where(logl <= logl_mm[1])[0]
                     nlive_array[ind] += incriment
             else:
                 if logl_mm[1] is None:
-                    ind = np.where(lp[:, 0] > logl_mm[0])[0]
+                    ind = np.where(logl > logl_mm[0])[0]
                     nlive_array[ind] += incriment
                 else:
-                    ind = np.where((lp[:, 0] > logl_mm[0]) &
-                                   (lp[:, 0] <= logl_mm[1]))[0]
+                    ind = np.where((logl > logl_mm[0]) &
+                                   (logl <= logl_mm[1]))[0]
                     nlive_array[ind] += incriment
     # If nlive_array contains zeros then print info and throw error
     if nlive_array.min() < 1:
-        loglmax = np.zeros(len(ns_run[0]['thread_logl_min_max']))
-        for i, lmm in enumerate(ns_run[0]['thread_logl_min_max']):
+        loglmax = np.zeros(len(run_dict['thread_logl_min_max']))
+        for i, lmm in enumerate(run_dict['thread_logl_min_max']):
             loglmax[i] = lmm[1]
-        print(lp[-1, :], loglmax.max(), lp[-1, 0] == loglmax.max())
-        print(lp[:, 0])
+        print(logl[-1], loglmax.max(), logl[-1] == loglmax.max())
+        print(logl)
         assert nlive_array.min() > 0, \
             ("nlive_array contains zeros: " + str(nlive_array))
-    return lp, nlive_array
+    return nlive_array
 
 
 def vstack_sort_array_list(array_list):
@@ -151,7 +147,8 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     Calculates values of list of estimators for a single nested sampling run.
     """
     simulate = kwargs.get('simulate', False)
-    lrxp, nlive = get_lp_nlive(ns_run)
+    lrxp = vstack_sort_array_list(ns_run[1])
+    nlive = get_nlive(ns_run[0], lrxp[:, 0])
     logw = get_logw(lrxp[:, 0], nlive, simulate=simulate)
     return get_estimators(lrxp, logw, estimator_list)
 
@@ -169,10 +166,11 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
     n_simulate = kwargs["n_simulate"]  # No default, must specify
     return_values = kwargs.get('return_values', False)
     all_values = np.zeros((len(estimator_list), n_simulate))
-    lp, nlive = get_lp_nlive(ns_run)
+    lrxp = vstack_sort_array_list(ns_run[1])
+    nlive = get_nlive(ns_run[0], lrxp[:, 0])
     for i in range(0, n_simulate):
-        logw = get_logw(lp[:, 0], nlive, simulate=True)
-        all_values[:, i] = get_estimators(lp, logw, estimator_list)
+        logw = get_logw(lrxp[:, 0], nlive, simulate=True)
+        all_values[:, i] = get_estimators(lrxp, logw, estimator_list)
     stds = np.zeros(all_values.shape[0])
     for i, _ in enumerate(stds):
         stds[i] = np.std(all_values[i, :], ddof=1)

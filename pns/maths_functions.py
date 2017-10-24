@@ -10,6 +10,7 @@ import scipy.special
 import scipy.misc  # for logsumexp
 import mpmath
 
+
 # Maths functions
 
 
@@ -190,9 +191,9 @@ def log_logistic_given_r(r, sigma, n_dim):
     if isinstance(r, np.ndarray):
         for i, r_i in enumerate(r):
             logl[i] -= 2 * scipy.misc.logsumexp([0.0, -0.5 * ((r_i ** 2) /
-                                                            (sigma ** 2))])
+                                                              (sigma ** 2))])
     else:
-        logl -= 2 * scipy.misc.logsumexp([0.0, -0.5 * ((r ** 2) / (sigma ** 2))])
+        logl -= 2 * scipy.misc.logsumexp([0, -0.5 * ((r ** 2) / (sigma ** 2))])
     # normalise
     logl -= n_dim * np.log(sigma)
     logl -= np.log(2 * np.pi) * (n_dim / 2.0)
@@ -313,12 +314,12 @@ def entropy_num_samples(w):
 
 def log_subtract(loga, logb):
     """
-    Returns log(a-b) given loga and logb.
+    Returns log(a-b) given loga and logb, where loga > logb.
     See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/
     for more details.
     """
-    assert loga >= logb, "log_subtract: a-b is negative for loga=" + \
-                         str(loga) + " and logb=" + str(logb)
+    # assert loga >= logb, "log_subtract: a-b is negative for loga=" + \
+    #                      str(loga) + " and logb=" + str(logb)
     return loga + np.log(1 - np.exp(logb - loga))
 
 

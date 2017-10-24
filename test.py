@@ -9,7 +9,8 @@ import pandas as pd
 import pns_settings
 import pns.estimators as e
 import pns.likelihoods as likelihoods
-import pns.results_generation as rg
+# import pns.results_generation as rg
+import pns.parallelised_wrappers as pw
 settings = pns_settings.PerfectNestedSamplingSettings()
 # settings.likelihood = likelihoods.exp_power(likelihood_scale=1, power=2)
 # settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
@@ -18,12 +19,7 @@ pd.set_option('display.width', 200)
 
 # settings
 # --------
-n_run = 10
-n_simulate = 50
-n_simulate_ci = n_simulate * 4
-settings.dynamic_goal = 1
-settings.n_dim = 3
-cred_int = 0.95
+n_run = 4
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
@@ -35,10 +31,12 @@ for est in estimator_list:
 print("True est values")
 print(e.check_estimator_values(estimator_list, settings))
 
-results = rg.get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
-                                   n_simulate_ci=n_simulate_ci,
-                                   cred_int=cred_int)
+runs = pw.generate_runs(settings, n_run, parallelise=False)
 
+# results = rg.get_bootstrap_results(n_run, n_simulate, estimator_list,
+#                                    settings,
+#                                    n_simulate_ci=n_simulate_ci,
+#                                    cred_int=cred_int)
 # load_results = True
 # save_name = slu.data_save_name(settings, n_repeats)
 # save_file = 'data/' + save_name + '.dat'
@@ -56,3 +54,4 @@ results = rg.get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
 #     print("Results saved to:\n" + save_file)
 #
 # print(dr)
+
