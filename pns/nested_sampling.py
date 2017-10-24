@@ -126,11 +126,12 @@ def generate_dynamic_run(settings):
         n_calls_max = settings.n_calls_max
     # Step 2: sample the peak until we run out of likelihood calls
     while n_calls < n_calls_max:
-        logl_min_max, logx_min_max, n_calls = logl_min_max_given_fraction(run, settings)
+        logl_min_max, logx_min_max, n_calls = min_max_importance(run, settings)
         nlive_2_count = 0
         if settings.dynamic_keep_final_point:
             n_calls_itr = 0
-            while n_calls_itr < n_calls_max * settings.n_calls_frac or nlive_2_count < settings.nlive_2:
+            while ((n_calls_itr < n_calls_max * settings.n_calls_frac) or
+                   (nlive_2_count < settings.nlive_2)):
                 nlive_2_count += 1
                 run[1].append(generate_single_thread(settings, logx_min_max[1],
                               logx_start=logx_min_max[0],
@@ -146,14 +147,15 @@ def generate_dynamic_run(settings):
                   (nlive_2_count < settings.nlive_2):
                 nlive_2_count += 1
                 logx += generate_thread_logx(logx_min_max[1],
-                            logx_start=logx_min_max[0],
-                            keep_final_point=settings.dynamic_keep_final_point)
+                                             logx_start=logx_min_max[0],
+                                             keep_final_point=settings.dynamic_keep_final_point)
             # make thread
             lrx = np.zeros((len(logx), 3))
             lrx[:, 2] = np.asarray(logx)
             lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
             lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-            theta = mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim, settings.dims_to_sample)
+            theta = mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim,
+                                             settings.dims_to_sample)
             run[1].append(np.hstack([lrx, theta]))
             logl_min_max.append(nlive_2_count)
             run[0]['thread_logl_min_max'].append(logl_min_max)
@@ -251,9 +253,9 @@ def p_importance(lrxp, w, tuned_dynamic_p=False, tuning_type='theta1'):
         return importance / importance.max()
 
 
-def logl_min_max_given_fraction(run, settings):
+def min_max_importance(run, settings):
     assert settings.dynamic_fraction > 0. and settings.dynamic_fraction < 1., \
-        "logl_min_max_given_fraction: settings.dynamic_fraction = " + \
+        "min_max_importance: settings.dynamic_fraction = " + \
         str(settings.dynamic_fraction) + " must be in [0, 1]"
     lrxp = au.vstack_sort_array_list(run[1])
     nlive = au.get_nlive(run[0], lrxp[:, 0])
