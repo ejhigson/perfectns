@@ -49,7 +49,7 @@ class PerfectNestedSamplingSettings(object):
             'nlive': 200,
             'data_version': 'v02',
             'dims_to_sample': 1,
-            'zv_termination_fraction': 0.0001,
+            'zv_termination_fraction': 0.001,
             # dynamic nested sampling settings
             # only used if dynamic_goal is not None.
             'dynamic_goal': None,
