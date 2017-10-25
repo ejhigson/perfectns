@@ -92,12 +92,12 @@ def get_run_data(settings, n_repeat, tqdm_leave=False, n_process=None,
             load = False
         else:
             # ensure the loaded settings match the current settings
-            if settings.get_settings_dict() == data[0][0]['settings']:
+            if settings.get_settings_dict() == data[0]['settings']:
                 print("Loaded settings = current settings")
                 # print(settings.get_settings_dict())
             else:
                 print("Loaded settings =")
-                print(data[0][0]['settings'])
+                print(data[0]['settings'])
                 print("are not equal to current settings =")
                 print(settings.get_settings_dict())
                 del data

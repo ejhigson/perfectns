@@ -68,17 +68,17 @@ def generate_standard_run(settings, nlive_const=None):
         theta = mf.sample_nsphere_shells(threads[i][:, 1], settings.n_dim,
                                          settings.dims_to_sample)
         threads[i] = np.hstack([threads[i], theta])
-    run = [{'settings': settings.get_settings_dict()}, threads]
+    run = {'settings': settings.get_settings_dict(), 'threads': threads}
     # add nlive array.
     # Do not use au.get_nlive as this throws assertions when
     # generate_standard_run is called inside generate_dynamic_run
-    run[0]['nlive_array'] = np.zeros(au.get_n_calls(run)) + len(threads)
+    run['nlive_array'] = np.zeros(au.get_n_calls(run)) + len(threads)
     for i in range(1, len(threads)):
-        run[0]['nlive_array'][-i] = i
+        run['nlive_array'][-i] = i
     # add data on threads for use as part of a dynamic run
-    run[0]['thread_logl_min_max'] = []
+    run['thread_logl_min_max'] = []
     for i, _ in enumerate(threads):
-        run[0]['thread_logl_min_max'].append([None, threads[i][-1, 0]])
+        run['thread_logl_min_max'].append([None, threads[i][-1, 0]])
     return run
 
 
@@ -103,10 +103,10 @@ def generate_dynamic_run(settings):
     np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: run all the way through with limited number of threads
     run = generate_standard_run(settings, nlive_const=settings.nlive_1)
-    n_calls = run[0]['nlive_array'].shape[0]
+    n_calls = run['nlive_array'].shape[0]
     # delete nlive so au.get_nlive recalculates this at each loop instead of
     # loading stored value
-    del run[0]['nlive_array']
+    del run['nlive_array']
     if settings.n_calls_max is None:
         # estimate number of likelihood calls available
         n_calls_max = settings.nlive * n_calls / settings.nlive_1
@@ -124,8 +124,8 @@ def generate_dynamic_run(settings):
         # subrun = [{'settings': {'dynamic_goal': settings.dynamic_goal},
         #            'thread_logl_min_max': []}, []]
         # update key loop variables
-        lrxp = au.merge_lrxp(run[1])
-        nlive = au.get_nlive(run[0], lrxp[:, 0])
+        lrxp = au.merge_lrxp(run['threads'])
+        nlive = au.get_nlive(run, lrxp[:, 0])
         n_calls = lrxp.shape[0]
         importance = point_importance(lrxp, nlive, settings)
         logl_min_max, logx_min_max = min_max_importance(importance, lrxp, settings)
@@ -135,12 +135,13 @@ def generate_dynamic_run(settings):
             while ((n_calls_itr < n_calls_max * settings.n_calls_frac) or
                    (nlive_2_count < settings.nlive_2)):
                 nlive_2_count += 1
-                run[1].append(generate_single_thread(settings, logx_min_max[1],
-                              logx_start=logx_min_max[0],
-                              keep_final_point=settings.dynamic_keep_final_point))
-                n_calls_itr += run[1][-1].shape[0]
-                run[0]['thread_logl_min_max'].append([logl_min_max[0],
-                                                      run[1][-1][-1, 0]])
+                run['threads'].append(generate_single_thread(settings,
+                                      logx_min_max[1],
+                                      logx_start=logx_min_max[0],
+                                      keep_final_point=settings.dynamic_keep_final_point))
+                n_calls_itr += run['threads'][-1].shape[0]
+                run['thread_logl_min_max'].append([logl_min_max[0],
+                                                   run['threads'][-1][-1, 0]])
         else:
             # Make many threads in a single array with a single logl_min_max to
             # speed stuff up.
@@ -159,8 +160,8 @@ def generate_dynamic_run(settings):
             theta = mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim,
                                              settings.dims_to_sample)
             logl_min_max.append(nlive_2_count)
-            run[1].append(np.hstack([lrx, theta]))
-            run[0]['thread_logl_min_max'].append(logl_min_max)
+            run['threads'].append(np.hstack([lrx, theta]))
+            run['thread_logl_min_max'].append(logl_min_max)
 #        # update the number of live points in the run
 #        lrxp_subrun = au.merge_lrxp(subrun[1])
 #        nlive_subrun = au.get_nlive(subrun[0], lrxp_subrun[:, 0])
@@ -171,8 +172,8 @@ def generate_dynamic_run(settings):
 #        # add subrun
 #        run[0]['thread_logl_min_max'] += subrun[0]['thread_logl_min_max']
 #        run[1] += subrun[1]
-    lrxp = au.merge_lrxp(run[1])
-    run[0]['nlive_array'] = au.get_nlive(run[0], lrxp[:, 0])
+    lrxp = au.merge_lrxp(run['threads'])
+    run['nlive_array'] = au.get_nlive(run, lrxp[:, 0])
     return run
 
 

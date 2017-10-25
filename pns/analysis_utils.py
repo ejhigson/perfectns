@@ -53,7 +53,7 @@ def get_n_calls(ns_run):
     Returns the number of likelihood calls in a nested sampling run.
     """
     n_calls = 0
-    for thread in ns_run[1]:
+    for thread in ns_run['threads']:
         if thread is not None:
             n_calls += thread.shape[0]
     return n_calls
@@ -219,8 +219,8 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     Calculates values of list of estimators for a single nested sampling run.
     """
     simulate = kwargs.get('simulate', False)
-    lrxp = merge_lrxp(ns_run[1])
-    nlive = get_nlive(ns_run[0], lrxp[:, 0])
+    lrxp = merge_lrxp(ns_run['threads'])
+    nlive = get_nlive(ns_run, lrxp[:, 0])
     logw = get_logw(lrxp[:, 0], nlive, simulate=simulate)
     return get_estimators(lrxp, logw, estimator_list)
 
@@ -238,8 +238,8 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
     n_simulate = kwargs["n_simulate"]  # No default, must specify
     return_values = kwargs.get('return_values', False)
     all_values = np.zeros((len(estimator_list), n_simulate))
-    lrxp = merge_lrxp(ns_run[1])
-    nlive = get_nlive(ns_run[0], lrxp[:, 0])
+    lrxp = merge_lrxp(ns_run['threads'])
+    nlive = get_nlive(ns_run, lrxp[:, 0])
     for i in range(0, n_simulate):
         logw = get_logw(lrxp[:, 0], nlive, simulate=True)
         all_values[:, i] = get_estimators(lrxp, logw, estimator_list)
@@ -258,39 +258,40 @@ def bootstrap_resample_run(ns_run, sample_ninit_sep=True):
     (resampled) nested sampling run.
     """
     threads_temp = []
-    if ns_run[0]['settings']['dynamic_goal'] is not None:  # dynamic run
-        assert 'thread_logl_min_max' in ns_run[0], \
+    if ns_run['settings']['dynamic_goal'] is not None:  # dynamic run
+        assert 'thread_logl_min_max' in ns_run, \
             "dynamic ns run does not contain thread_logl_min_max!"
         logl_min_max_temp = []
         if sample_ninit_sep:
             # first resample initial threads going all the way through the run
-            for _ in range(0, ns_run[0]['settings']["nlive_1"]):
-                ind = random.randint(0, ns_run[0]['settings']["nlive_1"] - 1)
-                threads_temp.append(ns_run[1][ind])
-                logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
+            for _ in range(0, ns_run['settings']["nlive_1"]):
+                ind = random.randint(0, ns_run['settings']["nlive_1"] - 1)
+                threads_temp.append(ns_run['threads'][ind])
+                logl_min_max_temp.append(ns_run["thread_logl_min_max"][ind])
             # now resample the remaining threads
-            for _ in range(ns_run[0]['settings']["nlive_1"], len(ns_run[1])):
-                ind = random.randint(ns_run[0]['settings']["nlive_1"],
-                                     len(ns_run[1]) - 1)
-                threads_temp.append(ns_run[1][ind])
-                logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
+            for _ in range(ns_run['settings']["nlive_1"],
+                           len(ns_run['threads'])):
+                ind = random.randint(ns_run['settings']["nlive_1"],
+                                     len(ns_run['threads']) - 1)
+                threads_temp.append(ns_run['threads'][ind])
+                logl_min_max_temp.append(ns_run["thread_logl_min_max"][ind])
         else:
             # sample all threads together
-            for _ in range(len(ns_run[1])):
-                ind = random.randint(ns_run[0]['settings']["nlive_1"],
-                                     len(ns_run[1]) - 1)
-                threads_temp.append(ns_run[1][ind])
-                logl_min_max_temp.append(ns_run[0]["thread_logl_min_max"][ind])
-        ns_run_temp = [{"thread_logl_min_max": logl_min_max_temp,
-                        "settings": ns_run[0]['settings']},
-                       threads_temp]
+            for _ in range(len(ns_run['threads'])):
+                ind = random.randint(ns_run['settings']["nlive_1"],
+                                     len(ns_run['threads']) - 1)
+                threads_temp.append(ns_run['threads'][ind])
+                logl_min_max_temp.append(ns_run["thread_logl_min_max"][ind])
+        ns_run_temp = {"thread_logl_min_max": logl_min_max_temp,
+                       "settings": ns_run['settings'],
+                       "threads": threads_temp}
     else:  # standard run
-        assert 'thread_logl_min_max' not in ns_run[0], \
+        assert 'thread_logl_min_max' not in ns_run, \
             "standard ns run contains thread_logl_min_max!"
-        for _ in range(len(ns_run[1])):
-            ind = random.randint(0, len(ns_run[1]) - 1)
-            threads_temp.append(ns_run[1][ind])
-        ns_run_temp = [{"settings": ns_run[0]['settings']}, threads_temp]
+        for _ in range(len(ns_run['threads'])):
+            ind = random.randint(0, len(ns_run['threads']) - 1)
+            threads_temp.append(ns_run['threads'][ind])
+        ns_run_temp = [{"settings": ns_run['settings']}, threads_temp]
     return ns_run_temp
 
 

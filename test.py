@@ -35,21 +35,21 @@ print(e.check_estimator_values(estimator_list, settings))
 
 runs = pw.generate_runs(settings, n_run, parallelise=False)
 
-lrxp_a = au.vstack_sort_array_list(runs[0][1])
-logl_a = lrxp_a[:, 0]
-lrxp_b = au.vstack_sort_array_list(runs[1][1])
-logl_b = lrxp_b[:, 0]
-nlive_a = au.get_nlive(runs[0][0], logl_a)
-nlive_b = au.get_nlive(runs[1][0], logl_b)
-nlive_merge_test = au.merge_nlive(logl_a, nlive_a, logl_b, nlive_b)
-
-run_merge = [{'settings': settings.get_settings_dict()}, runs[0][1] + runs[1][1]]
-run_merge[0]['settings']['nlive'] *= 2
-run_merge[0]['settings']['nlive_1'] *= 2
-run_merge[0]['settings']['nlive_2'] *= 2
-run_merge[0]['thread_logl_min_max'] = runs[0][0]['thread_logl_min_max'] + runs[1][0]['thread_logl_min_max']
-lrxp_m = au.vstack_sort_array_list(run_merge[1])
-nlive_merge = au.get_nlive(run_merge[0], lrxp_m[:, 0])
+# lrxp_a = au.vstack_sort_array_list(runs[0][1])
+# logl_a = lrxp_a[:, 0]
+# lrxp_b = au.vstack_sort_array_list(runs[1][1])
+# logl_b = lrxp_b[:, 0]
+# nlive_a = au.get_nlive(runs[0][0], logl_a)
+# nlive_b = au.get_nlive(runs[1][0], logl_b)
+# nlive_merge_test = au.merge_nlive(logl_a, nlive_a, logl_b, nlive_b)
+# 
+# run_merge = [{'settings': settings.get_settings_dict()}, runs[0][1] + runs[1][1]]
+# run_merge[0]['settings']['nlive'] *= 2
+# run_merge[0]['settings']['nlive_1'] *= 2
+# run_merge[0]['settings']['nlive_2'] *= 2
+# run_merge[0]['thread_logl_min_max'] = runs[0][0]['thread_logl_min_max'] + runs[1][0]['thread_logl_min_max']
+# lrxp_m = au.vstack_sort_array_list(run_merge[1])
+# nlive_merge = au.get_nlive(run_merge[0], lrxp_m[:, 0])
 # results = rg.get_bootstrap_results(n_run, n_simulate, estimator_list,
 #                                    settings,
 #                                    n_simulate_ci=n_simulate_ci,
