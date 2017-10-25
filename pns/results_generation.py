@@ -148,6 +148,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     bs_df = mf.get_df_row_summary(bs_values, e_names)
     results.loc['bs std'] = bs_df.loc['mean']
     results.loc['bs std_unc'] = bs_df.loc['mean_unc']
+    results.loc['bs var'] = 100 * bs_df.loc['std'] / bs_df.loc['mean']
+    results.loc['bs var_unc'] = 100 * bs_df.loc['std_unc'] / bs_df.loc['mean']
     if add_sim_method:
         # get std from simulation estimate
         sim_values = pw.func_on_runs(au.run_std_simulate, run_list,
@@ -155,6 +157,9 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         sim_df = mf.get_df_row_summary(sim_values, e_names)
         results.loc['sim std'] = sim_df.loc['mean']
         results.loc['sim std_unc'] = sim_df.loc['mean_unc']
+        results.loc['sim var'] = 100 * sim_df.loc['std'] / sim_df.loc['mean']
+        results.loc['sim var_unc'] = 100 * (sim_df.loc['std_unc'] /
+                                            sim_df.loc['mean'])
     # get bootstrap CI estimates
     bs_cis = pw.func_on_runs(au.run_ci_bootstrap, run_list[:n_run_ci],
                              estimator_list, n_simulate=n_simulate_ci,
