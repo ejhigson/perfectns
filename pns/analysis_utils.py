@@ -1,7 +1,6 @@
 #!/usr/bin/python
 """Module for functions used to analyse the nested sampling run's outputs"""
 
-import random
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
 # from numba import jit
@@ -70,6 +69,16 @@ def logl_mm_array(logl_mm_list):
     return arr
 
 
+def logl_mm_array_test(logl_mm_list):
+    """
+    tbc
+    """
+    arr = np.zeros(2)
+    for logl_mm in logl_mm_list[1:]:
+        arr = np.vstack((arr, np.reshape(np.asarray(logl_mm), (1, 2))))
+    return arr
+
+
 def get_nlive(run_dict, logl):
     """
     tbc
@@ -84,7 +93,7 @@ def get_nlive(run_dict, logl):
             nlive_array[-i] = i
     else:  # dynamic run
         nlive_array = np.zeros(logl.shape[0])
-        lmm_ar = logl_mm_array(run_dict['thread_logl_min_max'])
+        lmm_ar = run_dict['thread_logl_min_max']
         # no min logl
         for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
             nlive_array[np.where(r[1] >= logl)] += r[2]
@@ -101,83 +110,6 @@ def get_nlive(run_dict, logl):
     assert nlive_array.min() > 0, \
         ("nlive_array contains zeros: " + str(nlive_array))
     return nlive_array
-
-
-# def get_nlive_old(run_dict, logl):
-#     """
-#     tbc
-#     """
-#     if 'nlive_array' in run_dict:
-#         nlive_array = run_dict['nlive_array']
-#     elif 'thread_logl_min_max' not in run_dict:  # standard run
-#         assert run_dict['settings']['dynamic_goal'] is None, \
-#             "dynamic ns run does not contain thread_logl_min_max!"
-#         nlive_array = np.zeros(logl.shape[0]) + run_dict['settings']['nlive']
-#         for i in range(1, run_dict['settings']['nlive']):
-#             nlive_array[-i] = i
-#     else:  # dynamic run
-#         nlive_array = np.zeros(logl.shape[0])
-#         for logl_mm in run_dict['thread_logl_min_max']:
-#             if len(logl_mm) == 3:
-#                 incriment = logl_mm[2]
-#             else:
-#                 incriment = 1
-#             if logl_mm[0] is None:
-#                 if logl_mm[1] is None:
-#                     nlive_array += incriment
-#                 else:
-#                     ind = np.where(logl <= logl_mm[1])[0]
-#                     nlive_array[ind] += incriment
-#             else:
-#                 if logl_mm[1] is None:
-#                     ind = np.where(logl > logl_mm[0])[0]
-#                     nlive_array[ind] += incriment
-#                 else:
-#                     ind = np.where((logl > logl_mm[0]) &
-#                                    (logl <= logl_mm[1]))[0]
-#                     nlive_array[ind] += incriment
-#     # If nlive_array contains zeros then print info and throw error
-#     if nlive_array.min() < 1:
-#         loglmax = np.zeros(len(run_dict['thread_logl_min_max']))
-#         for i, lmm in enumerate(run_dict['thread_logl_min_max']):
-#             loglmax[i] = lmm[1]
-#         print(logl[-1], loglmax.max(), logl[-1] == loglmax.max())
-#         print(logl)
-#         assert nlive_array.min() > 0, \
-#             ("nlive_array contains zeros: " + str(nlive_array))
-#     return nlive_array
-
-
-# def merge_nlive(logl_a, nlive_a, logl_b, nlive_b):
-#     """
-#     merged is an array of the form:
-#     logl, nlive from a or b, is a(=1) or b(=0), nlive of a at this l,
-#     nlive of
-#     b at this logl
-#     """
-#     ln_a = np.zeros((logl_a.shape[0], 5))
-#     ln_b = np.zeros((logl_b.shape[0], 5))
-#     ln_a[:, 0] = logl_a
-#     ln_a[:, 1] = nlive_a
-#     ln_a[:, 2] = 1
-#     ln_b[:, 0] = logl_b
-#     ln_b[:, 1] = nlive_b
-#     merged = np.vstack((ln_a, ln_b))
-#     merged = merged[np.argsort(merged[:, 0])]
-#     # iterate upwards. For a points, nlive b is inchanged and nlive a is
-#     # updated (and vica versa)
-#     if merged[-1, 2] == 1:
-#         merged[-1, 3] = merged[-1, 1]
-#     else:
-#         merged[-1, 4] = merged[-1, 1]
-#     for i in range(2, merged.shape[0] + 1):
-#         if merged[-i, 2] == 1:
-#             merged[-i, 3] = merged[-i, 1]
-#             merged[-i, 4] = merged[1 - i, 4]
-#         else:
-#             merged[-i, 3] = merged[1 - i, 3]
-#             merged[-i, 4] = merged[-i, 1]
-#     return merged[:, 3] + merged[:, 4]
 
 
 def merge_lrxp(array_list):
@@ -258,40 +190,20 @@ def bootstrap_resample_run(ns_run, sample_ninit_sep=True):
     (resampled) nested sampling run.
     """
     threads_temp = []
-    if ns_run['settings']['dynamic_goal'] is not None:  # dynamic run
-        assert 'thread_logl_min_max' in ns_run, \
-            "dynamic ns run does not contain thread_logl_min_max!"
-        logl_min_max_temp = []
-        if sample_ninit_sep:
-            # first resample initial threads going all the way through the run
-            for _ in range(0, ns_run['settings']["nlive_1"]):
-                ind = random.randint(0, ns_run['settings']["nlive_1"] - 1)
-                threads_temp.append(ns_run['threads'][ind])
-                logl_min_max_temp.append(ns_run["thread_logl_min_max"][ind])
-            # now resample the remaining threads
-            for _ in range(ns_run['settings']["nlive_1"],
-                           len(ns_run['threads'])):
-                ind = random.randint(ns_run['settings']["nlive_1"],
-                                     len(ns_run['threads']) - 1)
-                threads_temp.append(ns_run['threads'][ind])
-                logl_min_max_temp.append(ns_run["thread_logl_min_max"][ind])
-        else:
-            # sample all threads together
-            for _ in range(len(ns_run['threads'])):
-                ind = random.randint(ns_run['settings']["nlive_1"],
-                                     len(ns_run['threads']) - 1)
-                threads_temp.append(ns_run['threads'][ind])
-                logl_min_max_temp.append(ns_run["thread_logl_min_max"][ind])
-        ns_run_temp = {"thread_logl_min_max": logl_min_max_temp,
-                       "settings": ns_run['settings'],
-                       "threads": threads_temp}
-    else:  # standard run
-        assert 'thread_logl_min_max' not in ns_run, \
-            "standard ns run contains thread_logl_min_max!"
-        for _ in range(len(ns_run['threads'])):
-            ind = random.randint(0, len(ns_run['threads']) - 1)
-            threads_temp.append(ns_run['threads'][ind])
-        ns_run_temp = [{"settings": ns_run['settings']}, threads_temp]
+    logl_min_max_temp = []
+    n_threads = len(ns_run['threads'])
+    if ns_run['settings']['dynamic_goal'] is not None and sample_ninit_sep:
+        ninit = ns_run["settings"]["nlive_1"]
+        inds = np.random.randint(0, ninit, ninit)
+        inds = np.append(inds, np.random.randint(ninit, n_threads,
+                                                 n_threads - ninit))
+    else:
+        inds = np.random.randint(0, n_threads, n_threads)
+    threads_temp = [ns_run['threads'][i] for i in inds]
+    logl_min_max_temp = ns_run["thread_logl_min_max"][inds]
+    ns_run_temp = {"thread_logl_min_max": logl_min_max_temp,
+                   "settings": ns_run['settings'],
+                   "threads": threads_temp}
     return ns_run_temp
 
 

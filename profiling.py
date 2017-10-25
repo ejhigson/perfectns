@@ -25,10 +25,10 @@ pd.set_option('display.width', 200)
 settings.dynamic_goal = 1
 settings.n_dim = 40
 run = ns.perfect_nested_sampling(settings)
-lrxp = au.merge_lrxp(run[1])
+lrxp = au.merge_lrxp(run['threads'])
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
                   e.theta1confEstimator(0.84)]
 # cProfile.run('ns.perfect_nested_sampling(settings)')
-cProfile.run('au.get_nlive(run[0], lrxp[:, 0])')
+cProfile.run('au.get_nlive(run, lrxp[:, 0])')

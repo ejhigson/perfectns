@@ -76,9 +76,11 @@ def generate_standard_run(settings, nlive_const=None):
     for i in range(1, len(threads)):
         run['nlive_array'][-i] = i
     # add data on threads for use as part of a dynamic run
-    run['thread_logl_min_max'] = []
+    run['thread_logl_min_max'] = np.zeros((len(threads), 3))
+    run['thread_logl_min_max'][:, 0] = np.nan
+    run['thread_logl_min_max'][:, 2] = 1
     for i, _ in enumerate(threads):
-        run['thread_logl_min_max'].append([None, threads[i][-1, 0]])
+        run['thread_logl_min_max'][i, 1] = threads[i][-1, 0]
     return run
 
 
@@ -140,8 +142,9 @@ def generate_dynamic_run(settings):
                                       logx_start=logx_min_max[0],
                                       keep_final_point=settings.dynamic_keep_final_point))
                 n_calls_itr += run['threads'][-1].shape[0]
-                run['thread_logl_min_max'].append([logl_min_max[0],
-                                                   run['threads'][-1][-1, 0]])
+                lmm = np.reshape(np.asarray([logl_min_max[0],
+                                 run['threads'][-1][-1, 0], 1]), (1, 3))
+                run['thread_logl_min_max'] = np.vstack((run['thread_logl_min_max'], lmm))
         else:
             # Make many threads in a single array with a single logl_min_max to
             # speed stuff up.
@@ -161,7 +164,8 @@ def generate_dynamic_run(settings):
                                              settings.dims_to_sample)
             logl_min_max.append(nlive_2_count)
             run['threads'].append(np.hstack([lrx, theta]))
-            run['thread_logl_min_max'].append(logl_min_max)
+            lmm = np.reshape(np.asarray(logl_min_max), (1, 3))
+            run['thread_logl_min_max'] = np.vstack((run['thread_logl_min_max'], lmm))
 #        # update the number of live points in the run
 #        lrxp_subrun = au.merge_lrxp(subrun[1])
 #        nlive_subrun = au.get_nlive(subrun[0], lrxp_subrun[:, 0])
@@ -273,7 +277,7 @@ def min_max_importance(importance, lrxp, settings):
     # where to start the additional threads:
     high_importance_inds = np.where(importance > settings.dynamic_fraction)[0]
     if high_importance_inds[0] == 0:  # start from sampling the whole prior
-        logl_min = None
+        logl_min = np.nan
         logx_min = 0
     else:
         logl_min = lrxp[:, 0][high_importance_inds[0] - 1]
