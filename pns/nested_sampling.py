@@ -124,7 +124,7 @@ def generate_dynamic_run(settings):
         # subrun = [{'settings': {'dynamic_goal': settings.dynamic_goal},
         #            'thread_logl_min_max': []}, []]
         # update key loop variables
-        lrxp = au.vstack_sort_array_list(run[1])
+        lrxp = au.merge_lrxp(run[1])
         nlive = au.get_nlive(run[0], lrxp[:, 0])
         n_calls = lrxp.shape[0]
         importance = point_importance(lrxp, nlive, settings)
@@ -162,7 +162,7 @@ def generate_dynamic_run(settings):
             run[1].append(np.hstack([lrx, theta]))
             run[0]['thread_logl_min_max'].append(logl_min_max)
 #        # update the number of live points in the run
-#        lrxp_subrun = au.vstack_sort_array_list(subrun[1])
+#        lrxp_subrun = au.merge_lrxp(subrun[1])
 #        nlive_subrun = au.get_nlive(subrun[0], lrxp_subrun[:, 0])
 #        run[0]['nlive_array'] = au.merge_nlive(lrxp[:, 0],
 #                                               run[0]['nlive_array'],
@@ -171,7 +171,7 @@ def generate_dynamic_run(settings):
 #        # add subrun
 #        run[0]['thread_logl_min_max'] += subrun[0]['thread_logl_min_max']
 #        run[1] += subrun[1]
-    lrxp = au.vstack_sort_array_list(run[1])
+    lrxp = au.merge_lrxp(run[1])
     run[0]['nlive_array'] = au.get_nlive(run[0], lrxp[:, 0])
     return run
 

@@ -41,13 +41,13 @@ class PerfectNestedSamplingSettings(object):
             # likelihood and prior settings
             # -----------------------------
             'n_dim': 10,
-            # 'prior': priors.gaussian(10),
-            'prior': priors.gaussian_cached(10, n_dim=10),
+            'prior': priors.gaussian(10),
+            # 'prior': priors.gaussian_cached(10, n_dim=10),
             'likelihood': likelihoods.gaussian(1),
             # calculation settings
             # --------------------
             'nlive': 200,
-            'data_version': 'v02',
+            'data_version': 'v03',
             'dims_to_sample': 1,
             'zv_termination_fraction': 0.001,
             # dynamic nested sampling settings

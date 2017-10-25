@@ -59,6 +59,17 @@ def get_n_calls(ns_run):
     return n_calls
 
 
+def logl_mm_array(logl_mm_list):
+    """
+    tbc
+    """
+    arr = np.zeros((len(logl_mm_list), 3))
+    arr[:, 2] = 1  # incriment nlive by 1 unless len(logl_mm) = 3
+    for i, logl_mm in enumerate(logl_mm_list):
+        arr[i, :len(logl_mm)] = np.asarray(logl_mm)
+    return arr
+
+
 def get_nlive(run_dict, logl):
     """
     tbc
@@ -73,69 +84,103 @@ def get_nlive(run_dict, logl):
             nlive_array[-i] = i
     else:  # dynamic run
         nlive_array = np.zeros(logl.shape[0])
-        for logl_mm in run_dict['thread_logl_min_max']:
-            if len(logl_mm) == 3:
-                incriment = logl_mm[2]
-            else:
-                incriment = 1
-            if logl_mm[0] is None:
-                if logl_mm[1] is None:
-                    nlive_array += incriment
-                else:
-                    ind = np.where(logl <= logl_mm[1])[0]
-                    nlive_array[ind] += incriment
-            else:
-                if logl_mm[1] is None:
-                    ind = np.where(logl > logl_mm[0])[0]
-                    nlive_array[ind] += incriment
-                else:
-                    ind = np.where((logl > logl_mm[0]) &
-                                   (logl <= logl_mm[1]))[0]
-                    nlive_array[ind] += incriment
+        lmm_ar = logl_mm_array(run_dict['thread_logl_min_max'])
+        # no min logl
+        for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
+            nlive_array[np.where(r[1] >= logl)] += r[2]
+        # no max logl
+        for r in lmm_ar[np.isnan(lmm_ar[:, 1])]:
+            nlive_array[np.where(logl > r[0])] += r[2]
+        # both min and max logl
+        for r in lmm_ar[~np.isnan(lmm_ar[:, 0]) & ~np.isnan(lmm_ar[:, 1])]:
+            nlive_array[np.where((r[1] >= logl) & (logl > r[0]))] += r[2]
+        assert lmm_ar[np.isnan(lmm_ar[:, 0]) &
+                      np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
+            'Should not have threads with neither start nor end logls'
     # If nlive_array contains zeros then print info and throw error
-    if nlive_array.min() < 1:
-        loglmax = np.zeros(len(run_dict['thread_logl_min_max']))
-        for i, lmm in enumerate(run_dict['thread_logl_min_max']):
-            loglmax[i] = lmm[1]
-        print(logl[-1], loglmax.max(), logl[-1] == loglmax.max())
-        print(logl)
-        assert nlive_array.min() > 0, \
-            ("nlive_array contains zeros: " + str(nlive_array))
+    assert nlive_array.min() > 0, \
+        ("nlive_array contains zeros: " + str(nlive_array))
     return nlive_array
 
 
-def merge_nlive(logl_a, nlive_a, logl_b, nlive_b):
-    """
-    merged is an array of the form:
-    logl, nlive from a or b, is a(=1) or b(=0), nlive of a at this l, nlive of
-    b at this logl
-    """
-    ln_a = np.zeros((logl_a.shape[0], 5))
-    ln_b = np.zeros((logl_b.shape[0], 5))
-    ln_a[:, 0] = logl_a
-    ln_a[:, 1] = nlive_a
-    ln_a[:, 2] = 1
-    ln_b[:, 0] = logl_b
-    ln_b[:, 1] = nlive_b
-    merged = np.vstack((ln_a, ln_b))
-    merged = merged[np.argsort(merged[:, 0])]
-    # iterate upwards. For a points, nlive b is inchanged and nlive a is
-    # updated (and vica versa)
-    if merged[-1, 2] == 1:
-        merged[-1, 3] = merged[-1, 1]
-    else:
-        merged[-1, 4] = merged[-1, 1]
-    for i in range(2, merged.shape[0] + 1):
-        if merged[-i, 2] == 1:
-            merged[-i, 3] = merged[-i, 1]
-            merged[-i, 4] = merged[1 - i, 4]
-        else:
-            merged[-i, 3] = merged[1 - i, 3]
-            merged[-i, 4] = merged[-i, 1]
-    return merged[:, 3] + merged[:, 4]
+# def get_nlive_old(run_dict, logl):
+#     """
+#     tbc
+#     """
+#     if 'nlive_array' in run_dict:
+#         nlive_array = run_dict['nlive_array']
+#     elif 'thread_logl_min_max' not in run_dict:  # standard run
+#         assert run_dict['settings']['dynamic_goal'] is None, \
+#             "dynamic ns run does not contain thread_logl_min_max!"
+#         nlive_array = np.zeros(logl.shape[0]) + run_dict['settings']['nlive']
+#         for i in range(1, run_dict['settings']['nlive']):
+#             nlive_array[-i] = i
+#     else:  # dynamic run
+#         nlive_array = np.zeros(logl.shape[0])
+#         for logl_mm in run_dict['thread_logl_min_max']:
+#             if len(logl_mm) == 3:
+#                 incriment = logl_mm[2]
+#             else:
+#                 incriment = 1
+#             if logl_mm[0] is None:
+#                 if logl_mm[1] is None:
+#                     nlive_array += incriment
+#                 else:
+#                     ind = np.where(logl <= logl_mm[1])[0]
+#                     nlive_array[ind] += incriment
+#             else:
+#                 if logl_mm[1] is None:
+#                     ind = np.where(logl > logl_mm[0])[0]
+#                     nlive_array[ind] += incriment
+#                 else:
+#                     ind = np.where((logl > logl_mm[0]) &
+#                                    (logl <= logl_mm[1]))[0]
+#                     nlive_array[ind] += incriment
+#     # If nlive_array contains zeros then print info and throw error
+#     if nlive_array.min() < 1:
+#         loglmax = np.zeros(len(run_dict['thread_logl_min_max']))
+#         for i, lmm in enumerate(run_dict['thread_logl_min_max']):
+#             loglmax[i] = lmm[1]
+#         print(logl[-1], loglmax.max(), logl[-1] == loglmax.max())
+#         print(logl)
+#         assert nlive_array.min() > 0, \
+#             ("nlive_array contains zeros: " + str(nlive_array))
+#     return nlive_array
 
 
-def vstack_sort_array_list(array_list):
+# def merge_nlive(logl_a, nlive_a, logl_b, nlive_b):
+#     """
+#     merged is an array of the form:
+#     logl, nlive from a or b, is a(=1) or b(=0), nlive of a at this l,
+#     nlive of
+#     b at this logl
+#     """
+#     ln_a = np.zeros((logl_a.shape[0], 5))
+#     ln_b = np.zeros((logl_b.shape[0], 5))
+#     ln_a[:, 0] = logl_a
+#     ln_a[:, 1] = nlive_a
+#     ln_a[:, 2] = 1
+#     ln_b[:, 0] = logl_b
+#     ln_b[:, 1] = nlive_b
+#     merged = np.vstack((ln_a, ln_b))
+#     merged = merged[np.argsort(merged[:, 0])]
+#     # iterate upwards. For a points, nlive b is inchanged and nlive a is
+#     # updated (and vica versa)
+#     if merged[-1, 2] == 1:
+#         merged[-1, 3] = merged[-1, 1]
+#     else:
+#         merged[-1, 4] = merged[-1, 1]
+#     for i in range(2, merged.shape[0] + 1):
+#         if merged[-i, 2] == 1:
+#             merged[-i, 3] = merged[-i, 1]
+#             merged[-i, 4] = merged[1 - i, 4]
+#         else:
+#             merged[-i, 3] = merged[1 - i, 3]
+#             merged[-i, 4] = merged[-i, 1]
+#     return merged[:, 3] + merged[:, 4]
+
+
+def merge_lrxp(array_list):
     """
     Merges a list of np arrays into a single array using vstack. Ommits list
     elements with value None (these are used to represent dynamic nested
@@ -174,7 +219,7 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     Calculates values of list of estimators for a single nested sampling run.
     """
     simulate = kwargs.get('simulate', False)
-    lrxp = vstack_sort_array_list(ns_run[1])
+    lrxp = merge_lrxp(ns_run[1])
     nlive = get_nlive(ns_run[0], lrxp[:, 0])
     logw = get_logw(lrxp[:, 0], nlive, simulate=simulate)
     return get_estimators(lrxp, logw, estimator_list)
@@ -193,7 +238,7 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
     n_simulate = kwargs["n_simulate"]  # No default, must specify
     return_values = kwargs.get('return_values', False)
     all_values = np.zeros((len(estimator_list), n_simulate))
-    lrxp = vstack_sort_array_list(ns_run[1])
+    lrxp = merge_lrxp(ns_run[1])
     nlive = get_nlive(ns_run[0], lrxp[:, 0])
     for i in range(0, n_simulate):
         logw = get_logw(lrxp[:, 0], nlive, simulate=True)
