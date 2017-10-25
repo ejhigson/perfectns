@@ -98,7 +98,7 @@ def generate_dynamic_run(settings):
     An entry "[none, none]" is a thread which runs over the whole range X=0 to
     X=X_terminate.
     """
-    assert 1 >= settings.dynamic_goal >= 1, "dynamic_goal = " + \
+    assert 1 >= settings.dynamic_goal >= 0, "dynamic_goal = " + \
         str(settings.dynamic_goal) + " should be between 0 and 1"
     np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: run all the way through with limited number of threads

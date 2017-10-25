@@ -68,9 +68,13 @@ def pickle_save(data, name, path="data/", extension=".dat"):
         filename += extension
         print("File already exists! Saving with time appended")
     print(filename)
-    outfile = open(filename, 'wb')
-    pickle.dump(data, outfile)
-    outfile.close()
+    try:
+        outfile = open(filename, 'wb')
+        pickle.dump(data, outfile)
+        outfile.close()
+    except MemoryError:
+        print("pickle_save could not save data due to memory error: exiting " +
+              "without saving")
 
 
 @timing_decorator

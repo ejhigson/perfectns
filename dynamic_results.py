@@ -43,5 +43,6 @@ print(e.check_estimator_values(estimator_list, settings))
 print("Running dynamic results:")
 dynamic_results = rg.get_dynamic_results(n_runs, dynamic_goals,
                                          estimator_list, settings,
-                                         tuned_dynamic_ps=tuned_dynamic_ps)
+                                         tuned_dynamic_ps=tuned_dynamic_ps,
+                                         parallelise=True)
 print(dynamic_results)
