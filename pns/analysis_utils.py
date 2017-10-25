@@ -72,10 +72,6 @@ def get_nlive(run_dict, logl):
         for i in range(1, run_dict['settings']['nlive']):
             nlive_array[-i] = i
     else:  # dynamic run
-        assert run_dict['settings']['dynamic_goal'] is not None, \
-            "standard ns run contains thread_logl_min_max!"
-        # if nlive_array is not already stored for the run, find it iteratively
-        # using the minimum and maximum logls of the slices
         nlive_array = np.zeros(logl.shape[0])
         for logl_mm in run_dict['thread_logl_min_max']:
             if len(logl_mm) == 3:

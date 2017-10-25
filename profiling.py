@@ -7,7 +7,7 @@ nested_sampling(settings).
 
 import pandas as pd
 import pns_settings
-import pns.estimators as e
+# import pns.estimators as e
 import pns.likelihoods as likelihoods
 import pns.nested_sampling as ns
 import cProfile
@@ -20,18 +20,7 @@ pd.set_option('display.width', 200)
 
 # settings
 # --------
-n_run = 10
-n_simulate = 50
-n_simulate_ci = n_simulate * 4
 settings.dynamic_goal = 1
-settings.n_dim = 50
-cred_int = 0.95
-estimator_list = [e.logzEstimator(),
-                  e.theta1Estimator(),
-                  e.theta1squaredEstimator(),
-                  e.theta1confEstimator(0.84)]
-e_names = []
-for est in estimator_list:
-    e_names.append(est.name)
+settings.n_dim = 40
 
 cProfile.run('ns.perfect_nested_sampling(settings)')
