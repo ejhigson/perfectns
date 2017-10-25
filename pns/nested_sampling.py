@@ -104,6 +104,9 @@ def generate_dynamic_run(settings):
     # Step 1: run all the way through with limited number of threads
     run = generate_standard_run(settings, nlive_const=settings.nlive_1)
     n_calls = run[0]['nlive_array'].shape[0]
+    # delete nlive so au.get_nlive recalculates this at each loop instead of
+    # loading stored value
+    del run[0]['nlive_array']
     if settings.n_calls_max is None:
         # estimate number of likelihood calls available
         n_calls_max = settings.nlive * n_calls / settings.nlive_1
@@ -117,13 +120,14 @@ def generate_dynamic_run(settings):
         n_calls_max = settings.n_calls_max
     # Step 2: sample the peak until we run out of likelihood calls
     while n_calls < n_calls_max:
-        # generate an additional subrun
-        subrun = [{'settings': {'dynamic_goal': settings.dynamic_goal},
-                   'thread_logl_min_max': []}, []]
+        # # generate an additional subrun
+        # subrun = [{'settings': {'dynamic_goal': settings.dynamic_goal},
+        #            'thread_logl_min_max': []}, []]
         # update key loop variables
         lrxp = au.vstack_sort_array_list(run[1])
+        nlive = au.get_nlive(run[0], lrxp[:, 0])
         n_calls = lrxp.shape[0]
-        importance = point_importance(lrxp, run[0]['nlive_array'], settings)
+        importance = point_importance(lrxp, nlive, settings)
         logl_min_max, logx_min_max = min_max_importance(importance, lrxp, settings)
         nlive_2_count = 0
         if settings.dynamic_keep_final_point:
@@ -131,12 +135,12 @@ def generate_dynamic_run(settings):
             while ((n_calls_itr < n_calls_max * settings.n_calls_frac) or
                    (nlive_2_count < settings.nlive_2)):
                 nlive_2_count += 1
-                subrun[1].append(generate_single_thread(settings, logx_min_max[1],
-                                 logx_start=logx_min_max[0],
-                                 keep_final_point=settings.dynamic_keep_final_point))
-                n_calls_itr += subrun[1][-1].shape[0]
-                subrun[0]['thread_logl_min_max'].append([logl_min_max[0],
-                                                        subrun[1][-1][-1, 0]])
+                run[1].append(generate_single_thread(settings, logx_min_max[1],
+                              logx_start=logx_min_max[0],
+                              keep_final_point=settings.dynamic_keep_final_point))
+                n_calls_itr += run[1][-1].shape[0]
+                run[0]['thread_logl_min_max'].append([logl_min_max[0],
+                                                      run[1][-1][-1, 0]])
         else:
             # Make many threads in a single array with a single logl_min_max to
             # speed stuff up.
@@ -154,19 +158,19 @@ def generate_dynamic_run(settings):
             lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
             theta = mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim,
                                              settings.dims_to_sample)
-            subrun[1].append(np.hstack([lrx, theta]))
             logl_min_max.append(nlive_2_count)
-            subrun[0]['thread_logl_min_max'].append(logl_min_max)
-        # update the number of live points in the run
-        lrxp_subrun = au.vstack_sort_array_list(subrun[1])
-        nlive_subrun = au.get_nlive(subrun[0], lrxp_subrun[:, 0])
-        run[0]['nlive_array'] = au.merge_nlive(lrxp[:, 0],
-                                               run[0]['nlive_array'],
-                                               lrxp_subrun[:, 0],
-                                               nlive_subrun)
-        # add subrun
-        run[0]['thread_logl_min_max'] += subrun[0]['thread_logl_min_max']
-        run[1] += subrun[1]
+            run[1].append(np.hstack([lrx, theta]))
+            run[0]['thread_logl_min_max'].append(logl_min_max)
+#        # update the number of live points in the run
+#        lrxp_subrun = au.vstack_sort_array_list(subrun[1])
+#        nlive_subrun = au.get_nlive(subrun[0], lrxp_subrun[:, 0])
+#        run[0]['nlive_array'] = au.merge_nlive(lrxp[:, 0],
+#                                               run[0]['nlive_array'],
+#                                               lrxp_subrun[:, 0],
+#                                               nlive_subrun)
+#        # add subrun
+#        run[0]['thread_logl_min_max'] += subrun[0]['thread_logl_min_max']
+#        run[1] += subrun[1]
     lrxp = au.vstack_sort_array_list(run[1])
     run[0]['nlive_array'] = au.get_nlive(run[0], lrxp[:, 0])
     return run
