@@ -184,7 +184,7 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
         return stds
 
 
-def bootstrap_resample_run(ns_run, sample_ninit_sep=True):
+def bootstrap_resample_run(ns_run, ninit_sep=True):
     """
     Bootstrap resamples threads of nested sampling run, returning a new
     (resampled) nested sampling run.
@@ -192,7 +192,7 @@ def bootstrap_resample_run(ns_run, sample_ninit_sep=True):
     threads_temp = []
     logl_min_max_temp = []
     n_threads = len(ns_run['threads'])
-    if ns_run['settings']['dynamic_goal'] is not None and sample_ninit_sep:
+    if ns_run['settings']['dynamic_goal'] is not None and ninit_sep:
         ninit = ns_run["settings"]["nlive_1"]
         inds = np.random.randint(0, ninit, ninit)
         inds = np.append(inds, np.random.randint(ninit, n_threads,
@@ -212,10 +212,11 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
     Calculates bootstrap standard deviation estimates
     for a single nested sampling run.
     """
+    ninit_sep = kwargs.get('ninit_sep', True)
     n_simulate = kwargs["n_simulate"]  # No default, must specify
     bs_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(0, n_simulate):
-        ns_run_temp = bootstrap_resample_run(ns_run)
+        ns_run_temp = bootstrap_resample_run(ns_run, ninit_sep=ninit_sep)
         bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
         del ns_run_temp
     stds = np.zeros(bs_values.shape[0])

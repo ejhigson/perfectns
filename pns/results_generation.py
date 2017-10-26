@@ -116,12 +116,14 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
     save_dir = kwargs.get('save_dir', 'data')
+    ninit_sep = kwargs.get('ninit_sep', True)
     add_sim_method = kwargs.get('add_sim_method', False)
     n_simulate_ci = kwargs.get('n_simulate_ci', n_simulate)
     n_run_ci = kwargs.get('n_run_ci', n_run)
     cred_int = kwargs.get('cred_int', 0.95)
     # make save_name
-    extra_root = "bootstrap_results_" + str(n_simulate) + "nsim"
+    extra_root = ("bootstrap_results_" + str(n_simulate) + "nsim_" +
+                  str(ninit_sep) + "sep_")
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
     save_file = save_dir + '/' + save_root + '.dat'
     # try loading results

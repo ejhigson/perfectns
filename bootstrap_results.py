@@ -22,8 +22,8 @@ pd.set_option('display.width', 200)
 # --------
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 3
-n_run_ci = 2
+n_runs = 5000
+n_run_ci = 500
 load = True
 save = True
 settings.n_dim = 3
@@ -49,5 +49,6 @@ bootstrap_results = rg.get_bootstrap_results(n_runs, n_simulate,
                                              add_sim_method=add_sim_method,
                                              n_run_ci=n_run_ci,
                                              cred_int=cred_int,
+                                             ninit_sep=True,
                                              parallelise=False)
 print(bootstrap_results)

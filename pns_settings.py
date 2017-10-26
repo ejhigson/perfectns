@@ -47,7 +47,7 @@ class PerfectNestedSamplingSettings(object):
             # calculation settings
             # --------------------
             'nlive': 200,
-            'data_version': 'v03',
+            'data_version': 'v04',
             'dims_to_sample': 1,
             'zv_termination_fraction': 0.001,
             # dynamic nested sampling settings
