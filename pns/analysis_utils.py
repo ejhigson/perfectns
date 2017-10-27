@@ -130,6 +130,17 @@ def merge_lrxp(array_list):
     return output
 
 
+def run_threads(ns_run):
+    """
+    Get the individual threads for a nested sampling run.
+    """
+    n_threads = ns_run['thread_logl_min_max'].shape[0]
+    threads = []
+    for i in range(1, n_threads + 1):
+        threads.append(ns_run['lrxtnp'][np.where(ns_run['lrxtnp'][:, 3] == i)])
+    return threads
+
+
 def get_estimators(lrxp, logw, estimator_list):
     """
     tbc

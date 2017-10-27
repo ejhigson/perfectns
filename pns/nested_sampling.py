@@ -21,66 +21,55 @@ def generate_standard_run(settings, nlive_const=None):
         nlive_const = settings.nlive
     # Reset the random seed to avoid repeated results when multiprocessing.
     np.random.seed()
-    threads = [None] * nlive_const
-    live = np.zeros((nlive_const, 3))
-    live[:, 2] = np.log(np.random.random(live.shape[0]))
-    live[:, 1] = settings.r_given_logx(live[:, 2])
-    live[:, 0] = settings.logl_given_r(live[:, 1])
+    live_lrxtn = np.zeros((nlive_const, 5))
+    live_lrxtn[:, 3] = np.arange(nlive_const) + 1  # thread number
+    live_lrxtn[:, 2] = np.log(np.random.random(live_lrxtn.shape[0]))
+    live_lrxtn[:, 1] = settings.r_given_logx(live_lrxtn[:, 2])
+    live_lrxtn[:, 0] = settings.logl_given_r(live_lrxtn[:, 1])
     # termination condition variables
     logx_i = 0.0
     logz_dead = -np.inf
-    logz_live = scipy.misc.logsumexp(live[:, 0]) + logx_i
+    logz_live = scipy.misc.logsumexp(live_lrxtn[:, 0]) + logx_i
     t = np.exp(-1.0 / nlive_const)
     # Calculate factor for trapizium rule of geometric series
     logtrapz = np.log(0.5 * ((t ** -1) - t))
+    lrxtn = None
     while logz_live - np.log(settings.zv_termination_fraction) > logz_dead:
         # add to dead points
-        dying_ind = np.where(live[:, 0] == live[:, 0].min())[0][0]
-        if threads[dying_ind] is None:
+        ind = np.where(live_lrxtn[:, 0] == live_lrxtn[:, 0].min())[0][0]
+        if lrxtn is None:
             # Must deep copy or this changes when the live points are updated.
-            threads[dying_ind] = copy.deepcopy(live[dying_ind, :])
+            lrxtn = copy.deepcopy(live_lrxtn[ind, :])
             # Must reshape so threads is a 2d array even if it only has one row
             # to avoid index errors,
-            threads[dying_ind] = np.reshape(threads[dying_ind],
-                                            (1, threads[dying_ind].shape[0]))
+            lrxtn = np.reshape(lrxtn, (1, lrxtn.shape[0]))
         else:
-            threads[dying_ind] = np.vstack((threads[dying_ind],
-                                           live[dying_ind, :]))
+            lrxtn = np.vstack((lrxtn, live_lrxtn[ind, :]))
         # update dead evidence estimates
         logx_i += -1.0 / nlive_const
-        logz_dead = scipy.misc.logsumexp((logz_dead, live[dying_ind, 0] +
+        logz_dead = scipy.misc.logsumexp((logz_dead, live_lrxtn[ind, 0] +
                                           logtrapz + logx_i))
         # add new point
-        live[dying_ind, 2] += np.log(np.random.random())
-        live[dying_ind, 1] = settings.r_given_logx(live[dying_ind, 2])
-        live[dying_ind, 0] = settings.logl_given_r(live[dying_ind, 1])
-        logz_live = (scipy.misc.logsumexp(live[:, 0]) + logx_i -
+        live_lrxtn[ind, 2] += np.log(np.random.random())
+        live_lrxtn[ind, 1] = settings.r_given_logx(live_lrxtn[ind, 2])
+        live_lrxtn[ind, 0] = settings.logl_given_r(live_lrxtn[ind, 1])
+        logz_live = (scipy.misc.logsumexp(live_lrxtn[:, 0]) + logx_i -
                      np.log(nlive_const))
-    for i, _ in enumerate(threads):
-        # add remaining live points to end of threads
-        if threads[i] is None:
-            # Must reshape so threads is a 2d array even if it only has one row
-            # to avoid index errors
-            threads[i] = np.reshape(live[i, :], (1, live.shape[1]))
-        else:
-            threads[i] = np.vstack((threads[i], live[i, :]))
-        # add parameters
-        theta = mf.sample_nsphere_shells(threads[i][:, 1], settings.n_dim,
-                                         settings.dims_to_sample)
-        threads[i] = np.hstack([threads[i], theta])
-    run = {'settings': settings.get_settings_dict(), 'threads': threads}
-    # add nlive array.
-    # Do not use au.get_nlive as this throws assertions when
-    # generate_standard_run is called inside generate_dynamic_run
-    run['nlive_array'] = np.zeros(au.get_n_calls(run)) + len(threads)
-    for i in range(1, len(threads)):
-        run['nlive_array'][-i] = i
+    # add remaining live points
+    # at -1 to the "change in nlive" column for the final point in each thread
+    live_lrxtn[:, 4] = -1
+    # include final live points (sorted in likelihood order)
+    lrxtn = np.vstack((lrxtn, live_lrxtn[np.argsort(live_lrxtn[:, 0])]))
+    # add parameters
+    theta = mf.sample_nsphere_shells(lrxtn[:, 1], settings.n_dim,
+                                     settings.dims_to_sample)
+    run = {'settings': settings.get_settings_dict(),
+           'lrxtnp': np.hstack((lrxtn, theta))}
     # add data on threads for use as part of a dynamic run
-    run['thread_logl_min_max'] = np.zeros((len(threads), 3))
+    run['thread_logl_min_max'] = np.zeros((nlive_const, 3))
     run['thread_logl_min_max'][:, 0] = np.nan
+    run['thread_logl_min_max'][:, 1] = live_lrxtn[:, 0]
     run['thread_logl_min_max'][:, 2] = 1
-    for i, _ in enumerate(threads):
-        run['thread_logl_min_max'][i, 1] = threads[i][-1, 0]
     return run
 
 
