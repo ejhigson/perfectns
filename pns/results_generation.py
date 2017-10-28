@@ -149,7 +149,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
                                 estimator_list, n_simulate=n_simulate)
     bs_df = mf.get_df_row_summary(bs_values, e_names)
-    # get mean bootstrap std estimate a ratio to the std measured from repeats
+    # Get the mean bootstrap std estimate as a fraction of the std measured
+    # from repeated calculations.
     results.loc['bs std'] = bs_df.loc['mean'] / results.loc['repeats std']
     bs_std_ratio_unc = mf.array_ratio_std(bs_df.loc["mean"],
                                           bs_df.loc["mean_unc"],
@@ -181,9 +182,9 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
     results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
     results.loc['bs ' + str(cred_int) + ' CI_unc'] = bs_ci_df.loc['mean_unc']
-    # add +- 1 std coverage
-    max_value = rep_df.loc['mean'].values + results.loc['bs std'].values
-    min_value = rep_df.loc['mean'].values - results.loc['bs std'].values
+    # add coverage for +- 1 bootstrap std estimate
+    max_value = rep_df.loc['mean'].values + bs_df.loc['mean'].values
+    min_value = rep_df.loc['mean'].values - bs_df.loc['mean'].values
     coverage = np.zeros(rep_values.shape[0])
     for i, _ in enumerate(coverage):
         ind = np.where((rep_values[i, :] > min_value[i]) &

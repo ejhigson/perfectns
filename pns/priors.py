@@ -51,7 +51,7 @@ class gaussian_cached(object):
         # if n_dim is specified we can cache the interpolation now.
         # Otherwise wait until it is called.
         self.logx_min = kwargs.get('logx_min', -3000)
-        self.logx_max = kwargs.get('logx_max', -30)
+        self.logx_max = kwargs.get('logx_max', -200)
         self.interp_density = kwargs.get('interp_density', 10)
         if 'n_dim' in kwargs:
             self.interp_d = cgp.interp_r_logx_dict(kwargs['n_dim'],
@@ -86,8 +86,8 @@ class gaussian_cached(object):
                 r[ind] = mf.scipy_gaussian_r_given_logx(logx[ind],
                                                         self.prior_scale,
                                                         n_dim)
-                assert np.count_nonzero(r) == r.shape[0], \
-                    "r contains zeros! r = " + str(r)
+                # assert np.count_nonzero(r) == r.shape[0], \
+                #     "r contains zeros! r = " + str(r)
                 return r
             else:
                 if logx <= self.interp_d['logx_array'].min():

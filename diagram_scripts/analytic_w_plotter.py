@@ -1,14 +1,12 @@
 #!/usr/bin/env python
+"""
+Plots the posterior mass as a function of logX for different posteriors.
+"""
 import numpy as np
-# import maths_functions as mf
-# import matplotlib
-# import matplotlib.cm as cm
-# import matplotlib.mlab as mlab
-# import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
-import pns.likelihoods_and_priors as lp
-import math
+import pns.priors as priors
+import pns.likelihoods as likelihoods
 import pns.maths_functions as mf
+import matplotlib.pyplot as plt
 from matplotlib import rc  # , rcParams
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text', usetex=True)
@@ -18,17 +16,17 @@ rc('ytick.major', size=2)  # default = 3.5
 # rcParams.update({'figure.autolayout': True})
 
 
-def w_given_logx(logx, likelihood_prior):
-    logw = logw_given_logx(logx, likelihood_prior)
-    for i, w_i in enumerate(logw):
-        if math.isnan(w_i):
-            logw[i] = -np.inf
-    logw -= logw.max()  # must do this after removing nans or it sets everything to nan
+def w_given_logx(logx, n_dim, likelihood, prior):
+    logw = logw_given_logx(logx, n_dim, likelihood, prior)
+    logw[np.isnan(logw)] = -np.inf
+    logw -= logw.max()  # must do this after removing nans
     return np.exp(logw)
 
 
-def logw_given_logx(logx, likelihood_prior):
-    return logx + likelihood_prior.logl_given_logx(logx)  # likelihood_prior.logz_analytic
+def logw_given_logx(logx, n_dim, likelihood, prior):
+    r = prior.r_given_logx(logx, n_dim)
+    logl = likelihood.logl_given_r(r, n_dim)
+    return logx + logl
 
 
 # Settings
@@ -46,61 +44,51 @@ save = True
 
 # Plotting
 # --------
-likelihood_list = ['gaussian', 'cauchy']
-# likelihood_list = ['gaussian', 'exp_power_1', 'exp_power_0_75']
-# Dynamic NS paper settings
-dim = [2, 10]
-if len(likelihood_list) == 2 and likelihood_list[-1] == "cauchy":
-    xmin = -35
-    figsize = (6, 1.5)
-else:
-    xmin = -35
-    figsize = (6, 2)
-# # errors paper settings
-# dim = [2, 6, 10]
-# figsize = (6, 2)
-# xmin = -30
-# shared settings
-xmax = 0.0
+likelihood_list = [likelihoods.gaussian(1)]  # likelihoods.exp_power(1, 2)]
+# prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
+prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
+prior_list = [priors.gaussian_cached(10)]
+dim_list = [300, 1000]
+figsize = (12, 4)
+xmin = -1000
+xmax = -0.001
+plt.close('all')
 plt.clf()
 image = plt.figure(figsize=figsize)
 ax = image.add_subplot(1, 1, 1)
 w_temp_max = 0
-logx = np.linspace(xmin, xmax, 10000)
-rmax = 10
-d_rmax_list = []
-for d in dim:
-    d_rmax_list += [(d, rmax)]
+logx = np.linspace(xmin, xmax, 100)
 linestyles = ['solid', 'dashed', 'dotted']
-linestyles += ['solid'] * len(likelihood_list)
-z_term_frac = 10 ** -4
-entropy_gain = np.zeros((len(likelihood_list), len(d_rmax_list)))
-for k, d_rmax in enumerate(d_rmax_list):
-    for j, likelihood_name in enumerate(likelihood_list):
-        print(likelihood_name, d_rmax)
-        likelihood_prior = lp.likelihood_prior(likelihood_name, 'gaussian', d_rmax[1], d_rmax[0])
-        # z = mpmath.quad(lambda x: likelihood_prior.logl_given_logx(x), [-1000, 0])
-        w_temp = w_given_logx(logx, likelihood_prior)
-        w_temp[np.isnan(w_temp)] = 0.0
-        print(np.trapz(w_temp, x=logx), np.exp(likelihood_prior.logz_analytic))
-        w_temp /= np.trapz(w_temp, x=logx)
-        w_cumsum = np.cumsum(w_temp)
-        w_temp_term = w_temp[np.where(w_cumsum > 1. - z_term_frac)]
-        entropy_gain[j, k] = w_temp_term.shape[0] / mf.entropy_num_samples(w_temp_term)
-        w_temp_max = max(w_temp_max, w_temp.max())
-        label = '$d = ' + str(d_rmax[0]) + '$'
-        # label += ' $\sigma_\pi = ' + str(d_rmax[1]) + ' $'
-        if len(likelihood_list) != 1:
-            if likelihood_name == 'exp_power_2':
-                label = 'Exp power' + ': $b=2$, ' + label
-            elif likelihood_name == 'exp_power_0_75':
-                label = 'Exp power' + ': $b=\\frac{3}{4}$, ' + label
-            else:
-                label = likelihood_name.replace('_', ' ').title() + ': ' + label
-        ax.plot(logx, w_temp, linewidth=1, label=label, linestyle=linestyles[j])
-print(likelihood_list)
+z_term_frac = 10 ** -3
+entropy_gain = np.zeros((len(likelihood_list), len(prior_list), len(dim_list)))
+for l, likelihood in enumerate(likelihood_list):
+    for p, prior in enumerate(prior_list):
+        for d, n_dim in enumerate(dim_list):
+            w_temp = w_given_logx(logx, n_dim, likelihood, prior)
+            r = prior.r_given_logx(logx, n_dim)
+            print(r)
+            # w_temp[np.isnan(w_temp)] = 0.0
+            w_temp /= np.trapz(w_temp, x=logx)
+            w_cumsum = np.cumsum(w_temp)
+            w_temp_term = w_temp[np.where(w_cumsum > 1. - z_term_frac)]
+            entropy_gain[l, p, d] = (w_temp_term.shape[0] /
+                                     mf.entropy_num_samples(w_temp_term))
+            w_temp_max = max(w_temp_max, w_temp.max())
+            label = (type(likelihood).__name__ + ' ' + type(prior).__name__ +
+                     ' $d = ' + str(n_dim) + '$')
+            # label += ' $\sigma_\pi = ' + str(d_rmax[1]) + ' $'
+            # if len(likelihood_list) != 1:
+            #     if likelihood_name == 'exp_power_2':
+            #         label = 'Exp power' + ': $b=2$, ' + label
+            #     elif likelihood_name == 'exp_power_0_75':
+            #         label = 'Exp power' + ': $b=\\frac{3}{4}$, ' + label
+            #     else:
+            #         label = likelihood_name.replace('_', ' ').title() +
+            #                 ': ' + label
+            label = label.replace('_', ' ')
+            ax.plot(logx, w_temp, linewidth=1, label=label,
+                    linestyle=linestyles[p + 1])
 print("entropy gain")
-print(d_rmax_list)
 print(entropy_gain)
 ax.set_ylabel('relative posterior mass', fontsize=label_fontsize)
 ax.set_xlabel('$\log X$', fontsize=(label_fontsize))
@@ -115,7 +103,7 @@ if len(likelihood_list) == 1:
     ncol = 1
 else:
     ncol = 2
-ax.legend(loc=2, ncol=ncol, prop={'size': label_fontsize})  # :fontsize=label_fontsize)
+ax.legend(loc=2, ncol=ncol, prop={'size': label_fontsize})
 # Output plot
 # ------------
 if save is True:
