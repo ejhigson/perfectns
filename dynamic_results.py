@@ -22,7 +22,8 @@ pd.set_option('display.width', 200)
 # --------
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 6
+n_runs = 10
+parallelise = False
 load = True
 save = True
 settings.n_dim = 10
@@ -44,5 +45,5 @@ print("Running dynamic results:")
 dynamic_results = rg.get_dynamic_results(n_runs, dynamic_goals,
                                          estimator_list, settings,
                                          tuned_dynamic_ps=tuned_dynamic_ps,
-                                         parallelise=True)
+                                         parallelise=parallelise)
 print(dynamic_results)

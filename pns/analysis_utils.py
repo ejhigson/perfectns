@@ -23,18 +23,99 @@ def get_nlive(run):
     Works by finding the number of live points at the start then cumulatively
     summing the changes in the number of live points at each step.
     """
-    nlive_0 = np.sum(np.isnan(run['thread_logl_min_max'][:, 0]))
-    nlive = np.zeros(run['lrxtnp'].shape[0]) + nlive_0
-    nlive[1:] += np.cumsum(run['lrxtnp'][:, 4])[:-1]
-    return nlive
+    nlive_0 = np.sum(np.isnan(run['thread_min_max'][:, 0]))
+    nlive_array = np.zeros(run['lrxtnp'].shape[0]) + nlive_0
+    nlive_array[1:] += np.cumsum(run['lrxtnp'][:, 4])[:-1]
+    assert nlive_array.min() > 0, "nlive contains 0s or negative values!\n" \
+        "nlive_array = " + str(nlive_array)
+    assert nlive_array[-1] == 1, "final point in nlive_array should be 1!\n" \
+        "nlive_array = " + str(nlive_array)
+    return nlive_array
 
 
-def get_logw(run, simulate=False):
+def get_run_threads(ns_run):
+    """
+    Get the individual threads for a nested sampling run.
+    """
+    n_threads = ns_run['thread_min_max'].shape[0]
+    threads = []
+    for i in range(1, n_threads + 1):
+        threads.append(ns_run['lrxtnp'][np.where(ns_run['lrxtnp'][:, 3] == i)])
+        # delete changes in nlive due to other threads in the run
+        threads[-1][:, 4] = 0
+        threads[-1][-1, 4] = -1
+    return threads
+
+
+def get_nlive_thread_min_max(run):
     """
     tbc
     """
     logl = run['lrxtnp'][:, 0]
-    nlive_array = get_nlive(run)
+    nlive_array = np.zeros(logl.shape[0])
+    lmm_ar = run['thread_min_max']
+    # no min logl
+    for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
+        nlive_array[np.where(r[1] >= logl)] += 1
+    # no max logl
+    for r in lmm_ar[np.isnan(lmm_ar[:, 1])]:
+        nlive_array[np.where(logl > r[0])] += 1
+    # both min and max logl
+    for r in lmm_ar[~np.isnan(lmm_ar[:, 0]) & ~np.isnan(lmm_ar[:, 1])]:
+        nlive_array[np.where((r[1] >= logl) & (logl > r[0]))] += 1
+    assert lmm_ar[np.isnan(lmm_ar[:, 0]) &
+                  np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
+        'Should not have threads with neither start nor end logls'
+    # If nlive_array contains zeros then print info and throw error
+    assert nlive_array.min() > 0, "nlive contains 0s or negative values!\n" \
+        "nlive_array = " + str(nlive_array)
+    assert nlive_array[-1] == 1, "final point in nlive_array should be 1!\n" \
+        "nlive_array = " + str(nlive_array)
+    return nlive_array
+
+
+def bootstrap_resample_run(ns_run, threads, ninit_sep=True):
+    """
+    Bootstrap resamples threads of nested sampling run, returning a new
+    (resampled) nested sampling run.
+    """
+    n_threads = len(threads)
+    if ns_run['settings']['dynamic_goal'] is not None and ninit_sep:
+        ninit = ns_run["settings"]["nlive_1"]
+        inds = np.random.randint(0, ninit, ninit)
+        inds = np.append(inds, np.random.randint(ninit, n_threads,
+                                                 n_threads - ninit))
+    else:
+        inds = np.random.randint(0, n_threads, n_threads)
+    threads_temp = [threads[i] for i in inds]
+    thread_min_max_temp = ns_run["thread_min_max"][inds]
+    # construct lrxtnp array from the threads, including an updated nlive
+    lrxtnp_temp = threads_temp[0]
+    for t in threads_temp[1:]:
+        lrxtnp_temp = np.vstack((lrxtnp_temp, t))
+    lrxtnp_temp = lrxtnp_temp[np.argsort(lrxtnp_temp[:, 0])]
+    # update the changes in live points column for threads which start part way
+    # through the run
+    logl_starts = thread_min_max_temp[:, 0]
+    for logl_start in logl_starts[~np.isnan(logl_starts)]:
+        ind_start = np.argmin(np.abs(lrxtnp_temp[:, 0] - logl_start))
+        lrxtnp_temp[ind_start, 4] += 1
+    # make run
+    ns_run_temp = {"thread_min_max": thread_min_max_temp,
+                   "lrxtnp": lrxtnp_temp,
+                   "settings": ns_run['settings']}
+    return ns_run_temp
+
+
+# Helper functions
+# ----------------
+
+def get_logw(logl, nlive_array, simulate=False):
+    """
+    tbc
+    """
+    # logl = run['lrxtnp'][:, 0]
+    # nlive_array = get_nlive(run)
     logx_inc_start = np.zeros(logl.shape[0] + 1)
     # find X value for each point (start is at logX=0)
     logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
@@ -51,110 +132,18 @@ def get_logw(run, simulate=False):
     return logw
 
 
-def get_run_threads(ns_run):
-    """
-    Get the individual threads for a nested sampling run.
-    """
-    n_threads = ns_run['thread_logl_min_max'].shape[0]
-    threads = []
-    for i in range(1, n_threads + 1):
-        threads.append(ns_run['lrxtnp'][np.where(ns_run['lrxtnp'][:, 3] == i)])
-    return threads
-
-
-def bootstrap_resample_run(ns_run, threads, ninit_sep=True):
-    """
-    Bootstrap resamples threads of nested sampling run, returning a new
-    (resampled) nested sampling run.
-    """
-    n_threads = len(threads)
-    if ns_run['settings']['dynamic_goal'] is not None and ninit_sep:
-        ninit = ns_run["settings"]["nlive_1"]
-        inds = np.random.randint(0, ninit, ninit)
-        inds = np.append(inds, np.random.randint(ninit, n_threads,
-                                                 n_threads - ninit))
-    else:
-        inds = np.random.randint(0, n_threads, n_threads)
-    logl_min_max_temp = ns_run["thread_logl_min_max"][inds]
-    threads_temp = [threads[i] for i in inds]
-    lrxtnp_temp = threads_temp[0]
-    for t in threads_temp[1:]:
-        lrxtnp_temp = np.vstack((lrxtnp_temp, t))
-    lrxtnp_temp = lrxtnp_temp[np.argsort(lrxtnp_temp[:, 0])]
-    # make run
-    ns_run_temp = {"thread_logl_min_max": logl_min_max_temp,
-                   "lrxtnp": lrxtnp_temp,
-                   "settings": ns_run['settings']}
-    return ns_run_temp
-
-
-# Helper functions
-# ----------------
-
-
-def get_logx(nlive_array, simulate=False):
+def get_logx(nlive, simulate=False):
     """
     Returns a logx vector showing the expected or simulated logx positions of
     points.
     """
-    assert nlive_array.min() > 0, "nlive_array contains zeros or negative " \
-        "values! nlive_array = " + str(nlive_array)
+    assert nlive.min() > 0, "nlive contains zeros or negative values!" \
+        "nlive = " + str(nlive)
     if simulate:
-        logx_steps = np.log(np.random.random(nlive_array.shape)) / nlive_array
+        logx_steps = np.log(np.random.random(nlive.shape)) / nlive
     else:
-        logx_steps = -1 * (nlive_array ** -1)
+        logx_steps = -1 * (nlive ** -1)
     return np.cumsum(logx_steps)
-
-
-# def get_nlive(run_dict, logl):
-#     """
-#     tbc
-#     """
-#     if 'nlive_array' in run_dict:
-#         nlive_array = run_dict['nlive_array']
-#     elif 'thread_logl_min_max' not in run_dict:  # standard run
-#         assert run_dict['settings']['dynamic_goal'] is None, \
-#             "dynamic ns run does not contain thread_logl_min_max!"
-#         nlive_array = np.zeros(logl.shape[0]) + run_dict['settings']['nlive']
-#         for i in range(1, run_dict['settings']['nlive']):
-#             nlive_array[-i] = i
-#     else:  # dynamic run
-#         nlive_array = np.zeros(logl.shape[0])
-#         lmm_ar = run_dict['thread_logl_min_max']
-#         # no min logl
-#         for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
-#             nlive_array[np.where(r[1] >= logl)] += r[2]
-#         # no max logl
-#         for r in lmm_ar[np.isnan(lmm_ar[:, 1])]:
-#             nlive_array[np.where(logl > r[0])] += r[2]
-#         # both min and max logl
-#         for r in lmm_ar[~np.isnan(lmm_ar[:, 0]) & ~np.isnan(lmm_ar[:, 1])]:
-#             nlive_array[np.where((r[1] >= logl) & (logl > r[0]))] += r[2]
-#         assert lmm_ar[np.isnan(lmm_ar[:, 0]) &
-#                       np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
-#             'Should not have threads with neither start nor end logls'
-#     # If nlive_array contains zeros then print info and throw error
-#     assert nlive_array.min() > 0, \
-#         ("nlive_array contains zeros: " + str(nlive_array))
-#     return nlive_array
-
-
-# def merge_lrxp(array_list):
-#     """
-#     Merges a list of np arrays into a single array using vstack. Ommits list
-#     elements with value None (these are used to represent dynamic nested
-#     sampling threads with do not contain a single live point.
-#     """
-#     output = None
-#     for array in array_list:
-#         if array is not None:
-#             if output is not None:
-#                 output = np.vstack((output, array))
-#             else:
-#                 output = array
-#     if output is not None:
-#         output = output[np.argsort(output[:, 0])]
-#     return output
 
 
 # Functions for output from a single nested sampling run
@@ -167,12 +156,13 @@ def run_estimators(run, estimator_list, **kwargs):
     Calculates values of list of estimators for a single nested sampling run.
     """
     simulate = kwargs.get('simulate', False)
-    logw = get_logw(run, simulate=simulate)
+    nlive = get_nlive(run)
+    logw = get_logw(run['lrxtnp'][:, 0], nlive, simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, f in enumerate(estimator_list):
         output[i] = f.estimator(logw=logw, logl=run['lrxtnp'][:, 0],
                                 r=run['lrxtnp'][:, 1],
-                                theta=run['lrtnxp'][:, 5:])
+                                theta=run['lrxtnp'][:, 5:])
     return output
 
 

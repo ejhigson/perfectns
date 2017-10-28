@@ -66,9 +66,9 @@ def generate_standard_run(settings, nlive_const=None):
     run = {'settings': settings.get_settings_dict(),
            'lrxtnp': np.hstack((lrxtn, theta))}
     # add data on threads for use as part of a dynamic run
-    run['thread_logl_min_max'] = np.zeros((nlive_const, 2))
-    run['thread_logl_min_max'][:, 0] = np.nan
-    run['thread_logl_min_max'][:, 1] = live_lrxtn[:, 0]
+    run['thread_min_max'] = np.zeros((nlive_const, 2))
+    run['thread_min_max'][:, 0] = np.nan
+    run['thread_min_max'][:, 1] = live_lrxtn[:, 0]
     return run
 
 
@@ -82,8 +82,8 @@ def generate_dynamic_run(settings):
     Outputs a list starting with dnsd, followed by a list of live points for
     each value of fractions.
     Output dnsd contains additional list array "nlive" and list of minimum and
-    maximum logls of threads "thread_logl_min_max".
-    The order of the "thread_logl_min_max" list corresponds to the order of the
+    maximum logls of threads "thread_min_max".
+    The order of the "thread_min_max" list corresponds to the order of the
     threads.
     An entry "[none, none]" is a thread which runs over the whole range X=0 to
     X=X_terminate.
@@ -114,7 +114,7 @@ def generate_dynamic_run(settings):
         nlive_2_count = 0
         while nlive_2_count < settings.nlive_2:
             # make new thread
-            thread_label = run['thread_logl_min_max'].shape[0] + 1
+            thread_label = run['thread_min_max'].shape[0] + 1
             thread = generate_single_thread(settings,
                                             logx_min_max[1],
                                             thread_label,
@@ -129,7 +129,7 @@ def generate_dynamic_run(settings):
                 run['lrxtnp'][start_ind, 4] += 1
             run['lrxtnp'] = np.vstack((run['lrxtnp'], thread))
             lmm = np.asarray([logl_min_max[0], thread[-1, 0]])
-            run['thread_logl_min_max'] = np.vstack((run['thread_logl_min_max'], lmm))
+            run['thread_min_max'] = np.vstack((run['thread_min_max'], lmm))
             # update counters
             nlive_2_count += 1
         # sort array and update n_calls in preparation for the next run

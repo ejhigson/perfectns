@@ -22,8 +22,8 @@ pd.set_option('display.width', 200)
 # --------
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 5000
-n_run_ci = 500
+n_runs = 50
+n_run_ci = 5
 load = True
 save = True
 settings.n_dim = 3

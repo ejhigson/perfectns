@@ -53,7 +53,8 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         print("dynamic_goal = " + str(settings.dynamic_goal))
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
-        values = pw.func_on_runs(au.run_estimators, run_list, funcs_list)
+        values = pw.func_on_runs(au.run_estimators, run_list, funcs_list,
+                                 parallelise=parallelise)
         if dynamic_goal is None:
             key_i = "standard"
         else:
