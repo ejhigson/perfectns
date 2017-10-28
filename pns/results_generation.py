@@ -149,8 +149,13 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
                                 estimator_list, n_simulate=n_simulate)
     bs_df = mf.get_df_row_summary(bs_values, e_names)
-    results.loc['bs std'] = bs_df.loc['mean']
-    results.loc['bs std_unc'] = bs_df.loc['mean_unc']
+    # get mean bootstrap std estimate a ratio to the std measured from repeats
+    results.loc['bs std'] = bs_df.loc['mean'] / results.loc['repeats std']
+    bs_std_ratio_unc = mf.array_ratio_std(bs_df.loc["mean"],
+                                          bs_df.loc["mean_unc"],
+                                          results.loc["repeats std"],
+                                          results.loc["repeats std_unc"])
+    results.loc['bs std_unc'] = bs_std_ratio_unc
     results.loc['bs var'] = 100 * bs_df.loc['std'] / bs_df.loc['mean']
     results.loc['bs var_unc'] = 100 * bs_df.loc['std_unc'] / bs_df.loc['mean']
     if add_sim_method:
@@ -158,8 +163,14 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         sim_values = pw.func_on_runs(au.run_std_simulate, run_list,
                                      estimator_list, n_simulate=n_simulate)
         sim_df = mf.get_df_row_summary(sim_values, e_names)
-        results.loc['sim std'] = sim_df.loc['mean']
-        results.loc['sim std_unc'] = sim_df.loc['mean_unc']
+        # get mean simulation std estimate a ratio to the std from repeats
+        results.loc['sim std'] = (sim_df.loc['mean'] /
+                                  results.loc['repeats std'])
+        sim_std_ratio_unc = mf.array_ratio_std(sim_df.loc["mean"],
+                                               sim_df.loc["mean_unc"],
+                                               results.loc["repeats std"],
+                                               results.loc["repeats std_unc"])
+        results.loc['sim std_unc'] = sim_std_ratio_unc
         results.loc['sim var'] = 100 * sim_df.loc['std'] / sim_df.loc['mean']
         results.loc['sim var_unc'] = 100 * (sim_df.loc['std_unc'] /
                                             sim_df.loc['mean'])

@@ -22,11 +22,11 @@ pd.set_option('display.width', 200)
 # --------
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 10
-parallelise = False
+n_runs = 25
+parallelise = True
 load = True
 save = True
-settings.n_dim = 10
+settings.n_dim = 50
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),

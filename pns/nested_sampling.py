@@ -1,9 +1,9 @@
 #!/usr/bin/python
 """Generates nested sampling runs and threads."""
 
+import copy
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
-import copy
 # perfect nested sampling modules
 import pns.maths_functions as mf
 import pns.analysis_utils as au
@@ -33,18 +33,17 @@ def generate_standard_run(settings, nlive_const=None):
     t = np.exp(-1.0 / nlive_const)
     # Calculate factor for trapizium rule of geometric series
     logtrapz = np.log(0.5 * ((t ** -1) - t))
-    lrxtn = None
+    # start the array of dead points
+    ind = np.where(live_lrxtn[:, 0] == live_lrxtn[:, 0].min())[0][0]
+    # Must deep copy or this changes when the live points are updated.
+    lrxtn = copy.deepcopy(live_lrxtn[ind, :])
+    # Must reshape so threads is a 2d array even if it only has one row
+    # to avoid index errors,
+    lrxtn = np.reshape(lrxtn, (1, lrxtn.shape[0]))
     while logz_live - np.log(settings.zv_termination_fraction) > logz_dead:
         # add to dead points
         ind = np.where(live_lrxtn[:, 0] == live_lrxtn[:, 0].min())[0][0]
-        if lrxtn is None:
-            # Must deep copy or this changes when the live points are updated.
-            lrxtn = copy.deepcopy(live_lrxtn[ind, :])
-            # Must reshape so threads is a 2d array even if it only has one row
-            # to avoid index errors,
-            lrxtn = np.reshape(lrxtn, (1, lrxtn.shape[0]))
-        else:
-            lrxtn = np.vstack((lrxtn, live_lrxtn[ind, :]))
+        lrxtn = np.vstack((lrxtn, live_lrxtn[ind, :]))
         # update dead evidence estimates
         logx_i += -1.0 / nlive_const
         logz_dead = scipy.misc.logsumexp((logz_dead, live_lrxtn[ind, 0] +
@@ -65,7 +64,8 @@ def generate_standard_run(settings, nlive_const=None):
                                      settings.dims_to_sample)
     run = {'settings': settings.get_settings_dict(),
            'lrxtnp': np.hstack((lrxtn, theta))}
-    # add data on threads for use as part of a dynamic run
+    # Add data on threads' beginnings and ends. Each starts by sampling the
+    # whole prior and ends on one of the final live poins.
     run['thread_min_max'] = np.zeros((nlive_const, 2))
     run['thread_min_max'][:, 0] = np.nan
     run['thread_min_max'][:, 1] = live_lrxtn[:, 0]
@@ -113,6 +113,7 @@ def generate_dynamic_run(settings):
                                                         settings)
         nlive_2_count = 0
         while nlive_2_count < settings.nlive_2:
+            nlive_2_count += 1
             # make new thread
             thread_label = run['thread_min_max'].shape[0] + 1
             thread = generate_single_thread(settings,
@@ -130,8 +131,6 @@ def generate_dynamic_run(settings):
             run['lrxtnp'] = np.vstack((run['lrxtnp'], thread))
             lmm = np.asarray([logl_min_max[0], thread[-1, 0]])
             run['thread_min_max'] = np.vstack((run['thread_min_max'], lmm))
-            # update counters
-            nlive_2_count += 1
         # sort array and update n_calls in preparation for the next run
         run['lrxtnp'] = run['lrxtnp'][np.argsort(run['lrxtnp'][:, 0])]
         n_calls = run['lrxtnp'].shape[0]
@@ -165,7 +164,7 @@ def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
         str(logx_start) + " <= logx_end=" + str(logx_end)
     logx_list = generate_thread_logx(logx_end, logx_start=logx_start,
                                      keep_final_point=keep_final_point)
-    if len(logx_list) == 0:
+    if not logx_list:  # PEP8 method for testing if sequence is empty
         return None
     else:
         lrxtn = np.zeros((len(logx_list), 5))
@@ -223,7 +222,7 @@ def p_importance(lrxp, w, tuned_dynamic_p=False, tuning_type='theta1'):
         assert tuning_type == 'theta1', 'so far only set up for theta1'
         if tuning_type == 'theta1':
             # extract theta1 values from lrxp
-            f = lrxp[:, 3]
+            f = lrxp[:, 5]
         # calculate importance in proportion to difference between f values and
         # the calculation mean.
         fabs = np.absolute(f - (np.sum(f * w) / np.sum(w)))
@@ -244,29 +243,20 @@ def min_max_importance(importance, lrxp, settings):
         logl_min = lrxp[:, 0][high_importance_inds[0] - 1]
         # use lookup to avoid float errors and to not need inverse function
         ind = np.where(lrxp[:, 0] == logl_min)[0]
-        assert ind.shape[0] == 1, \
+        assert ind.shape == (1,), \
             "Should be one unique match for logl=logl_min=" + str(logl_min) + \
             ". Instead we have matches at indexes " + str(ind) + \
             " of the lrxp array (shape " + str(lrxp.shape) + ")"
         logx_min = lrxp[ind[0], 2]
     # where to end the additional threads:
     if high_importance_inds[-1] == lrxp[:, 0].shape[0] - 1:
-        if settings.dynamic_keep_final_point:
-            logl_max = lrxp[-1, 0]
-            logx_max = lrxp[-1, 2]
-        else:
-            # If this is the last point and we are not keeping final points
-            # then allow samples to go a bit further.
-            # Here we use the biggest shrinkage (smallest number) of 3 randomly
-            # generated shrinkage ratios to model what would happen if we were
-            # keeping points.
-            logx_max = lrxp[-1, 2] + np.log(np.min(np.random.random(3)))
-            logl_max = settings.logl_given_logx(logx_max)
+        logl_max = lrxp[-1, 0]
+        logx_max = lrxp[-1, 2]
     else:
         logl_max = lrxp[:, 0][(high_importance_inds[-1] + 1)]
         # use lookup to avoid float errors and to not need inverse function
         ind = np.where(lrxp[:, 0] == logl_max)[0]
-        assert ind.shape[0] == 1, \
+        assert ind.shape == (1,), \
             "Should be one unique match for logl=logl_max=" + str(logl_max) + \
             ".\n Instead we have matches at indexes " + str(ind) + \
             " of the lrxp array (shape " + str(lrxp.shape) + ")"

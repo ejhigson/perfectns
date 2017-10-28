@@ -22,8 +22,8 @@ pd.set_option('display.width', 200)
 # --------
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 50
-n_run_ci = 5
+n_runs = 5000
+n_run_ci = 500
 load = True
 save = True
 settings.n_dim = 3
@@ -33,7 +33,7 @@ estimator_list = [e.logzEstimator(),
                   e.theta1confEstimator(0.84)]
 n_simulate = 200
 n_simulate_ci = 1000
-add_sim_method = False
+add_sim_method = True
 settings.dynamic_goal = 1
 cred_int = 0.95
 e_names = []

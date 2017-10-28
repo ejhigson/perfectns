@@ -55,9 +55,7 @@ class PerfectNestedSamplingSettings(object):
             'dynamic_goal': None,
             'nlive_1': 5,
             'nlive_2': 2,
-            'n_calls_frac': 0,
             'dynamic_fraction': 0.9,
-            'dynamic_keep_final_point': True,
             # from func args
             'tuned_dynamic_p': False,
             'n_calls_max': None

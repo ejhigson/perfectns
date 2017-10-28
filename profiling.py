@@ -25,13 +25,15 @@ pd.set_option('display.width', 200)
 
 # settings
 # --------
-settings.dynamic_goal = 1
-settings.n_dim = 40
+settings.dynamic_goal = None
+settings.n_dim = 10
+# cProfile.run('ns.perfect_nested_sampling(settings)')
 run = ns.perfect_nested_sampling(settings)
 lrxp = run['lrxtnp']
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
                   e.theta1confEstimator(0.84)]
-cProfile.run('ns.perfect_nested_sampling(settings)')
 # cProfile.run('au.get_nlive(run, lrxp[:, 0])')
+# cProfile.run('au.run_std_bootstrap(run, estimator_list, n_simulate=200)')
+cProfile.run('au.run_ci_bootstrap(run, estimator_list, n_simulate=2000, cred_int=0.95)')
