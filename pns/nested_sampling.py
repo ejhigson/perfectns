@@ -66,10 +66,9 @@ def generate_standard_run(settings, nlive_const=None):
     run = {'settings': settings.get_settings_dict(),
            'lrxtnp': np.hstack((lrxtn, theta))}
     # add data on threads for use as part of a dynamic run
-    run['thread_logl_min_max'] = np.zeros((nlive_const, 3))
+    run['thread_logl_min_max'] = np.zeros((nlive_const, 2))
     run['thread_logl_min_max'][:, 0] = np.nan
     run['thread_logl_min_max'][:, 1] = live_lrxtn[:, 0]
-    run['thread_logl_min_max'][:, 2] = 1
     return run
 
 
@@ -94,10 +93,7 @@ def generate_dynamic_run(settings):
     np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: run all the way through with limited number of threads
     run = generate_standard_run(settings, nlive_const=settings.nlive_1)
-    n_calls = run['nlive_array'].shape[0]
-    # delete nlive so au.get_nlive recalculates this at each loop instead of
-    # loading stored value
-    del run['nlive_array']
+    n_calls = run['lrxtnp'].shape[0]
     if settings.n_calls_max is None:
         # estimate number of likelihood calls available
         n_calls_max = settings.nlive * n_calls / settings.nlive_1
@@ -111,62 +107,34 @@ def generate_dynamic_run(settings):
         n_calls_max = settings.n_calls_max
     # Step 2: sample the peak until we run out of likelihood calls
     while n_calls < n_calls_max:
-        # # generate an additional subrun
-        # subrun = [{'settings': {'dynamic_goal': settings.dynamic_goal},
-        #            'thread_logl_min_max': []}, []]
-        # update key loop variables
-        lrxp = au.merge_lrxp(run['threads'])
-        nlive = au.get_nlive(run, lrxp[:, 0])
-        n_calls = lrxp.shape[0]
-        importance = point_importance(lrxp, nlive, settings)
-        logl_min_max, logx_min_max = min_max_importance(importance, lrxp, settings)
+        importance = point_importance(run, settings)
+        logl_min_max, logx_min_max = min_max_importance(importance,
+                                                        run['lrxtnp'],
+                                                        settings)
         nlive_2_count = 0
-        if settings.dynamic_keep_final_point:
-            n_calls_itr = 0
-            while ((n_calls_itr < n_calls_max * settings.n_calls_frac) or
-                   (nlive_2_count < settings.nlive_2)):
-                nlive_2_count += 1
-                run['threads'].append(generate_single_thread(settings,
-                                      logx_min_max[1],
-                                      logx_start=logx_min_max[0],
-                                      keep_final_point=settings.dynamic_keep_final_point))
-                n_calls_itr += run['threads'][-1].shape[0]
-                lmm = np.reshape(np.asarray([logl_min_max[0],
-                                 run['threads'][-1][-1, 0], 1]), (1, 3))
-                run['thread_logl_min_max'] = np.vstack((run['thread_logl_min_max'], lmm))
-        else:
-            # Make many threads in a single array with a single logl_min_max to
-            # speed stuff up.
-            logx = []
-            while (len(logx) < n_calls_max * settings.n_calls_frac) or \
-                  (nlive_2_count < settings.nlive_2):
-                nlive_2_count += 1
-                logx += generate_thread_logx(logx_min_max[1],
-                                             logx_start=logx_min_max[0],
-                                             keep_final_point=settings.dynamic_keep_final_point)
-            # make thread
-            lrx = np.zeros((len(logx), 3))
-            lrx[:, 2] = np.asarray(logx)
-            lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
-            lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-            theta = mf.sample_nsphere_shells(lrx[:, 1], settings.n_dim,
-                                             settings.dims_to_sample)
-            logl_min_max.append(nlive_2_count)
-            run['threads'].append(np.hstack([lrx, theta]))
-            lmm = np.reshape(np.asarray(logl_min_max), (1, 3))
+        while nlive_2_count < settings.nlive_2:
+            # make new thread
+            thread_label = run['thread_logl_min_max'].shape[0] + 1
+            thread = generate_single_thread(settings,
+                                            logx_min_max[1],
+                                            thread_label,
+                                            logx_start=logx_min_max[0],
+                                            keep_final_point=True)
+            # update run
+            if not np.isnan(logl_min_max[0]):
+                start_ind = np.where(run['lrxtnp'][:, 0] == logl_min_max[0])[0]
+                # check there is exactly one point with the likelihood at which
+                # the new thread starts, and note that nlive increases by 1
+                assert start_ind.shape == (1,)
+                run['lrxtnp'][start_ind, 4] += 1
+            run['lrxtnp'] = np.vstack((run['lrxtnp'], thread))
+            lmm = np.asarray([logl_min_max[0], thread[-1, 0]])
             run['thread_logl_min_max'] = np.vstack((run['thread_logl_min_max'], lmm))
-#        # update the number of live points in the run
-#        lrxp_subrun = au.merge_lrxp(subrun[1])
-#        nlive_subrun = au.get_nlive(subrun[0], lrxp_subrun[:, 0])
-#        run[0]['nlive_array'] = au.merge_nlive(lrxp[:, 0],
-#                                               run[0]['nlive_array'],
-#                                               lrxp_subrun[:, 0],
-#                                               nlive_subrun)
-#        # add subrun
-#        run[0]['thread_logl_min_max'] += subrun[0]['thread_logl_min_max']
-#        run[1] += subrun[1]
-    lrxp = au.merge_lrxp(run['threads'])
-    run['nlive_array'] = au.get_nlive(run, lrxp[:, 0])
+            # update counters
+            nlive_2_count += 1
+        # sort array and update n_calls in preparation for the next run
+        run['lrxtnp'] = run['lrxtnp'][np.argsort(run['lrxtnp'][:, 0])]
+        n_calls = run['lrxtnp'].shape[0]
     return run
 
 
@@ -188,7 +156,7 @@ def generate_thread_logx(logx_end, logx_start=0, keep_final_point=True):
     return logx_list
 
 
-def generate_single_thread(settings, logx_end, logx_start=0,
+def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
                            keep_final_point=True):
     """Make lp array for single thread of problem specified in settings."""
     if logx_end is None:
@@ -200,32 +168,36 @@ def generate_single_thread(settings, logx_end, logx_start=0,
     if len(logx_list) == 0:
         return None
     else:
-        lrx = np.zeros((len(logx_list), 3))
-        lrx[:, 2] = np.asarray(logx_list)
-        lrx[:, 1] = settings.r_given_logx(lrx[:, 2])
-        lrx[:, 0] = settings.logl_given_r(lrx[:, 1])
-        theta = mf.sample_nsphere_shells(lrx[:, 1],
+        lrxtn = np.zeros((len(logx_list), 5))
+        lrxtn[:, 3] = thread_label
+        lrxtn[:, 2] = np.asarray(logx_list)
+        lrxtn[:, 1] = settings.r_given_logx(lrxtn[:, 2])
+        lrxtn[:, 0] = settings.logl_given_r(lrxtn[:, 1])
+        # set change in nlive to -1 where thread ends (zero elsewhere)
+        lrxtn[-1, 4] = -1
+        theta = mf.sample_nsphere_shells(lrxtn[:, 1],
                                          settings.n_dim,
                                          settings.dims_to_sample)
-        return np.hstack([lrx, theta])
+        return np.hstack([lrxtn, theta])
 
 
 # Dynamic NS helper functions
 # ----------------
 
 
-def point_importance(lp, nlive, settings, simulate=False):
-    logw = au.get_logw(lp[:, 0], nlive, simulate=simulate)
+def point_importance(run, settings, simulate=False):
+    nlive = au.get_nlive(run)
+    logw = au.get_logw(run['lrxtnp'][:, 0], nlive, simulate=simulate)
     # subtract logw.max() to avoids numerical errors with very small numbers
     w_relative = np.exp(logw - logw.max())
     if settings.dynamic_goal == 0:
         return z_importance(w_relative, nlive)
     elif settings.dynamic_goal == 1:
-        return p_importance(lp, w_relative,
+        return p_importance(run['lrxtnp'], w_relative,
                             tuned_dynamic_p=settings.tuned_dynamic_p)
     else:
         imp_z = z_importance(w_relative, nlive)
-        imp_p = p_importance(lp, w_relative,
+        imp_p = p_importance(run['lrxtnp'], w_relative,
                              tuned_dynamic_p=settings.tuned_dynamic_p)
         importance = (imp_z / np.sum(imp_z)) * (1.0 - settings.dynamic_goal)
         importance += (imp_p / np.sum(imp_p)) * settings.dynamic_goal
