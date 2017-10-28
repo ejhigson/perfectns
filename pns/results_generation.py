@@ -118,6 +118,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     save = kwargs.get('save', True)
     save_dir = kwargs.get('save_dir', 'data')
     ninit_sep = kwargs.get('ninit_sep', True)
+    parallelise = kwargs.get('parallelise', True)
     add_sim_method = kwargs.get('add_sim_method', False)
     n_simulate_ci = kwargs.get('n_simulate_ci', n_simulate)
     n_run_ci = kwargs.get('n_run_ci', n_run)
@@ -140,14 +141,17 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     for est in estimator_list:
         e_names.append(est.name)
     # generate runs
-    run_list = pw.get_run_data(settings, n_run, save=save, load=load)
+    run_list = pw.get_run_data(settings, n_run, save=save, load=load,
+                               parallelise=parallelise)
     # get std from repeats
-    rep_values = pw.func_on_runs(au.run_estimators, run_list, estimator_list)
+    rep_values = pw.func_on_runs(au.run_estimators, run_list, estimator_list,
+                                 parallelise=parallelise)
     rep_df = mf.get_df_row_summary(rep_values, e_names)
     results = rep_df.set_index('repeats ' + rep_df.index.astype(str))
     # get bootstrap std estimate
     bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
-                                estimator_list, n_simulate=n_simulate)
+                                estimator_list, n_simulate=n_simulate,
+                                parallelise=parallelise)
     bs_df = mf.get_df_row_summary(bs_values, e_names)
     # Get the mean bootstrap std estimate as a fraction of the std measured
     # from repeated calculations.
@@ -162,7 +166,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     if add_sim_method:
         # get std from simulation estimate
         sim_values = pw.func_on_runs(au.run_std_simulate, run_list,
-                                     estimator_list, n_simulate=n_simulate)
+                                     estimator_list, n_simulate=n_simulate,
+                                     parallelise=parallelise)
         sim_df = mf.get_df_row_summary(sim_values, e_names)
         # get mean simulation std estimate a ratio to the std from repeats
         results.loc['sim std'] = (sim_df.loc['mean'] /
@@ -178,7 +183,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # get bootstrap CI estimates
     bs_cis = pw.func_on_runs(au.run_ci_bootstrap, run_list[:n_run_ci],
                              estimator_list, n_simulate=n_simulate_ci,
-                             cred_int=cred_int)
+                             cred_int=cred_int, parallelise=parallelise)
     bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
     results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
     results.loc['bs ' + str(cred_int) + ' CI_unc'] = bs_ci_df.loc['mean_unc']
