@@ -35,45 +35,43 @@ def logw_given_logx(logx, n_dim, likelihood, prior):
 
 # Output Settings
 # ---------------
-version = 'v15'
+version = 'v02'
 root = 'an_weights_' + version
 
 label_fontsize = 8
 pdf_dpi = 100
 save = True
+plot_r = True
 
 # Plotting
 # --------
-likelihood_list = [likelihoods.gaussian(1)]  # likelihoods.exp_power(1, 2)]
+# likelihood_list = [likelihoods.gaussian(1),
+#                    likelihoods.exp_power(1, 0.75),
+#                    likelihoods.exp_power(1, 2)]
+likelihood_list = [likelihoods.exp_power(1, 2)]
 # prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
-prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
+# prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
 prior_list = [priors.gaussian_cached(10)]
-dim_list = [300, 1000]
+dim_list = [3, 10, 30, 100, 300, 1000]
 figsize = (12, 4)
-xmin = -1000
+xmin = -4000
 xmax = -0.001
 plt.close('all')
 plt.clf()
-image = plt.figure(figsize=figsize)
-ax = image.add_subplot(1, 1, 1)
+image, ax = plt.subplots(figsize=figsize)
+if plot_r:
+    ax2 = ax.twinx()
+    ax2.set_ylim([0, 150])
+# image = plt.figure(figsize=figsize)
+# ax = image.add_subplot(1, 1, 1)
 w_temp_max = 0
-logx = np.linspace(xmin, xmax, 100)
+logx = np.linspace(xmin, xmax, int(np.ceil(xmax - xmin)) * 10)
 linestyles = ['solid', 'dashed', 'dotted']
-z_term_frac = 10 ** -3
+z_term_frac = 10 ** -10
 entropy_gain = np.zeros((len(likelihood_list), len(prior_list), len(dim_list)))
 for l, likelihood in enumerate(likelihood_list):
     for p, prior in enumerate(prior_list):
         for d, n_dim in enumerate(dim_list):
-            w_temp = w_given_logx(logx, n_dim, likelihood, prior)
-            r = prior.r_given_logx(logx, n_dim)
-            print(r)
-            # w_temp[np.isnan(w_temp)] = 0.0
-            w_temp /= np.trapz(w_temp, x=logx)
-            w_cumsum = np.cumsum(w_temp)
-            w_temp_term = w_temp[np.where(w_cumsum > 1. - z_term_frac)]
-            entropy_gain[l, p, d] = (w_temp_term.shape[0] /
-                                     mf.entropy_num_samples(w_temp_term))
-            w_temp_max = max(w_temp_max, w_temp.max())
             label = (type(likelihood).__name__ + ' ' + type(prior).__name__ +
                      ' $d = ' + str(n_dim) + '$')
             # label += ' $\sigma_\pi = ' + str(d_rmax[1]) + ' $'
@@ -85,13 +83,31 @@ for l, likelihood in enumerate(likelihood_list):
             #     else:
             #         label = likelihood_name.replace('_', ' ').title() +
             #                 ': ' + label
-            label = label.replace('_', ' ')
+            label = label.replace('_', '\_')
+            print(label)
+            w_temp = w_given_logx(logx, n_dim, likelihood, prior)
+            # normalise so area under curve = 1 for purposes of graphing
+            w_temp /= np.trapz(w_temp, x=logx)
+            # calculate entropy
+            w_cumsum = np.cumsum(w_temp)
+            w_cumsum /= w_cumsum.max()
+            w_cumsum = 1 - w_cumsum  # run iterates from high to low logx
+            w_temp_term = w_temp[np.where(w_cumsum < 1. - z_term_frac)]
+            entropy_gain[l, p, d] = (w_temp_term.shape[0] /
+                                     mf.entropy_num_samples(w_temp_term))
             ax.plot(logx, w_temp, linewidth=1, label=label,
                     linestyle=linestyles[p + 1])
+            w_temp_max = max(w_temp_max, w_temp.max())
+            if plot_r and l == 0:
+                label = ('r_given_logx ' + type(prior).__name__ +
+                         ' $d = ' + str(n_dim) + '$')
+                r = prior.r_given_logx(logx, n_dim)
+                ax2.plot(logx, r, linewidth=1, label=label,
+                         linestyle=linestyles[p + 1])
 print("entropy gain")
 print(entropy_gain)
 ax.set_ylabel('relative posterior mass', fontsize=label_fontsize)
-ax.set_xlabel('$\log X$', fontsize=(label_fontsize))
+ax.set_xlabel('$\mathrm{log} X$', fontsize=(label_fontsize))
 for tick in ax.yaxis.get_major_ticks():
     tick.label.set_fontsize(label_fontsize)
 for tick in ax.xaxis.get_major_ticks():

@@ -19,8 +19,25 @@ def pynverse_gaussian_r_given_logx(logx, sigma, n_dim):
     return float(r)
 
 
-def interp_r_logx_dict(n_dim, prior_scale, logx_min, logx_max, interp_density):
+def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     """tbc"""
+    logx_min = kwargs.get('logx_min', -4500)
+    if n_dim > 1000 and logx_min >= -4500:
+        print("Interp_r_logx_dict: WARNING: n_dim=" + str(n_dim) + ": "
+              "for very high dimensions, depending on the likelihood, you may "
+              "need to lower logx_min=" + str(logx_min))
+    if n_dim < 100:
+        print("Interp_r_logx_dict: WARNING: n_dim=" + str(n_dim) + ": "
+              "for n_dim<100 the 'gaussian' prior works fine and you should "
+              "use it instead of the 'gaussian_cached' prior")
+        # use a smaller logx_max as the point at which the logx at which the
+        # scipy method (scipy.special.gammainc) fails is lower in lower.
+        # dimensions. logx_max=-10 will mean the gaussian_cached prior works
+        # for all n_dim>2.
+        logx_max = kwargs.get('logx_max', -10)
+    else:
+        logx_max = kwargs.get('logx_max', -200)
+    interp_density = kwargs.get('interp_density', 10)
     version = 'v01'
     save_name = 'interp_gauss_prior_' + version + "_" + str(n_dim) + 'd_' + \
                 str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' + \

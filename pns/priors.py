@@ -50,15 +50,9 @@ class gaussian_cached(object):
         self.prior_scale = prior_scale
         # if n_dim is specified we can cache the interpolation now.
         # Otherwise wait until it is called.
-        self.logx_min = kwargs.get('logx_min', -3000)
-        self.logx_max = kwargs.get('logx_max', -200)
-        self.interp_density = kwargs.get('interp_density', 10)
         if 'n_dim' in kwargs:
             self.interp_d = cgp.interp_r_logx_dict(kwargs['n_dim'],
-                                                   self.prior_scale,
-                                                   self.logx_min,
-                                                   self.logx_max,
-                                                   self.interp_density)
+                                                   self.prior_scale)
             self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
                                                  self.interp_d['r_array'])
         else:
@@ -71,26 +65,23 @@ class gaussian_cached(object):
         # Check that the input dimension matches that of the cached
         # interpolation function, and if needed recalculate.
         if n_dim != self.interp_d['n_dim']:
-            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale,
-                                                   self.logx_min,
-                                                   self.logx_max,
-                                                   self.interp_density)
+            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale)
             self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
                                                  self.interp_d['r_array'])
         try:
             if isinstance(logx, np.ndarray):
                 r = np.zeros(logx.shape)
-                ind = np.where(logx <= self.interp_d['logx_array'].min())[0]
+                ind = np.where(logx <= self.interp_d['logx_array'].max())[0]
                 r[ind] = self.interp_f(logx[ind])
-                ind = np.where(logx > self.interp_d['logx_array'].min())[0]
+                ind = np.where(logx > self.interp_d['logx_array'].max())[0]
                 r[ind] = mf.scipy_gaussian_r_given_logx(logx[ind],
                                                         self.prior_scale,
                                                         n_dim)
-                # assert np.count_nonzero(r) == r.shape[0], \
-                #     "r contains zeros! r = " + str(r)
+                assert np.count_nonzero(r) == r.shape[0], \
+                    "r contains zeros! r = " + str(r)
                 return r
             else:
-                if logx <= self.interp_d['logx_array'].min():
+                if logx <= self.interp_d['logx_array'].max():
                     return self.interp_f(logx)
                 else:
                     return mf.scipy_gaussian_r_given_logx(logx,

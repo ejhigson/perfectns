@@ -29,21 +29,17 @@ def generate_standard_run(settings, nlive_const=None):
     # termination condition variables
     logx_i = 0.0
     logz_dead = -np.inf
-    logz_live = scipy.misc.logsumexp(live_lrxtn[:, 0]) + logx_i
+    logz_live = (scipy.misc.logsumexp(live_lrxtn[:, 0]) + logx_i -
+                 np.log(nlive_const))
     t = np.exp(-1.0 / nlive_const)
     # Calculate factor for trapizium rule of geometric series
     logtrapz = np.log(0.5 * ((t ** -1) - t))
     # start the array of dead points
-    ind = np.where(live_lrxtn[:, 0] == live_lrxtn[:, 0].min())[0][0]
-    # Must deep copy or this changes when the live points are updated.
-    lrxtn = copy.deepcopy(live_lrxtn[ind, :])
-    # Must reshape so threads is a 2d array even if it only has one row
-    # to avoid index errors,
-    lrxtn = np.reshape(lrxtn, (1, lrxtn.shape[0]))
+    dead_points = []
     while logz_live - np.log(settings.zv_termination_fraction) > logz_dead:
         # add to dead points
         ind = np.where(live_lrxtn[:, 0] == live_lrxtn[:, 0].min())[0][0]
-        lrxtn = np.vstack((lrxtn, live_lrxtn[ind, :]))
+        dead_points.append(copy.deepcopy(live_lrxtn[ind, :]))
         # update dead evidence estimates
         logx_i += -1.0 / nlive_const
         logz_dead = scipy.misc.logsumexp((logz_dead, live_lrxtn[ind, 0] +
@@ -54,6 +50,7 @@ def generate_standard_run(settings, nlive_const=None):
         live_lrxtn[ind, 0] = settings.logl_given_r(live_lrxtn[ind, 1])
         logz_live = (scipy.misc.logsumexp(live_lrxtn[:, 0]) + logx_i -
                      np.log(nlive_const))
+    lrxtn = np.array(dead_points)
     # add remaining live points
     # at -1 to the "change in nlive" column for the final point in each thread
     live_lrxtn[:, 4] = -1

@@ -6,6 +6,8 @@ nested_sampling(settings).
 """
 
 import cProfile
+import re
+import pstats
 import pandas as pd
 import numpy as np
 import pns_settings
@@ -14,6 +16,7 @@ import pns.likelihoods as likelihoods
 import pns.estimators as e
 import pns.nested_sampling as ns
 import pns.analysis_utils as au
+import pns.priors as priors
 # import pns.results_generation as rg
 settings = pns_settings.PerfectNestedSamplingSettings()
 # settings.likelihood = likelihoods.exp_power(likelihood_scale=1, power=2)
@@ -26,14 +29,17 @@ pd.set_option('display.width', 200)
 # settings
 # --------
 settings.dynamic_goal = None
-settings.n_dim = 10
-# cProfile.run('ns.perfect_nested_sampling(settings)')
-run = ns.perfect_nested_sampling(settings)
-lrxp = run['lrxtnp']
-estimator_list = [e.logzEstimator(),
-                  e.theta1Estimator(),
-                  e.theta1squaredEstimator(),
-                  e.theta1confEstimator(0.84)]
+settings.n_dim = 100
+settings.prior = priors.gaussian_cached(10, n_dim=settings.n_dim)
+prof = cProfile.run('ns.perfect_nested_sampling(settings)', 'data/restats')
+p = pstats.Stats('data/restats')
+p.strip_dirs().sort_stats('tottime').print_stats(20)
+# run = ns.perfect_nested_sampling(settings)
+# lrxp = run['lrxtnp']
+# estimator_list = [e.logzEstimator(),
+#                   e.theta1Estimator(),
+#                   e.theta1squaredEstimator(),
+#                   e.theta1confEstimator(0.84)]
 # cProfile.run('au.get_nlive(run, lrxp[:, 0])')
 # cProfile.run('au.run_std_bootstrap(run, estimator_list, n_simulate=200)')
-cProfile.run('au.run_ci_bootstrap(run, estimator_list, n_simulate=2000, cred_int=0.95)')
+# cProfile.run('au.run_ci_bootstrap(run, estimator_list, n_simulate=2000, cred_int=0.95)')
