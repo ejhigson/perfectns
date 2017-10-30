@@ -98,11 +98,22 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
     # through the run. These are only present in dynamic nested sampling.
     logl_starts = thread_min_max_temp[:, 0]
     for logl_start in logl_starts[~np.isnan(logl_starts)]:
-        # If the point with the likelihood at which the thread started is not
-        # present in this particular bootstrap replication, approximate it
-        # with the point with the nearest likelihood.
-        ind_start = np.argmin(np.abs(lrxtnp_temp[:, 0] - logl_start))
-        lrxtnp_temp[ind_start, 4] += 1
+        ind = np.where(lrxtnp_temp[:, 0] == logl_start)[0]
+        if ind.shape == (1,):
+            # If the point at which this thread started is present exactly
+            # once in this bootstrap replication:
+            lrxtnp_temp[ind[0], 4] += 1
+        elif ind.shape == (0,):
+            # If the point with the likelihood at which the thread started
+            # is not present in this particular bootstrap replication,
+            # approximate it with the point with the nearest likelihood.
+            ind_closest = np.argmin(np.abs(lrxtnp_temp[:, 0] - logl_start))
+            lrxtnp_temp[ind_closest, 4] += 1
+        else:
+            # If the point at which this thread started is present multiple
+            # times in this bootstrap replication, select one at random to
+            # incriment nlive on.
+            lrxtnp_temp[np.random.choice(ind), 4] += 1
     # make run
     ns_run_temp = {"thread_min_max": thread_min_max_temp,
                    "lrxtnp": lrxtnp_temp,
