@@ -48,8 +48,9 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
     save_name += "_" + str(n_repeats) + "reps"
     save_name += "_" + str(settings.nlive) + "nlive"
     if settings.dynamic_goal is not None or include_dg is False:
-        save_name += "_" + str(settings.nlive_1) + "nlive1"
-        save_name += "_" + str(settings.nlive_2) + "nlive2"
+        save_name += "_" + str(settings.ninit) + "ninit"
+        if settings.nbatch != 1:
+            save_name += "_" + str(settings.nbatch) + "nbatch"
     if settings.n_calls_max is not None and settings.nlive is None:
         save_name += "_" + str(settings.n_calls_max) + "callsmax"
     if settings.tuned_dynamic_p is True and settings.dynamic_goal is not None:

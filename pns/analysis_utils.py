@@ -81,7 +81,7 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
     """
     n_threads = len(threads)
     if ns_run['settings']['dynamic_goal'] is not None and ninit_sep:
-        ninit = ns_run["settings"]["nlive_1"]
+        ninit = ns_run["settings"]["ninit"]
         inds = np.random.randint(0, ninit, ninit)
         inds = np.append(inds, np.random.randint(ninit, n_threads,
                                                  n_threads - ninit))
@@ -95,9 +95,12 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
         lrxtnp_temp = np.vstack((lrxtnp_temp, t))
     lrxtnp_temp = lrxtnp_temp[np.argsort(lrxtnp_temp[:, 0])]
     # update the changes in live points column for threads which start part way
-    # through the run
+    # through the run. These are only present in dynamic nested sampling.
     logl_starts = thread_min_max_temp[:, 0]
     for logl_start in logl_starts[~np.isnan(logl_starts)]:
+        # If the point with the likelihood at which the thread started is not
+        # present in this particular bootstrap replication, approximate it
+        # with the point with the nearest likelihood.
         ind_start = np.argmin(np.abs(lrxtnp_temp[:, 0] - logl_start))
         lrxtnp_temp[ind_start, 4] += 1
     # make run

@@ -88,29 +88,29 @@ def generate_dynamic_run(settings):
     assert 1 >= settings.dynamic_goal >= 0, "dynamic_goal = " + \
         str(settings.dynamic_goal) + " should be between 0 and 1"
     np.random.seed()  # needed to avoid repeated results when multiprocessing
-    # Step 1: run all the way through with limited number of threads
-    run = generate_standard_run(settings, nlive_const=settings.nlive_1)
+    # Step 1: inital exploratory run with a constant ninit live points
+    # ----------------------------------------------------------------
+    run = generate_standard_run(settings, nlive_const=settings.ninit)
     n_calls = run['lrxtnp'].shape[0]
     if settings.n_calls_max is None:
         # estimate number of likelihood calls available
-        n_calls_max = settings.nlive * n_calls / settings.nlive_1
+        n_calls_max = settings.nlive * n_calls / settings.ninit
         # Reduce by small factor so dynamic ns uses fewer likelihood calls than
         # normal ns. This factor is a function of the dynamic goal as typically
         # evidence calculations have longer attitional threads than parameter
         # estimation calculations.
-        n_calls_max *= (settings.nlive - settings.nlive_2 *
+        n_calls_max *= (settings.nlive - settings.nbatch *
                         (1.5 - 0.5 * settings.dynamic_goal)) / settings.nlive
     else:
         n_calls_max = settings.n_calls_max
-    # Step 2: sample the peak until we run out of likelihood calls
+    # Step 2: add samples whereever they are most useful
+    # --------------------------------------------------
     while n_calls < n_calls_max:
         importance = point_importance(run, settings)
         logl_min_max, logx_min_max = min_max_importance(importance,
                                                         run['lrxtnp'],
                                                         settings)
-        nlive_2_count = 0
-        while nlive_2_count < settings.nlive_2:
-            nlive_2_count += 1
+        for _ in range(settings.nbatch):
             # make new thread
             thread_label = run['thread_min_max'].shape[0] + 1
             thread = generate_single_thread(settings,
