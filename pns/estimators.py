@@ -66,7 +66,7 @@ def check_estimator_values(funcs_list, settings, return_int_errors=False):
 class logzEstimator(object):
 
     name = 'logz'
-    latex_name = '$\log \mathcal{Z}$'
+    latex_name = '$\mathrm{log} \mathcal{Z}$'
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
         return scipy.misc.logsumexp(logw)
