@@ -26,9 +26,10 @@ load = True
 save = True
 dynamic_goals = [None, 0, 1]
 # dynamic_goals = [None, 0, 0.25, 1]
-n_dim_list = [2]
-rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
-# rmax_list = [10]
+# n_dim_list = [2]
+# rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
+n_dim_list = [2, 5, 10, 30, 100]
+rmax_list = [10]
 prior_list = [priors.gaussian(r) for r in rmax_list]
 likelihood_list = [likelihoods.gaussian(1),
                    likelihoods.exp_power(1, 0.75),
