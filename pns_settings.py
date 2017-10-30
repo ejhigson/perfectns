@@ -47,14 +47,14 @@ class PerfectNestedSamplingSettings(object):
             # calculation settings
             # --------------------
             'nlive': 200,
-            'data_version': 'v05',
+            'data_version': 'v06',
             'dims_to_sample': 1,
             'zv_termination_fraction': 0.001,
             # dynamic nested sampling settings
             # only used if dynamic_goal is not None.
             'dynamic_goal': None,
             'nlive_1': 5,
-            'nlive_2': 2,
+            'nlive_2': 1,
             'dynamic_fraction': 0.9,
             # from func args
             'tuned_dynamic_p': False,

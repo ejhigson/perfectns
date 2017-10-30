@@ -74,7 +74,7 @@ def get_nlive_thread_min_max(run):
     return nlive_array
 
 
-def bootstrap_resample_run(ns_run, threads, ninit_sep=True):
+def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
     """
     Bootstrap resamples threads of nested sampling run, returning a new
     (resampled) nested sampling run.

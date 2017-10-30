@@ -11,6 +11,7 @@ import pns.maths_functions as mf
 import pns.estimators as e
 
 
+@slu.timing_decorator
 def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     """
     Generate results using different dynamic goals and output a pandas data
@@ -29,6 +30,8 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root,
                                    include_dg=False)
     save_file = save_dir + '/' + save_root + '.dat'
+    print("Running get_dynamic_results: save file is")
+    print(save_file)
     # try loading results
     if load:
         try:
@@ -109,6 +112,7 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     return results
 
 
+@slu.timing_decorator
 def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                           **kwargs):
     """
@@ -117,7 +121,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
     save_dir = kwargs.get('save_dir', 'data')
-    ninit_sep = kwargs.get('ninit_sep', True)
+    ninit_sep = kwargs.get('ninit_sep', False)
     parallelise = kwargs.get('parallelise', True)
     add_sim_method = kwargs.get('add_sim_method', False)
     n_simulate_ci = kwargs.get('n_simulate_ci', n_simulate)
@@ -125,9 +129,11 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     cred_int = kwargs.get('cred_int', 0.95)
     # make save_name
     extra_root = ("bootstrap_results_" + str(n_simulate) + "nsim_" +
-                  str(ninit_sep) + "sep_")
+                  str(ninit_sep) + "sep")
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
     save_file = save_dir + '/' + save_root + '.dat'
+    print("Running get_bootstrap_results: save file is")
+    print(save_file)
     # try loading results
     if load:
         try:

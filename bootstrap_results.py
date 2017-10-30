@@ -32,6 +32,7 @@ settings.n_dim = 3
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
+                  e.theta1confEstimator(0.5),
                   e.theta1confEstimator(0.84)]
 n_simulate = 200
 n_simulate_ci = 1000

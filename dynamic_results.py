@@ -20,18 +20,26 @@ pd.set_option('display.width', 200)
 
 # Settings
 # --------
-settings.prior = priors.gaussian(10)
-settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 25
+n_runs = 2000
 parallelise = True
 load = True
 save = True
-settings.n_dim = 50
+# dynamic_goals = [None, 0, 1]
+dynamic_goals = [None, 0, 0.25, 1]
+n_dim_list = [10]
+# rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
+rmax_list = [10]
+prior_list = [priors.gaussian(r) for r in rmax_list]
+likelihood_list = [likelihoods.gaussian(1),
+                   likelihoods.exp_power(1, 0.75),
+                   likelihoods.exp_power(1, 2)]
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
+                  e.theta1confEstimator(0.5),
                   e.theta1confEstimator(0.84)]
-dynamic_goals = [None, 0, 0.25, 1]
+# print("True est values")
+# print(e.check_estimator_values(estimator_list, settings))
 tuned_dynamic_ps = [False] * len(dynamic_goals)
 if type(settings.likelihood).__name__ == "cauchy":
     dynamic_goals = [None, 0, 1, 1]
@@ -39,11 +47,17 @@ if type(settings.likelihood).__name__ == "cauchy":
 
 # Run program
 # -----------
-print("True est values")
-print(e.check_estimator_values(estimator_list, settings))
 print("Running dynamic results:")
-dynamic_results = rg.get_dynamic_results(n_runs, dynamic_goals,
-                                         estimator_list, settings,
-                                         tuned_dynamic_ps=tuned_dynamic_ps,
-                                         parallelise=parallelise)
-print(dynamic_results)
+dr_list = []
+for n_dim in n_dim_list:
+    for prior in prior_list:
+        for likelihood in likelihood_list:
+            settings.n_dim = n_dim
+            settings.prior = prior
+            settings.likelihood = likelihood
+            dr = rg.get_dynamic_results(n_runs, dynamic_goals,
+                                        estimator_list, settings,
+                                        tuned_dynamic_ps=tuned_dynamic_ps,
+                                        parallelise=parallelise)
+            print(dr)
+            dr_list.append(dr)
