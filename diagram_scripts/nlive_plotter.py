@@ -12,7 +12,6 @@ import pns.analysis_utils as au
 import pns.estimators as e
 import pns.parallelised_wrappers as pw
 import pns_settings
-# import matplotlib.patches as mpatches
 import pns.likelihoods as likelihoods
 settings = pns_settings.PerfectNestedSamplingSettings()
 np.core.arrayprint._line_width = 400
@@ -20,13 +19,10 @@ np.set_printoptions(precision=5, suppress=True)
 
 # settings
 # --------
-settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
+settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 n_run = 10
 settings.nlive = 200
-settings.nlive_2 = 1
-settings.n_calls_frac = 0
 settings.n_dim = 10
-settings.dynamic_keep_final_point = True
 use_automatic_n_calls_max = True
 load = True
 save = True
@@ -54,6 +50,7 @@ for i, _ in enumerate(dynamic_goals):
     print(dynamic_goals[i], tuned_dynamic_p[i])
     settings.dynamic_goal = dynamic_goals[i]
     settings.tuned_dynamic_p = tuned_dynamic_p[i]
+    settings.n_calls_max = n_calls_max
     temp_runs = pw.get_run_data(settings, n_run, parallelise=True, load=load,
                                 save=save)
     calls = pw.func_on_runs(au.run_estimators, temp_runs,
@@ -67,7 +64,8 @@ for i, _ in enumerate(dynamic_goals):
     run_list += temp_runs
 # Output Settings
 # ---------------
-root = "nlive_" + settings.data_version + "_" + type(settings.likelihood).__name__
+root = ("nlive_" + settings.data_version + "_" +
+        type(settings.likelihood).__name__)
 if any(tuned_dynamic_p):
     root += "_tuned"
 if not use_automatic_n_calls_max:
@@ -90,32 +88,32 @@ n_calls = np.zeros(len(run_list))
 logx_min = np.zeros(len(run_list))
 # colors = ["k", "b", "g", "y", "m", "c", "r"]
 # use default colors as per http://matplotlib.org/users/dflt_style_changes.html
-default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                  '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 colors = []
 colors.append(default_colors[2])  # green for standard ns
-if len(dynamic_goals) == 4 and type(settings.likelihood).__name__ != "cauchy":
-    colors.append(default_colors[8])  # pale yellow to go under blue analytic line
+if (len(dynamic_goals) == 4 and type(settings.likelihood).__name__ != "cauchy"):
+    colors.append(default_colors[8])  # pale yellow close to blue analytic line
     colors.append(default_colors[4])  # if required, pink
     colors.append(default_colors[9])  # pale blue
 elif len(dynamic_goals) == 4 and type(settings.likelihood).__name__ == "cauchy":
-    colors.append(default_colors[8])  # pale yellow to go under blue analytic line
+    colors.append(default_colors[8])  # pale yellow close to blue analytic line
     colors.append(default_colors[9])  # pale blue
     colors.append(default_colors[4])  # if required, pink
 elif len(dynamic_goals) == 3:
     colors.append(default_colors[9])  # pale blue
-    colors.append(default_colors[8])  # pale yellow to go under blue analytic line
+    colors.append(default_colors[8])  # pale yellow close blue analytic line
 standard_nlive_max = 0
 integrals = np.zeros(len(run_list))
 for g, goal in enumerate(dynamic_goals):
     for i in range(n_run):
         run = run_list[g * n_run + i]
-        lp, nlive = au.get_lp_nlive(run)
-        n_calls[i] = lp.shape[0]
-        nlive = nlive + np.zeros(lp.shape[0])  # turn constant nlive into an array
-        logx = settings.logx_given_logl(lp[:, 0])
+        nlive = au.get_nlive(run)
+        n_calls[i] = nlive.shape[0]
+        logx = settings.logx_given_logl(run['lrxtnp'][:, 0])
         logx[0] = 0  # to make lines extend all the way to the end
         logx_min[i] = logx[-1]  # for calculating plotting limits on x
-        # normalise nlive
+        # for normalising analytic weight lines
         integrals[g * n_run + i] = -np.trapz(nlive, x=logx)
         if i == 1:
             if goal is None:
@@ -160,31 +158,30 @@ if any(tuned_dynamic_p):
     w_an *= np.mean(integrals[n_run:2 * n_run])
 else:
     w_an *= np.mean(integrals[-(1 + n_run):-1])
-ax.plot(logx, w_an, linewidth=1.5, label="relative posterior mass", linestyle=":", color='k')
+ax.plot(logx, w_an, linewidth=1.5, label="relative posterior mass",
+        linestyle=":", color='k')
 # # plot cumulative posterior mass
 w_an_c = np.cumsum(w_an)
 w_an_c /= np.trapz(w_an_c, x=logx)
 w_an_c *= np.mean(integrals[n_run:2 * n_run])
-ax.plot(logx, w_an_c, linewidth=1.5, linestyle="--", dashes=(2, 3), label="posterior mass remaining", color='darkblue')
+ax.plot(logx, w_an_c, linewidth=1.5, linestyle="--", dashes=(2, 3),
+        label="posterior mass remaining", color='darkblue')
 if any(tuned_dynamic_p):
     # plot tuned mass
-    w_tuned = w_an * settings.r_given_logx(logx) * np.sqrt(1.0 / settings.n_dim)
+    w_tuned = (w_an * settings.r_given_logx(logx) *
+               np.sqrt(1.0 / settings.n_dim))
     # remove any nans or infs as they screw up normalisation
     w_tuned[~np.isfinite(w_tuned)] = 0.0
     w_tuned /= np.trapz(w_tuned, x=logx)
     w_tuned *= np.mean(integrals[-(1 + n_run):-1])
-    ax.plot(logx, w_tuned, linewidth=1.5, label="tuned importance", linestyle="-.", dashes=(2, 1.5, 1, 1.5), color='k')
+    ax.plot(logx, w_tuned, linewidth=1.5, label="tuned importance",
+            linestyle="-.", dashes=(2, 1.5, 1, 1.5), color='k')
 ax.set_ylabel("number of live points", fontsize=(label_fontsize))
 ax.set_xlabel("$\log X $", fontsize=(label_fontsize))
 for tick in ax.yaxis.get_major_ticks():
     tick.label.set_fontsize(label_fontsize)
 for tick in ax.xaxis.get_major_ticks():
     tick.label.set_fontsize(label_fontsize)
-# ax.set_yticks([])
-# ax.set_ylim([0, w_an.max() * 1.05])
-# ax.set_ylim([0, max(standard_nlive_max * 4, w_an.max() * 1.05)])
-# ax.set_ylim(bottom=1)
-# xmin = -25
 ax.set_xlim([xmin, xmax])
 if type(settings.likelihood).__name__ == "cauchy":
     loc = 2
