@@ -28,10 +28,10 @@ pd.set_option('display.width', 200)
 
 # settings
 # --------
-settings.dynamic_goal = None
-settings.n_dim = 300
-# settings.prior = priors.gaussian_cached(10, n_dim=settings.n_dim)
-settings.prior = priors.gaussian_cached(10)
+settings.dynamic_goal = 1
+settings.nbatch = 2
+settings.n_dim = 1000
+settings.prior = priors.gaussian_cached(10, n_dim=settings.n_dim)
 prof = cProfile.run('ns.perfect_nested_sampling(settings)', 'data/restats')
 p = pstats.Stats('data/restats')
 p.strip_dirs().sort_stats('tottime').print_stats(20)
