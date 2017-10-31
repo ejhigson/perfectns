@@ -104,7 +104,7 @@ def latex_sf(value, start_end_sf=[2, -2], dp=4):
         output = int(output)
     output = str(output)
     if power is not False and power != 0:
-        output += " \\cdot 10^{" + str(power) + "}"
+        output += "cdot 10{" + str(power) + "}"
     return output
 
 
@@ -136,7 +136,7 @@ def latex_form(value_in, error_in, start_end_sf=[2, -2], dp=4):
             output += '{:.{prec}f}'.format(error, prec=error_dp)
             output += ")"
         if power is not False and power != 0:
-            output += " \\cdot 10^{" + str(power) + "}"
+            output += " cdot 10{" + str(power) + "}"
         return output
     except (ValueError, OverflowError):
         # print("latex_form: warning: ValueError on ", value_in, error_in)

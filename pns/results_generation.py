@@ -51,23 +51,26 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     values_list = []
     if type(settings.prior).__name__ == 'gaussian_cached':
         settings.prior.check_cache(settings.n_dim)
+    method_names = []
     for i, dynamic_goal in enumerate(dynamic_goals):
+        # set up settings
         settings.dynamic_goal = dynamic_goal
         if tuned_dynamic_ps is not None:
             settings.tuned_dynamic_p = tuned_dynamic_ps[i]
         print("dynamic_goal = " + str(settings.dynamic_goal))
+        # get a name for this calculation method
+        if dynamic_goal is None:
+            method_names.append("standard")
+        else:
+            method_names.append("dyn " + str(settings.dynamic_goal))
+            if settings.tuned_dynamic_p is True:
+                method_names[-1] += " tuned"
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
         values = pw.func_on_runs(au.run_estimators, run_list, funcs_list,
                                  parallelise=parallelise)
-        if dynamic_goal is None:
-            key_i = "standard"
-        else:
-            key_i = "dyn " + str(settings.dynamic_goal)
-            if settings.tuned_dynamic_p is True:
-                key_i += " tuned"
         df = mf.get_df_row_summary(values, func_names)
-        df_dict[key_i] = df
+        df_dict[method_names[-1]] = df
         if (settings.dynamic_goal is None and settings.n_calls_max is None
                 and i == 0):
             n_calls_max = int(df['n_samples']['mean'] *
@@ -90,18 +93,22 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     # make uncertainties appear in seperate columns
     for key, df in df_dict.items():
         df_dict[key] = mf.df_unc_rows_to_cols(df)
-        df_dict[key]["dynamic_goal"] = [key] * df_dict[key].shape[0]
+        df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
     results = pd.concat(df_dict.values())
-    # make the calc column catagorical with a custom ordering
-    results['calc_type'] = pd.Categorical(results.index,
-                                          ['mean', 'std', 'gain'])
-    results.sort_values(["calc_type", "dynamic_goal"], inplace=True)
-    del results['calc_type']
+    # Sort the rows into the order needed for the paper
+    row_order = []
+    for pref in ['mean', 'std', 'gain']:
+        for mn in method_names:
+            row_order.append(pref + ' ' + mn)
+    results = results.reindex(row_order)
+    # results['calc_type'] = pd.Categorical(results.index,
+    #                                       ['mean', 'std', 'gain'])
+    # results.sort_values(["calc_type", "dynamic_goal"], inplace=True)
+    # del results['calc_type']
     # put the dynamic goal column first
     cols = list(results)
-    cols.insert(0, cols.pop(cols.index('dynamic_goal')))
-    cols.insert(1, cols.pop(cols.index('n_samples')))
-    cols.insert(2, cols.pop(cols.index('n_samples_unc')))
+    cols.insert(0, cols.pop(cols.index('n_samples')))
+    cols.insert(1, cols.pop(cols.index('n_samples_unc')))
     results = results.loc[:, cols]
     if save:
         # save the results data frame
@@ -109,8 +116,10 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         print("Results saved to:\n" + save_file)
         # save results in latex format
         latex_save_file = save_dir + '/' + save_root + "_latex.txt"
+        latex_df = slu.latex_format_df(results, cols=None, rows=None,
+                                       dp_list=None)
         with open(latex_save_file, "w") as text_file:
-            print(results.to_latex(), file=text_file)
+            print(latex_df.to_latex(), file=text_file)
     return results
 
 

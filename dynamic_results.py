@@ -66,6 +66,7 @@ for n_dim in n_dim_list:
             dr = rg.get_dynamic_results(n_runs, dynamic_goals,
                                         estimator_list, settings,
                                         tuned_dynamic_ps=tuned_dynamic_ps,
+                                        load=load, save=save,
                                         parallelise=parallelise)
             print(dr)
             dr_list.append(dr)
