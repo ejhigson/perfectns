@@ -85,12 +85,12 @@ def sample_nsphere_shells_beta(r, n_dim, n_sample):
                                     size=(r.shape[0], n_sample)))
     # randomly select + or -
     thetas *= (-1) ** (np.random.randint(0, 2, size=thetas.shape))
-    for i in range(n_sample):
-        thetas[:, i] *= r
+    # multiply by r
+    thetas *= r[:, None]
     return thetas
 
 
-def sample_nsphere_shells(r, n_dim, n_sample):
+def sample_nsphere_shells_normal(r, n_dim, n_sample):
     assert n_sample <= n_dim, "so far only set up for nsample <= ndim"
     # sample single parameters on n_dim-dimensional sphere independently
     # as described in section 4 of my errors in nested sampling paper
@@ -101,6 +101,13 @@ def sample_nsphere_shells(r, n_dim, n_sample):
     thetas = thetas[:, :n_sample]
     thetas *= norm[:, None]
     return thetas
+
+
+def sample_nsphere_shells(r, n_dim, n_sample):
+    if n_dim >= 100 and n_sample == 1:
+        return sample_nsphere_shells_beta(r, n_dim, n_sample)
+    else:
+        return sample_nsphere_shells_normal(r, n_dim, n_sample)
 
 
 def nsphere_r_given_logx(logx, r_max, n_dim):

@@ -51,10 +51,14 @@ if type(settings.likelihood).__name__ == "cauchy":
 print("Running dynamic results:")
 dr_list = []
 for n_dim in n_dim_list:
-    for prior in prior_list:
+    settings.n_dim = n_dim
+    if n_dim >= 100:
+        settings.nbatch = 2
+    else:
+        settings.nbatch = 1
+    for rmax in rmax_list:
+        settings.prior = priors.gaussian_cached(rmax, n_dim=n_dim)
         for likelihood in likelihood_list:
-            settings.n_dim = n_dim
-            settings.prior = prior
             settings.likelihood = likelihood
             dr = rg.get_dynamic_results(n_runs, dynamic_goals,
                                         estimator_list, settings,

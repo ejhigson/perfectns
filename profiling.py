@@ -28,7 +28,7 @@ pd.set_option('display.width', 200)
 
 # settings
 # --------
-settings.dynamic_goal = 1
+settings.dynamic_goal = None
 settings.nbatch = 2
 settings.n_dim = 1000
 settings.prior = priors.gaussian_cached(10, n_dim=settings.n_dim)
