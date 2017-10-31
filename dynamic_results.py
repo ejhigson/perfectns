@@ -20,16 +20,15 @@ pd.set_option('display.width', 200)
 
 # Settings
 # --------
-n_runs = 5000
+n_runs = 1000
 parallelise = True
 load = True
 save = True
 dynamic_goals = [None, 0, 1]
-dynamic_goals = [None, 0, 0.25, 1]
-# n_dim_list = [2]
-# rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
-n_dim_list = [10]
-rmax_list = [10]
+n_dim_list = [2]
+rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
+# n_dim_list = [10]
+# rmax_list = [10]
 likelihood_list = [likelihoods.gaussian(1),
                    likelihoods.exp_power(1, 0.75),
                    likelihoods.exp_power(1, 2)]
@@ -40,10 +39,10 @@ estimator_list = [e.logzEstimator(),
                   e.theta1confEstimator(0.84)]
 tuned_dynamic_ps = [False] * len(dynamic_goals)
 
-# For Cauchy
-likelihood_list = [likelihoods.cauchy(1)]
-dynamic_goals = [None, 0, 1, 1]
-tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
+# # For Cauchy
+# likelihood_list = [likelihoods.cauchy(1)]
+# dynamic_goals = [None, 0, 1, 1]
+# tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
 
 # Run program
 # -----------

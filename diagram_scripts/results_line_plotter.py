@@ -26,16 +26,14 @@ label_fontsize = 8
 # ---------------
 
 nlive = 200
-n_run = 100
-settings.data_version = 'v05'
-settings.nlive_2 = 2
+n_run = 1000
 plot_name = 'dynamic_test'
 plot_type = 'n_dim'
 plot_type = 'prior_scale'
 if plot_type == 'prior_scale':
     likelihood_list = [likelihoods.gaussian(1),
-                       likelihoods.exp_power(1, 0.75),
-                       likelihoods.exp_power(1, 2)]
+                       likelihoods.exp_power(1, 2),
+                       likelihoods.exp_power(1, 0.75)]
     estimator_list = [e.logzEstimator(),
                       e.theta1Estimator()]
 else:
@@ -51,17 +49,15 @@ else:
 # ------------
 log = True
 dynamic_goals = [None, 0, 1]
-ind_to_plot = 'performance'  # performance gain
 extra_root = "dynamic_test"
 for dg in dynamic_goals:
     extra_root += "_" + str(dg)
 if plot_type == 'n_dim':
-    prior_list = [priors.gaussian_cached(10)]
+    rmax_list = [10]
     n_dim_list = [2, 5, 10, 30, 100, 300, 1000]
 elif plot_type == 'prior_scale':
     n_dim_list = [2]
     rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
-    prior_list = [priors.gaussian(r) for r in rmax_list]
 
 likelihood_results = []
 likelihood_x_values = []
@@ -69,10 +65,13 @@ for likelihood in likelihood_list:
     results = []
     x_values = []
     settings.likelihood = likelihood
-    for prior in prior_list:
-        settings.prior = prior
-        for n_dim in n_dim_list:
-            settings.n_dim = n_dim
+    for n_dim in n_dim_list:
+        settings.n_dim = n_dim
+        for r in rmax_list:
+            if n_dim < 100:
+                settings.prior = priors.gaussian(r)
+            else:
+                settings.prior = priors.gaussian_cached(r, n_dim=n_dim)
             try:
 
                 save_root = slu.data_save_name(settings, n_run,
@@ -106,35 +105,37 @@ else:
     figsize = (6, 2)
 image = plt.figure(figsize=figsize)
 ax = image.add_subplot(1, 1, 1)
-for l, likelihood in enumerate(likelihood_list):
-    assert len(likelihood_results[l]) == len(likelihood_x_values[l])
-    # Do not plot lines where there is no data as this causes an error when
-    # ax.legend() is called.
-    if likelihood_results[l]:  # True if likelihood_results is not empty
-        for dg in [0, 1]:
-            for est in estimator_list:
-                x_values = likelihood_x_values[l]
-                y_values = []
-                y_unc = []
-                for df in likelihood_results[l]:
-                    gain_results = df[df['dynamic_goal'] == "dyn " +
-                                      str(dg)].loc['gain']
-                    y_values.append(gain_results[est.name])
-                    y_unc.append(gain_results[est.name + "_unc"])
-                # Make a string to label the series on the plot
-                label = '$G=' + str(dg) + '$: ' + est.latex_name
-                if len(likelihood_list) != 1:
-                    name = type(likelihood).__name__.title().replace('_', ' ')
-                    if type(likelihood).__name__ == 'exp_power':
-                        if likelihood.power == 0.75:
-                            label = ('$b=\\frac{3}{4}$, ' + label)
-                        else:
-                            label = ('$b=' + str(likelihood.power) +
-                                     '$, ' + label)
-                    label = name + ', ' + label
-                # plot
-                ax.errorbar(x_values, y_values, yerr=y_unc, label=label,
-                            linestyle=linestyles[l])
+for est in estimator_list:
+    if est.name == 'logz':
+        dg = 0
+    else:
+        dg = 1
+    for l, likelihood in enumerate(likelihood_list):
+        assert len(likelihood_results[l]) == len(likelihood_x_values[l])
+        # Do not plot lines where there is no data as this causes an error when
+        # ax.legend() is called.
+        if likelihood_results[l]:  # True if likelihood_results is not empty
+            x_values = likelihood_x_values[l]
+            y_values = []
+            y_unc = []
+            for df in likelihood_results[l]:
+                gain_results = df.loc['gain dyn ' + str(dg)]
+                y_values.append(gain_results[est.name])
+                y_unc.append(gain_results[est.name + "_unc"])
+            # Make a string to label the series on the plot
+            label = '$G=' + str(dg) + '$: ' + est.latex_name
+            if len(likelihood_list) != 1:
+                name = type(likelihood).__name__.title().replace('_', ' ')
+                if type(likelihood).__name__ == 'exp_power':
+                    if likelihood.power == 0.75:
+                        label = ('$b=\\frac{3}{4}$, ' + label)
+                    else:
+                        label = ('$b=' + str(likelihood.power) +
+                                 '$, ' + label)
+                label = name + ', ' + label
+            # plot
+            ax.errorbar(x_values, y_values, yerr=y_unc, label=label,
+                        linestyle=linestyles[l])
 # set limits on axis
 ax.set_ylim(bottom=0)
 if log:
