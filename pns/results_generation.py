@@ -169,6 +169,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                           results.loc["repeats std"],
                                           results.loc["repeats std_unc"])
     results.loc['bs std_unc'] = bs_std_ratio_unc
+    # multiply by 100 to express as a percentage
     results.loc['bs var'] = 100 * bs_df.loc['std'] / bs_df.loc['mean']
     results.loc['bs var_unc'] = 100 * bs_df.loc['std_unc'] / bs_df.loc['mean']
     if add_sim_method:
@@ -185,6 +186,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                                results.loc["repeats std"],
                                                results.loc["repeats std_unc"])
         results.loc['sim std_unc'] = sim_std_ratio_unc
+        # multiply by 100 to express as a percentage
         results.loc['sim var'] = 100 * sim_df.loc['std'] / sim_df.loc['mean']
         results.loc['sim var_unc'] = 100 * (sim_df.loc['std_unc'] /
                                             sim_df.loc['mean'])
@@ -203,14 +205,16 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         ind = np.where((rep_values[i, :] > min_value[i]) &
                        (rep_values[i, :] < max_value[i]))
         coverage[i] = ind[0].shape[0] / rep_values.shape[1]
-    results.loc['bs +-1std cov'] = coverage
+    # multiply by 100 to express as a percentage
+    results.loc['bs +-1std cov'] = coverage * 100
     # add conf interval coverage
     max_value = results.loc['bs ' + str(cred_int) + ' CI'].values
     ci_coverage = np.zeros(rep_values.shape[0])
     for i, _ in enumerate(coverage):
         ind = np.where(rep_values[i, :] < max_value[i])
         ci_coverage[i] = ind[0].shape[0] / rep_values.shape[1]
-    results.loc['bs ' + str(cred_int) + ' CI cov'] = ci_coverage
+    # multiply by 100 to express as a percentage
+    results.loc['bs ' + str(cred_int) + ' CI cov'] = ci_coverage * 100
     results = mf.df_unc_rows_to_cols(results)
     if save:
         # save the results data frame
@@ -218,6 +222,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         print("Results saved to:\n" + save_file)
         # save results in latex format
         latex_save_file = save_dir + '/' + save_root + "_latex.txt"
+        latex_df = slu.latex_format_df(results, cols=None, rows=None,
+                                       dp_list=None)
         with open(latex_save_file, "w") as text_file:
-            print(results.to_latex(), file=text_file)
+            print(latex_df.to_latex(), file=text_file)
     return results

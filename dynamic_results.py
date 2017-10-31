@@ -20,20 +20,20 @@ pd.set_option('display.width', 200)
 
 # Settings
 # --------
-n_runs = 1000
+n_runs = 5000
 parallelise = True
 load = True
 save = True
 dynamic_goals = [None, 0, 1]
-# dynamic_goals = [None, 0, 0.25, 1]
+dynamic_goals = [None, 0, 0.25, 1]
 # n_dim_list = [2]
 # rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
-n_dim_list = [100, 300]
+n_dim_list = [10]
 rmax_list = [10]
-prior_list = [priors.gaussian_cached(r) for r in rmax_list]
 likelihood_list = [likelihoods.gaussian(1),
                    likelihoods.exp_power(1, 0.75),
-                   likelihoods.exp_power(1, 2)]
+                   likelihoods.exp_power(1, 2),
+                   likelihoods.cauchy(1)]
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
@@ -57,7 +57,10 @@ for n_dim in n_dim_list:
     else:
         settings.nbatch = 1
     for rmax in rmax_list:
-        settings.prior = priors.gaussian_cached(rmax, n_dim=n_dim)
+        if n_dim >= 100:
+            settings.prior = priors.gaussian_cached(rmax, n_dim=n_dim)
+        else:
+            settings.prior = priors.gaussian(rmax)
         for likelihood in likelihood_list:
             settings.likelihood = likelihood
             dr = rg.get_dynamic_results(n_runs, dynamic_goals,

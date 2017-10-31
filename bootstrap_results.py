@@ -13,6 +13,7 @@ import pns.estimators as e
 # import pns.maths_functions as mf
 import pns.results_generation as rg
 import pns.likelihoods as likelihoods
+import pns.save_load_utils as slu
 import pns.priors as priors
 settings = pns_settings.PerfectNestedSamplingSettings()
 pd.set_option('display.width', 200)
@@ -55,3 +56,6 @@ bootstrap_results = rg.get_bootstrap_results(n_runs, n_simulate,
                                              ninit_sep=ninit_sep,
                                              parallelise=parallelise)
 print(bootstrap_results)
+# latex_df = slu.latex_format_df(bootstrap_results, cols=None, rows=None,
+#                                dp_list=None)
+# print(latex_df)
