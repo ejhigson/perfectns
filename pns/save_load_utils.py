@@ -160,7 +160,8 @@ def latex_format_df(df, cols=None, rows=None, dp_list=None):
     for c in cols:
         latex_dict[c] = []
         for i, r in enumerate(rows):
-            temp = latex_form(df[c][r], df[c + '_unc'][r], dp=dp_list[i])
+            temp = latex_form(df[c][r], df[c + '_unc'][r], dp=dp_list[i],
+                              start_end_sf=[4, -4])
             latex_dict[c].append(temp)
     latex_df = pd.DataFrame(latex_dict, index=rows)
     return latex_df

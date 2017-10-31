@@ -32,19 +32,18 @@ n_dim_list = [10]
 rmax_list = [10]
 likelihood_list = [likelihoods.gaussian(1),
                    likelihoods.exp_power(1, 0.75),
-                   likelihoods.exp_power(1, 2),
-                   likelihoods.cauchy(1)]
+                   likelihoods.exp_power(1, 2)]
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
                   e.theta1confEstimator(0.5),
                   e.theta1confEstimator(0.84)]
-# print("True est values")
-# print(e.check_estimator_values(estimator_list, settings))
 tuned_dynamic_ps = [False] * len(dynamic_goals)
-if type(settings.likelihood).__name__ == "cauchy":
-    dynamic_goals = [None, 0, 1, 1]
-    tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
+
+# For Cauchy
+likelihood_list = [likelihoods.cauchy(1)]
+dynamic_goals = [None, 0, 1, 1]
+tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
 
 # Run program
 # -----------
