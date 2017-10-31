@@ -95,11 +95,11 @@ def sample_nsphere_shells(r, n_dim, n_sample):
     # sample single parameters on n_dim-dimensional sphere independently
     # as described in section 4 of my errors in nested sampling paper
     thetas = np.random.normal(size=(r.shape[0], n_dim))
-    for i in range(r.shape[0]):
-        thetas[i, :] /= np.sqrt(np.sum(thetas[i, :] ** 2))
+    # calculate normalisation so sum_i(theta_i^2) = r^2 for each row
+    norm = r / np.sqrt(np.sum(thetas ** 2, axis=1))
+    # only return n_sample rows
     thetas = thetas[:, :n_sample]
-    for i in range(n_sample):
-        thetas[:, i] *= r
+    thetas *= norm[:, None]
     return thetas
 
 
