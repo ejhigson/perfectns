@@ -49,6 +49,8 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         func_names.append(func.name)
     df_dict = {}
     values_list = []
+    if type(settings.prior).__name__ == 'gaussian_cached':
+        settings.prior.check_cache(settings.n_dim)
     for i, dynamic_goal in enumerate(dynamic_goals):
         settings.dynamic_goal = dynamic_goal
         if tuned_dynamic_ps is not None:

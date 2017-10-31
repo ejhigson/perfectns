@@ -53,8 +53,8 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         # guard against any errors in interpolation
         while mf.mpmath_gaussian_logx_given_r(r_min, prior_scale,
                                               n_dim) > logx_min:
-            print("increasing interp range", r_min,
-                  mf.mpmath_gaussian_logx_given_r(r_min, prior_scale, n_dim))
+            # print("increasing interp range", r_min,
+            #       mf.mpmath_gaussian_logx_given_r(r_min, prior_scale, n_dim))
             r_min /= 2.0
         r_array = np.linspace(r_min, r_max,
                               int((logx_max - logx_min) * interp_density))

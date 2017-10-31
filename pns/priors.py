@@ -56,7 +56,7 @@ class gaussian_cached(object):
             self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
                                                  self.interp_d['r_array'])
         else:
-            self.interp_d = {'n_dim': None}
+            self.interp_d = {'n_dim': None, 'prior_scale': None}
 
     def logx_given_r(self, r, n_dim):
         return mf.gaussian_logx_given_r(r, self.prior_scale, n_dim)
@@ -94,7 +94,7 @@ class gaussian_cached(object):
                                                  self.interp_d['prior_scale']):
             print("re-cache prior: input (n_dim, self.prior_scale) = (" +
                   str(n_dim) + ", " + str(self.prior_scale) + ") =! cached " +
-                  "(n_dim, prior_scale) =" + str(self.interp_d['n_dim']) +
+                  "(n_dim, prior_scale) = (" + str(self.interp_d['n_dim']) +
                   ", " + str(self.prior_scale) + ")")
             self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale)
             self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
