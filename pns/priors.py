@@ -62,12 +62,7 @@ class gaussian_cached(object):
         return mf.gaussian_logx_given_r(r, self.prior_scale, n_dim)
 
     def r_given_logx(self, logx, n_dim):
-        # Check that the input dimension matches that of the cached
-        # interpolation function, and if needed recalculate.
-        if n_dim != self.interp_d['n_dim']:
-            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale)
-            self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
-                                                 self.interp_d['r_array'])
+        self.check_cache(n_dim)
         try:
             if isinstance(logx, np.ndarray):
                 r = np.zeros(logx.shape)
@@ -91,3 +86,16 @@ class gaussian_cached(object):
             print("ValueError in r_given_logx for gaussian prior")
             print("logx_interp is ", self.interp_d['logx_array'])
             print("input logx is", logx)
+
+    def check_cache(self, n_dim):
+        # Check that the input dimension matches that of the cached
+        # interpolation function, and if needed recalculate.
+        if (n_dim != self.interp_d['n_dim']) or (self.prior_scale !=
+                                                 self.interp_d['prior_scale']):
+            print("re-cache prior: input (n_dim, self.prior_scale) = (" +
+                  str(n_dim) + ", " + str(self.prior_scale) + ") =! cached " +
+                  "(n_dim, prior_scale) =" + str(self.interp_d['n_dim']) +
+                  ", " + str(self.prior_scale) + ")")
+            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale)
+            self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
+                                                 self.interp_d['r_array'])
