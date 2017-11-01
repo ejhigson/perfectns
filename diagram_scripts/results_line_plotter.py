@@ -78,7 +78,7 @@ for likelihood in likelihood_list:
                                                extra_root=extra_root,
                                                include_dg=False)
                 save_file = 'data/' + save_root + '.dat'
-                print(save_file)
+                # print(save_file)
                 results.append(pd.read_pickle(save_file))
                 if plot_type == 'n_dim':
                     x_values.append(settings.n_dim)
@@ -141,7 +141,7 @@ ax.set_ylim(bottom=0)
 if log:
     ax.set_xscale('log')
 if plot_type == 'prior_scale':
-    ax.set_ylim([0, 15])
+    ax.set_ylim([0, 12])
     # ax.set_ylim(bottom=0)
     ax.set_xlabel('$\\sigma_\\pi$', fontsize=(label_fontsize))
     # to line up y labels as the fact the n_dim y axis goes up to 10 makes

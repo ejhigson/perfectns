@@ -13,7 +13,7 @@ import pns.estimators as e
 # import pns.maths_functions as mf
 import pns.results_generation as rg
 import pns.likelihoods as likelihoods
-import pns.save_load_utils as slu
+# import pns.save_load_utils as slu
 import pns.priors as priors
 settings = pns_settings.PerfectNestedSamplingSettings()
 pd.set_option('display.width', 200)
@@ -23,9 +23,9 @@ pd.set_option('display.width', 200)
 # --------
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-n_runs = 5000
-n_run_ci = 500
-ninit_sep = False
+n_runs = 2000
+n_run_ci = 5
+ninit_sep = True
 parallelise = True
 load = True
 save = True
