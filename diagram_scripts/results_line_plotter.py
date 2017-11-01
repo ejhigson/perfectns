@@ -26,10 +26,10 @@ label_fontsize = 8
 # ---------------
 
 nlive = 200
-n_run = 1000
+settings.data_version = 'v07'
 plot_name = 'dynamic_test'
-plot_type = 'n_dim'
 plot_type = 'prior_scale'
+plot_type = 'n_dim'
 if plot_type == 'prior_scale':
     likelihood_list = [likelihoods.gaussian(1),
                        likelihoods.exp_power(1, 2),
@@ -41,9 +41,9 @@ else:
                       e.theta1Estimator(),
                       e.theta1confEstimator(0.5),
                       e.theta1confEstimator(0.84)]
-    likelihood_list = [likelihoods.gaussian(1)]
-    likelihood_list = [likelihoods.exp_power(1, 0.75)]
     likelihood_list = [likelihoods.exp_power(1, 2)]
+    likelihood_list = [likelihoods.exp_power(1, 0.75)]
+    likelihood_list = [likelihoods.gaussian(1)]
 
 # begin script
 # ------------
@@ -70,8 +70,14 @@ for likelihood in likelihood_list:
         for r in rmax_list:
             if n_dim < 100:
                 settings.prior = priors.gaussian(r)
+                settings.nbatch = 1
             else:
                 settings.prior = priors.gaussian_cached(r, n_dim=n_dim)
+                settings.nbatch = 2
+            if n_dim < 1000:
+                n_run = 1000
+            else:
+                n_run = 250
             try:
 
                 save_root = slu.data_save_name(settings, n_run,
@@ -119,7 +125,10 @@ for est in estimator_list:
             y_values = []
             y_unc = []
             for df in likelihood_results[l]:
-                gain_results = df.loc['gain dyn ' + str(dg)]
+                if settings.data_version == 'v07':
+                    gain_results = df.loc[df['dynamic_goal'] == 'dyn ' + str(dg)].loc['gain']
+                else:
+                    gain_results = df.loc['gain dyn ' + str(dg)]
                 y_values.append(gain_results[est.name])
                 y_unc.append(gain_results[est.name + "_unc"])
             # Make a string to label the series on the plot
@@ -150,6 +159,7 @@ if plot_type == 'prior_scale':
 elif plot_type == 'n_dim':
     ax.set_xlim(left=1)
     ax.set_xlabel('dimension $d$', fontsize=(label_fontsize))
+    ypad = 2
     # if likelihood_names == ["exp_power_0_75"]:
     #     ypad = 5  # to make up for ymax < 10 meaning labels are thinner
     # else:
@@ -167,6 +177,8 @@ save_name = ('results_plotter_' + plot_name + '_' + settings.data_version +
              '_' + plot_type)
 for likelihood in likelihood_list:
     save_name += '_' + type(likelihood).__name__
+    if type(likelihood).__name__ == 'exp_power':
+        save_name += '_' + str(likelihood.power)
 output_root = 'plots/' + save_name
 output_root = output_root.replace('.', '_')
 output_root = output_root.replace(',', '_')
