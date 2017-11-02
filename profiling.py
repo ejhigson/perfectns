@@ -28,13 +28,13 @@ pd.set_option('display.width', 200)
 
 # settings
 # --------
-settings.dynamic_goal = None
+settings.dynamic_goal = 1
 settings.nbatch = 1
-settings.n_dim = 3
+settings.n_dim = 1000
 settings.prior = priors.gaussian_cached(10, n_dim=settings.n_dim)
 prof = cProfile.run('run = ns.perfect_nested_sampling(settings)', 'data/restats')
 p = pstats.Stats('data/restats')
-p.strip_dirs().sort_stats('tottime').print_stats(20)
+p.strip_dirs().sort_stats('tottime').print_stats(30)
 # run = ns.perfect_nested_sampling(settings)
 # lrxp = run['lrxtnp']
 # estimator_list = [e.logzEstimator(),

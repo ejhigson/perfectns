@@ -182,22 +182,22 @@ def generate_dynamic_run(settings):
     # [logl, r, logx, thread label, change in nlive, params]
     samples = au.samples_array_given_run(standard_run)
     thread_min_max = standard_run['thread_min_max']
-    n_calls = samples.shape[0]
-    if settings.n_calls_max is None:
-        print("dns: settings.n_calls_max is None: estimate from nlive_const")
+    n_samples = samples.shape[0]
+    if settings.n_samples_max is None:
+        print("dns: settings.n_samples_max is None: estimate from nlive_const")
         # estimate number of likelihood calls available
-        n_calls_max = settings.nlive_const * n_calls / settings.ninit
+        n_samples_max = settings.nlive_const * n_samples / settings.ninit
         # Reduce by small factor so dynamic ns uses fewer likelihood calls than
         # normal ns. This factor is a function of the dynamic goal as typically
         # evidence calculations have longer attitional threads than parameter
         # estimation calculations.
-        n_calls_max *= 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
-                            (settings.nbatch / settings.nlive_const))
+        n_samples_max *= 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
+                              (settings.nbatch / settings.nlive_const))
     else:
-        n_calls_max = settings.n_calls_max
+        n_samples_max = settings.n_samples_max
     # Step 2: add samples whereever they are most useful
     # --------------------------------------------------
-    while n_calls < n_calls_max:
+    while n_samples < n_samples_max:
         importance = point_importance(samples, thread_min_max, settings)
         logl_min_max, logx_min_max = min_max_importance(importance,
                                                         samples,
@@ -220,9 +220,9 @@ def generate_dynamic_run(settings):
             samples = np.vstack((samples, thread))
             lmm = np.asarray([logl_min_max[0], thread[-1, 0]])
             thread_min_max = np.vstack((thread_min_max, lmm))
-        # sort array and update n_calls in preparation for the next iteration
+        # sort array and update n_samples in preparation for the next iteration
         samples = samples[np.argsort(samples[:, 0])]
-        n_calls = samples.shape[0]
+        n_samples = samples.shape[0]
     # To compute nlive from the changes in nlive at each step, first find nlive
     # for the first point (= the number of threads which sample from the entire
     # prior)

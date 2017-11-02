@@ -21,7 +21,7 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     save = kwargs.get('save', True)
     save_dir = kwargs.get('save_dir', 'data')
     parallelise = kwargs.get('parallelise', True)
-    reduce_n_calls_max_frac = kwargs.get('reduce_n_calls_max_frac', 0.02)
+    reduce_n_samples_max_frac = kwargs.get('reduce_n_samples_max_frac', 0.02)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
     # make save_name
     extra_root = "dynamic_test"
@@ -71,12 +71,12 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
                                  parallelise=parallelise)
         df = mf.get_df_row_summary(values, func_names)
         df_dict[method_names[-1]] = df
-        if (settings.dynamic_goal is None and settings.n_calls_max is None
+        if (settings.dynamic_goal is None and settings.n_samples_max is None
                 and i == 0):
-            n_calls_max = int(df['n_samples']['mean'] *
-                              (1.0 - reduce_n_calls_max_frac))
+            n_samples_max = int(df['n_samples']['mean'] *
+                                (1.0 - reduce_n_samples_max_frac))
             print("given standard used " + str(df['n_samples']['mean']) +
-                  " calls, set n_calls_max=" + str(n_calls_max))
+                  " calls, set n_samples_max=" + str(n_samples_max))
         values_list.append(values)
         del run_list
     # analyse data

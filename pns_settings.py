@@ -58,7 +58,7 @@ class PerfectNestedSamplingSettings(object):
             'dynamic_fraction': 0.9,
             # from func args
             'tuned_dynamic_p': False,
-            'n_calls_max': None
+            'n_samples_max': None
         }
 
         for (setting_name, default_value) in default_settings.items():
