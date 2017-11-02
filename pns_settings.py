@@ -46,8 +46,8 @@ class PerfectNestedSamplingSettings(object):
             'likelihood': likelihoods.gaussian(1),
             # calculation settings
             # --------------------
-            'nlive': 200,
-            'data_version': 'v08',
+            'nlive_const': 200,
+            'data_version': 'v09',
             'dims_to_sample': 1,
             'zv_termination_fraction': 0.001,
             # dynamic nested sampling settings

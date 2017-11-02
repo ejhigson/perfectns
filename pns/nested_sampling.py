@@ -16,9 +16,11 @@ def perfect_nested_sampling(settings):
         return generate_dynamic_run(settings)
 
 
-def generate_standard_run(settings, nlive_const=None):
-    if nlive_const is None:
-        nlive_const = settings.nlive
+def generate_standard_run(settings, is_dynamic_initial_run=False):
+    if is_dynamic_initial_run:
+        nlive_const = settings.ninit
+    else:
+        nlive_const = settings.nlive_const
     # Reset the random seed to avoid repeated results when multiprocessing.
     np.random.seed()
     live_lrxtn = np.zeros((nlive_const, 5))
@@ -90,17 +92,17 @@ def generate_dynamic_run(settings):
     np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: inital exploratory run with a constant ninit live points
     # ----------------------------------------------------------------
-    run = generate_standard_run(settings, nlive_const=settings.ninit)
+    run = generate_standard_run(settings, is_dynamic_initial_run=True)
     n_calls = run['lrxtnp'].shape[0]
     if settings.n_calls_max is None:
         # estimate number of likelihood calls available
-        n_calls_max = settings.nlive * n_calls / settings.ninit
+        n_calls_max = settings.nlive_const * n_calls / settings.ninit
         # Reduce by small factor so dynamic ns uses fewer likelihood calls than
         # normal ns. This factor is a function of the dynamic goal as typically
         # evidence calculations have longer attitional threads than parameter
         # estimation calculations.
-        n_calls_max *= (settings.nlive - settings.nbatch *
-                        (1.5 - 0.5 * settings.dynamic_goal)) / settings.nlive
+        n_calls_max *= 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
+                            (settings.nbatch / settings.nlive_const))
     else:
         n_calls_max = settings.n_calls_max
     # Step 2: add samples whereever they are most useful

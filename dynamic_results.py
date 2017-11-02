@@ -20,30 +20,45 @@ pd.set_option('display.width', 200)
 
 # Settings
 # --------
+calc_type = 'test'
 n_runs = 1000
 parallelise = True
 load = True
 save = True
-dynamic_goals = [None, 0, 1]
-n_dim_list = [2]
-rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
-# n_dim_list = [10]
-# rmax_list = [10]
-likelihood_list = [likelihoods.gaussian(1),
-                   likelihoods.exp_power(1, 0.75),
-                   likelihoods.exp_power(1, 2)]
+if calc_type == 'test':
+    n_runs = 10
+    parallelise = True
+    load = False
+    save = False
+    dynamic_goals = [None, 0, 1]
+    tuned_dynamic_ps = [False] * len(dynamic_goals)
+    likelihood_list = [likelihoods.gaussian(1)]
+    n_dim_list = [3]
+    rmax_list = [10]
+elif calc_type == 'n_dim' or calc_type == 'prior_scale':
+    dynamic_goals = [None, 0, 1]
+    tuned_dynamic_ps = [False] * len(dynamic_goals)
+    likelihood_list = [likelihoods.gaussian(1),
+                       likelihoods.exp_power(1, 0.75),
+                       likelihoods.exp_power(1, 2)]
+    if calc_type == 'ndim':
+        n_dim_list = [10]
+        rmax_list = [10]
+    elif calc_type == 'prior_scale':
+        n_dim_list = [2]
+        rmax_list = [0.1, 0.3, 1, 3, 10, 30, 100]
+elif calc_type == 'Cauchy':
+    n_dim_list = [10]
+    rmax_list = [10]
+    likelihood_list = [likelihoods.cauchy(1)]
+    dynamic_goals = [None, 0, 1, 1]
+    tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
+
 estimator_list = [e.logzEstimator(),
                   e.theta1Estimator(),
                   e.theta1squaredEstimator(),
                   e.theta1confEstimator(0.5),
                   e.theta1confEstimator(0.84)]
-tuned_dynamic_ps = [False] * len(dynamic_goals)
-
-# # For Cauchy
-# likelihood_list = [likelihoods.cauchy(1)]
-# dynamic_goals = [None, 0, 1, 1]
-# tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
-
 # Run program
 # -----------
 print("Running dynamic results:")

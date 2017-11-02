@@ -26,9 +26,8 @@ def check_integrand(logx, func, settings):
             * func.ftilde(logx, settings))
 
 
-def check_estimator_values(funcs_list, settings, return_int_errors=False):
+def check_estimator_values(funcs_list, settings):
     output = np.zeros(len(funcs_list))
-    errors = np.zeros(len(funcs_list))
     for i, f in enumerate(funcs_list):
         try:
             output[i] = f.analytical(settings)
@@ -46,16 +45,11 @@ def check_estimator_values(funcs_list, settings, return_int_errors=False):
                 result = scipy.integrate.quad(check_integrand, logx_terminate,
                                               0.0, args=(f, settings))
                 output[i] = result[0] / np.exp(settings.logz_analytic())
-                errors[i] = result[1] / np.exp(settings.logz_analytic())
                 # print(f.name + " from integrating = " + str(result[0]) + "
                 # with tollerance " + str(result[1]))
             except (AttributeError, AssertionError):
                 output[i] = np.nan
-                errors[i] = np.nan
-    if return_int_errors:
-        return output, errors
-    else:
-        return output
+    return output
 
 
 # Estimators
