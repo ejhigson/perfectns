@@ -39,11 +39,12 @@ if plot_type == 'prior_scale':
 else:
     estimator_list = [e.logzEstimator(),
                       e.theta1Estimator(),
+                      e.theta1squaredEstimator(),
                       e.theta1confEstimator(0.5),
                       e.theta1confEstimator(0.84)]
-    likelihood_list = [likelihoods.exp_power(1, 2)]
-    likelihood_list = [likelihoods.exp_power(1, 0.75)]
     likelihood_list = [likelihoods.gaussian(1)]
+    likelihood_list = [likelihoods.exp_power(1, 0.75)]
+    likelihood_list = [likelihoods.exp_power(1, 2)]
 
 # begin script
 # ------------
@@ -72,7 +73,7 @@ for likelihood in likelihood_list:
                 settings.prior = priors.gaussian(r)
                 settings.nbatch = 1
             else:
-                settings.prior = priors.gaussian_cached(r, n_dim=n_dim)
+                settings.prior = priors.gaussian_cached(r)
                 settings.nbatch = 2
             if n_dim < 1000:
                 n_run = 1000
@@ -90,10 +91,15 @@ for likelihood in likelihood_list:
                     x_values.append(settings.n_dim)
                 elif plot_type == 'prior_scale':
                     x_values.append(settings.prior.prior_scale)
-                print('likelihood=', type(settings.likelihood).__name__,
-                      'n_dim=', settings.n_dim,
-                      'prior_scale=', settings.prior.prior_scale,
-                      'version=', settings.data_version)
+                print('likelihood =', type(settings.likelihood).__name__,
+                      'version =', settings.data_version,
+                      'n_dim =', settings.n_dim,
+                      'prior_scale =', settings.prior.prior_scale)
+                if settings.n_dim == 1000 or settings.prior.prior_scale == 0.1:
+                    print("Gain numbers for n_dim =", settings.n_dim,
+                          'prior_scale =', settings.prior.prior_scale)
+                    print(results[-1])
+
             except IOError:
                 pass
     likelihood_results.append(results)
@@ -126,7 +132,9 @@ for est in estimator_list:
             y_unc = []
             for df in likelihood_results[l]:
                 if settings.data_version == 'v07':
-                    gain_results = df.loc[df['dynamic_goal'] == 'dyn ' + str(dg)].loc['gain']
+                    dg_str = 'dyn ' + str(dg)
+                    gain_results = df.loc[df['dynamic_goal'] == dg_str]
+                    gain_results = gain_results.loc['gain']
                 else:
                     gain_results = df.loc['gain dyn ' + str(dg)]
                 y_values.append(gain_results[est.name])

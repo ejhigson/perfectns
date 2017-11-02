@@ -49,10 +49,11 @@ plot_r = True
 #                    likelihoods.exp_power(1, 0.75),
 #                    likelihoods.exp_power(1, 2)]
 likelihood_list = [likelihoods.exp_power(1, 2)]
+likelihood_list = [likelihoods.gaussian(1)]
 # prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
 # prior_list = [priors.gaussian(10), priors.gaussian_cached(10)]
 prior_list = [priors.gaussian_cached(10)]
-dim_list = [3, 10, 30, 100, 300, 1000]
+dim_list = [2, 3, 10, 30, 100, 300, 1000]
 figsize = (12, 4)
 xmin = -4000
 xmax = -0.001
@@ -67,7 +68,7 @@ if plot_r:
 w_temp_max = 0
 logx = np.linspace(xmin, xmax, int(np.ceil(xmax - xmin)) * 10)
 linestyles = ['solid', 'dashed', 'dotted']
-z_term_frac = 10 ** -10
+z_term_frac = 10 ** -3
 entropy_gain = np.zeros((len(likelihood_list), len(prior_list), len(dim_list)))
 for l, likelihood in enumerate(likelihood_list):
     for p, prior in enumerate(prior_list):

@@ -169,16 +169,19 @@ class theta1Estimator(object):
 class theta1confEstimator(object):
 
     def __init__(self, fraction, param_ind=1):
-        assert fraction < 1.0 and fraction > 0, ("conf interval fraction = " +
-                                                 str(fraction) +
-                                                 " must be between 0 and 1")
+        assert 1.0 > fraction > 0, \
+            "conf interval fraction = " + str(fraction) + " not <1 and >0"
         self.param_ind = param_ind
         self.name = 't' + str(param_ind) + 'c_' + str(fraction)
         self.fraction = fraction
-        # format percent without trailing zeros
-        percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
-        self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
-                           '\%}(\\theta_{\hat{' + str(param_ind) + '}})$')
+        param_str = '\\theta_{\hat{' + str(param_ind) + '}}'
+        if fraction == 0.5:
+            self.latex_name = '$\mathrm{median}(' + param_str + ')$'
+        else:
+            # format percent without trailing zeros
+            percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
+            self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
+                               '\%}(' + param_str + ')$')
 
     def estimator(self, logw=None, logl=None, r=None, theta=None):
         wp = np.zeros((r.shape[0], 2))
