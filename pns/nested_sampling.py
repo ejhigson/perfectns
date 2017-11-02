@@ -237,8 +237,8 @@ def generate_dynamic_run(settings):
 
 def generate_thread_logx(logx_end, logx_start=0, keep_final_point=True):
     """
-    Generate x co-ordinates of a new nested sampling thread (single live point
-    run).
+    Generate logx co-ordinates of a new nested sampling thread (single live
+    point run).
     """
     logx_list = [logx_start + np.log(np.random.random())]
     while logx_list[-1] > logx_end:
@@ -250,7 +250,11 @@ def generate_thread_logx(logx_end, logx_start=0, keep_final_point=True):
 
 def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
                            keep_final_point=True):
-    """Make lp array for single thread of problem specified in settings."""
+    """
+    Generates a samples array for a thread (single live point run) between
+    logx_start and logx_end.
+    Settings argument specifies how the calculation is done.
+    """
     if logx_end is None:
         logx_end = settings.logx_terminate
     assert logx_start > logx_end, "generate_single_thread: logx_start=" + \
