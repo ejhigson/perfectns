@@ -27,7 +27,7 @@ load = True
 save = True
 if calc_type == 'test':
     n_runs = 10
-    parallelise = True
+    parallelise = False
     load = False
     save = False
     dynamic_goals = [None, 0, 1]

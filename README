@@ -1,0 +1,13 @@
+
+
+By considering only spherical likelihoods and priors L(r) and P(r), and
+requiring the L(r) is a monotinically decreasing function of the radius r
+(i.e. that the likelihood increases as r decreases to a maximum at r=0)
+we ensure all iso-likelihood contours are hyperspherical shells.
+
+For details of standard and dynamic sampling and the terminoligy used here,
+see "Sampling errors in nested sampling parameter estimation" (Higson et
+al. 2017) and "Dynamic nested sampling: an improved algorithm for nested
+sampling parameter estimation and evidence calculation" (Higson et al.
+2017).
+

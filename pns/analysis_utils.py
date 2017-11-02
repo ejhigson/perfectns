@@ -10,37 +10,86 @@ import pns.maths_functions as mf
 # Access functions which interface directly with ns runs
 # ------------------------------------------------------
 
-# def get_ncalls(ns_run):
-#     """
-#     Returns the number of likelihood calls in a nested sampling run.
-#     """
-#     return ns_run['lrxtnp'].shape[0]
+def samples_array_given_run(run):
+    """
+    Converts information on samples in a nested sampling run dictionary into a
+    numpy array representation. This allows fast addition of more samples and
+    recalculation of nlive.
+
+    Parameters
+    ----------
+    run: dict
+        Nested sampling run dictionary.
+        Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
+        'theta'
+
+    Returns
+    -------
+    samples: numpy array
+        Numpy array containing columns
+        [logl, r, logx, thread label, change in nlive at sample, (thetas)]
+        with each row representing a single sample.
+    """
+    samples = np.zeros((run['theta'].shape[0], 5 + run['theta'].shape[1]))
+    samples[:, 0] = run['logl']
+    samples[:, 1] = run['r']
+    samples[:, 2] = run['logx']
+    samples[:, 3] = run['thread_labels']
+    # Calculate "change in nlive" after each step
+    samples[:-1, 4] = np.diff(run['nlive_array'])
+    samples[-1, 4] = -1  # nlive drops to zero after final point
+    samples[:, 5:] = run['theta']
+    return samples
 
 
-def get_nlive(run):
+def dict_given_samples_array(samples, thread_min_max):
     """
-    Find a vector giving the number of live points at each point in the run.
-    Works by finding the number of live points at the start then cumulatively
-    summing the changes in the number of live points at each step.
+    Converts an array of information about samples back into a dictionary.
+
+    Parameters
+    ----------
+    samples: numpy array
+        Numpy array containing columns
+        [logl, r, logx, thread label, change in nlive at sample, (thetas)]
+        with each row representing a single sample.
+    nlive_0: int
+        The number of threads which begin by sampling from the whole prior.
+        I.e. the number of live points at the first sample. Needed to
+        calculate nlive_array from the differences in nlive at each step.
+
+    Returns
+    -------
+    run: dict
+        Nested sampling run dictionary.
+        Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
+        'theta'
     """
-    nlive_0 = np.sum(np.isnan(run['thread_min_max'][:, 0]))
-    nlive_array = np.zeros(run['lrxtnp'].shape[0]) + nlive_0
-    nlive_array[1:] += np.cumsum(run['lrxtnp'][:, 4])[:-1]
+    nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
+    nlive_array = np.zeros(samples.shape[0]) + nlive_0
+    nlive_array[1:] += np.cumsum(samples[:-1, 4])
     assert nlive_array.min() > 0, "nlive contains 0s or negative values!\n" \
         "nlive_array = " + str(nlive_array)
     assert nlive_array[-1] == 1, "final point in nlive_array should be 1!\n" \
         "nlive_array = " + str(nlive_array)
-    return nlive_array
+    samples_dict = {'logl': samples[:, 0],
+                    'r': samples[:, 1],
+                    'logx': samples[:, 2],
+                    'thread_labels': samples[:, 3],
+                    'nlive_array': nlive_array,
+                    'thread_min_max': thread_min_max,
+                    'theta': samples[:, 5:]}
+    return samples_dict
 
 
 def get_run_threads(ns_run):
     """
     Get the individual threads for a nested sampling run.
     """
+    samples = samples_array_given_run(ns_run)
     n_threads = ns_run['thread_min_max'].shape[0]
     threads = []
     for i in range(1, n_threads + 1):
-        threads.append(ns_run['lrxtnp'][np.where(ns_run['lrxtnp'][:, 3] == i)])
+        threads.append(samples[np.where(samples[:, 3] == i)])
         # delete changes in nlive due to other threads in the run
         threads[-1][:, 4] = 0
         threads[-1][-1, 4] = -1
@@ -49,20 +98,21 @@ def get_run_threads(ns_run):
 
 def get_nlive_thread_min_max(run):
     """
-    tbc
+    Calculates the local number of live points for each sample using likelihood
+    values and the thread_min_max array.
     """
-    logl = run['lrxtnp'][:, 0]
-    nlive_array = np.zeros(logl.shape[0])
+    nlive_array = np.zeros(run['logl'].shape[0])
     lmm_ar = run['thread_min_max']
     # no min logl
     for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
-        nlive_array[np.where(r[1] >= logl)] += 1
+        nlive_array[np.where(r[1] >= run['logl'])] += 1
     # no max logl
     for r in lmm_ar[np.isnan(lmm_ar[:, 1])]:
-        nlive_array[np.where(logl > r[0])] += 1
+        nlive_array[np.where(run['logl'] > r[0])] += 1
     # both min and max logl
     for r in lmm_ar[~np.isnan(lmm_ar[:, 0]) & ~np.isnan(lmm_ar[:, 1])]:
-        nlive_array[np.where((r[1] >= logl) & (logl > r[0]))] += 1
+        indexes = np.where((r[1] >= run['logl']) & (run['logl'] > r[0]))
+        nlive_array[indexes] += 1
     assert lmm_ar[np.isnan(lmm_ar[:, 0]) &
                   np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
         'Should not have threads with neither start nor end logls'
@@ -115,9 +165,8 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
             # incriment nlive on.
             lrxtnp_temp[np.random.choice(ind), 4] += 1
     # make run
-    ns_run_temp = {"thread_min_max": thread_min_max_temp,
-                   "lrxtnp": lrxtnp_temp,
-                   "settings": ns_run['settings']}
+    ns_run_temp = dict_given_samples_array(lrxtnp_temp, thread_min_max_temp)
+    ns_run_temp['settings'] = ns_run['settings']
     return ns_run_temp
 
 
@@ -128,8 +177,6 @@ def get_logw(logl, nlive_array, simulate=False):
     """
     tbc
     """
-    # logl = run['lrxtnp'][:, 0]
-    # nlive_array = get_nlive(run)
     logx_inc_start = np.zeros(logl.shape[0] + 1)
     # find X value for each point (start is at logX=0)
     logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
@@ -170,13 +217,10 @@ def run_estimators(run, estimator_list, **kwargs):
     Calculates values of list of estimators for a single nested sampling run.
     """
     simulate = kwargs.get('simulate', False)
-    nlive = get_nlive(run)
-    logw = get_logw(run['lrxtnp'][:, 0], nlive, simulate=simulate)
+    logw = get_logw(run['logl'], run['nlive_array'], simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, f in enumerate(estimator_list):
-        output[i] = f.estimator(logw=logw, logl=run['lrxtnp'][:, 0],
-                                r=run['lrxtnp'][:, 1],
-                                theta=run['lrxtnp'][:, 5:])
+        output[i] = f.estimator(logw, run)
     return output
 
 

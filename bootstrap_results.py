@@ -39,7 +39,7 @@ n_simulate_ci = 200
 # perfect nested sampling calc type:
 add_sim_method = True
 cred_int = 0.95
-settings.dynamic_goal = 1
+settings.dynamic_goal = None
 settings.prior = priors.gaussian(10)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 ninit_sep = False

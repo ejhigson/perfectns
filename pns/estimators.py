@@ -62,7 +62,7 @@ class logzEstimator(object):
     name = 'logz'
     latex_name = '$\mathrm{log} \mathcal{Z}$'
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw, ns_run):
         return scipy.misc.logsumexp(logw)
 
     def analytical(self, settings):
@@ -74,7 +74,7 @@ class zEstimator(object):
     name = 'z'
     latex_name = '$\mathcal{Z}$'
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw, ns_run):
         return np.exp(scipy.misc.logsumexp(logw))
 
     def analytical(self, settings):
@@ -86,7 +86,7 @@ class n_samplesEstimator(object):
     name = 'n_samples'
     latex_name = '\# samples'
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw, ns_run):
         return logw.shape[0]
 
 
@@ -95,9 +95,9 @@ class rEstimator:
     name = 'r'
     latex_name = '$|\\theta|$'
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw, ns_run):
         w_relative = np.exp(logw - logw.max())
-        return (np.sum(w_relative * r) / np.sum(w_relative))
+        return (np.sum(w_relative * ns_run['r']) / np.sum(w_relative))
 
     def analytical(self, settings):
         return 0
@@ -124,11 +124,11 @@ class rconfEstimator(object):
     def min(self, settings):
         return 0
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw, ns_run):
         # get sorted array of p1 values with their posterior weight
-        wr = np.zeros((r.shape[0], 2))
+        wr = np.zeros((logw.shape[0], 2))
         wr[:, 0] = np.exp(logw - logw.max())
-        wr[:, 1] = r
+        wr[:, 1] = ns_run['r']
         wr = wr[np.argsort(wr[:, 1], axis=0)]
         # calculate cdf
         cdf = np.zeros(wr.shape[0])
@@ -148,9 +148,9 @@ class theta1Estimator(object):
         self.latex_name = ('$\\overline{\\theta_{\hat{' + str(param_ind) +
                            '}}}$')
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
+    def estimator(self, logw, ns_run):
         w_relative = np.exp(logw - logw.max())
-        return ((np.sum(w_relative * theta[:, self.param_ind - 1])
+        return ((np.sum(w_relative * ns_run['theta'][:, self.param_ind - 1])
                 / np.sum(w_relative)))
 
     def analytical(self, settings):
@@ -177,10 +177,10 @@ class theta1confEstimator(object):
             self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
                                '\%}(' + param_str + ')$')
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
-        wp = np.zeros((r.shape[0], 2))
+    def estimator(self, logw, ns_run):
+        wp = np.zeros((logw.shape[0], 2))
         wp[:, 0] = np.exp(logw - logw.max())
-        wp[:, 1] = theta[:, self.param_ind - 1]
+        wp[:, 1] = ns_run['theta'][:, self.param_ind - 1]
         wp = wp[np.argsort(wp[:, 1], axis=0)]
         # calculate cdf
         cdf = np.zeros(wp.shape[0])
@@ -200,10 +200,11 @@ class theta1squaredEstimator:
         self.latex_name = ('$\\overline{\\theta^2_{\hat{' + str(param_ind) +
                            '}}}$')
 
-    def estimator(self, logw=None, logl=None, r=None, theta=None):
-        w_relative = np.exp(logw - logw.max())
-        return ((np.sum(w_relative * (theta[:, self.param_ind - 1] ** 2)) /
-                np.sum(w_relative)))
+    def estimator(self, logw, ns_run):
+        w_relative = np.exp(logw - logw.max())  # protect against overflow
+        w_relative /= np.sum(w_relative)
+        return np.sum(w_relative *
+                      (ns_run['theta'][:, self.param_ind - 1] ** 2))
 
     def ftilde(self, logx, settings):
         # by symmetry at each (hyper)spherical isolikelihood contour:
