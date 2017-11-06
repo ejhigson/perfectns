@@ -16,7 +16,7 @@ import pns.save_load_utils as slu
 def generate_runs(settings, n_repeat, tqdm_leave=True, n_process=None,
                   parallelise=True):
     """
-    Generate n_repeat nested sampling runs in parallel
+    Generate n_repeat nested sampling runs in parallel.
     """
     run_list = []
     if parallelise is False:

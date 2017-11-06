@@ -1,5 +1,8 @@
 #!/usr/bin/python
-"""Generates nested sampling runs and threads."""
+"""
+Functions which perform standard and dynamic nested sampling runs and generate
+samples for use in evidence calculations and parameter estimation.
+"""
 
 import copy
 import numpy as np
@@ -278,6 +281,14 @@ def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
 
 
 def point_importance(samples, thread_min_max, settings, simulate=False):
+    """
+    Calculate the relative importance of each point for use in the dynamic
+    nested sampling algorithm.
+
+    For more details see "Dynamic nested sampling: an improved algorithm for
+    nested sampling parameter estimation and evidence calculation" (Higson et
+    al. 2017).
+    """
     run_dict = au.dict_given_samples_array(samples, thread_min_max)
     logw = au.get_logw(run_dict['logl'], run_dict['nlive_array'],
                        simulate=simulate)
@@ -298,6 +309,13 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
 
 
 def z_importance(w, nlive, exact=False):
+    """
+    Calculate the relative importance of each point for evidence calculation.
+
+    For more details see "Dynamic nested sampling: an improved algorithm for
+    nested sampling parameter estimation and evidence calculation" (Higson et
+    al. 2017).
+    """
     importance = np.cumsum(w)
     importance = importance.max() - importance
     if exact:
@@ -310,6 +328,13 @@ def z_importance(w, nlive, exact=False):
 
 
 def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
+    """
+    Calculate the relative importance of each point for parameter estimation.
+
+    For more details see "Dynamic nested sampling: an improved algorithm for
+    nested sampling parameter estimation and evidence calculation" (Higson et
+    al. 2017).
+    """
     if tuned_dynamic_p is False:
         return w / w.max()
     else:
@@ -325,6 +350,10 @@ def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
 
 
 def min_max_importance(importance, lrxp, settings):
+    """
+    Find the logl and logx values at which to start and end additional dynamic
+    nested sampling threads.
+    """
     assert settings.dynamic_fraction > 0. and settings.dynamic_fraction < 1., \
         "min_max_importance: settings.dynamic_fraction = " + \
         str(settings.dynamic_fraction) + " must be in [0, 1]"
@@ -335,7 +364,8 @@ def min_max_importance(importance, lrxp, settings):
         logx_min = 0
     else:
         logl_min = lrxp[:, 0][high_importance_inds[0] - 1]
-        # use lookup to avoid float errors and to not need inverse function
+        # Use lookup to avoid recalculating the logx values (otherwise there
+        # may be float comparison errors).
         ind = np.where(lrxp[:, 0] == logl_min)[0]
         assert ind.shape == (1,), \
             "Should be one unique match for logl=logl_min=" + str(logl_min) + \
@@ -348,7 +378,8 @@ def min_max_importance(importance, lrxp, settings):
         logx_max = lrxp[-1, 2]
     else:
         logl_max = lrxp[:, 0][(high_importance_inds[-1] + 1)]
-        # use lookup to avoid float errors and to not need inverse function
+        # Use lookup to avoid recalculating the logx values (otherwise there
+        # may be float comparison errors).
         ind = np.where(lrxp[:, 0] == logl_max)[0]
         assert ind.shape == (1,), \
             "Should be one unique match for logl=logl_max=" + str(logl_max) + \

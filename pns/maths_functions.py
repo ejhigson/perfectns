@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Contains useful helper functions shared by many other modules."""
+"""Contains mathematical functions used in perfect nested sampling."""
 
 
 import numpy as np
@@ -11,32 +11,48 @@ import scipy.misc  # for logsumexp
 import mpmath
 
 
-# Maths functions
+def gaussian_r_given_logx(logx, sigma, n_dim):
+    """
+    Returns r coordinate corresponding to logx values for a Gaussian prior with
+    the specificed standard deviation and dimension.
 
-
-def scipy_gaussian_r_given_logx(logx, sigma, n_dim):
+    This uses scipy.special.gammaincinv and requires exponentiating logx, so
+    numerical errors occur with very low logx values.
+    """
     exponent = scipy.special.gammaincinv(n_dim / 2., np.exp(logx))
     return np.sqrt(2 * exponent * sigma ** 2)
 
 
 def scipy_gaussian_logx_given_r(r, sigma, n_dim):
+    """
+    Returns logx coordinate corresponding to r values for a Gaussian prior with
+    the specificed standard deviation and dimension.
+
+    This uses scipy.special.gammainc and requires exponentiating logx, so
+    numerical errors occur with very low logx values.
+    """
     exponent = 0.5 * (r / sigma) ** 2
-    # - scipy.special.gammaln(n_dim / 2.)
     return np.log(scipy.special.gammainc(n_dim / 2., exponent))
 
 
 def mpmath_gaussian_logx_given_r(r, sigma, n_dim):
+    """
+    Returns logx coordinate corresponding to r values for a Gaussian prior with
+    the specificed standard deviation and dimension
+
+    Uses mpmath package for arbitary precision, but only works with float
+    values for r (not arrays).
+    """
     exponent = 0.5 * (r / sigma) ** 2
     return float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=exponent,
                                             regularized=True)))
 
 
-def gaussian_r_given_logx(logx, shrinkage_ratio, n_dim):
-    r = scipy_gaussian_r_given_logx(logx, shrinkage_ratio, n_dim)
-    return r
-
-
 def gaussian_logx_given_r(r, sigma, n_dim):
+    """
+    Wrapper for mpmath_gaussian_logx_given_r which allows both float and 1d
+    numpy array inputs for r.
+    """
     if isinstance(r, np.ndarray):  # needed to ensure output is numpy array
         logx = np.zeros(r.shape)
         for i, r_i in enumerate(r):
@@ -75,12 +91,28 @@ def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
     return np.log(zv_termination_fraction) + logz_analytic - logl_max
 
 
-def sample_nsphere_shells_beta(r, n_dim, n_sample):
-    # sample single parameters on n_dim-dimensional sphere independently
-    # as described in section 4 of my errors in nested sampling paper
-    # NB this will not look correct when plotted in many dimensions as the
-    # radius of n points independently sampled on the radius R hypersphere do
-    # not nessesarily have a radius r!
+def sample_nsphere_shells_beta(r, n_dim, n_sample=None):
+    """
+    Given some 1d numpy array of radial coordinates r, return a numpy array
+    of sample coordinates on the hyperspherical shells with each radial
+    coordinate.
+
+    Sample single parameters on n_dim-dimensional sphere independently, as
+    as described in Section 3.2 of 'Sampling Errors in nested sampling
+    parameter estimation' (Higson et al. 2017).
+
+    NB if each parameter is sampled independently and combined into a vector,
+    that vector will not have a magnitude r.
+
+    The n_sample argument can be used to set the number of parameters for which
+    samples are returned (by symmetry they all have the same distribution).
+    This is useful for saving memory in high dimensions.
+
+    This function is much quicker than sample_nsphere_shells_normal when n_dim
+    is high and n_sample is low.
+    """
+    if n_sample is None:
+        n_sample = n_dim
     thetas = np.sqrt(np.random.beta(0.5, (n_dim - 1) * 0.5,
                                     size=(r.shape[0], n_sample)))
     # randomly select + or -
@@ -90,20 +122,39 @@ def sample_nsphere_shells_beta(r, n_dim, n_sample):
     return thetas
 
 
-def sample_nsphere_shells_normal(r, n_dim, n_sample):
-    assert n_sample <= n_dim, "so far only set up for nsample <= ndim"
-    # sample single parameters on n_dim-dimensional sphere independently
-    # as described in section 4 of my errors in nested sampling paper
+def sample_nsphere_shells_normal(r, n_dim, n_sample=None):
+    """
+    Given some 1d numpy array of radial coordinates r, return a numpy array
+    of sample coordinates on the hyperspherical shells with each radial
+    coordinate.
+
+    This works by using the symmetry of the normal distribution to sample
+    isotropically, then normalising each set of samples to lie on a spherical
+    shell of the correct radius.
+
+    The n_sample argument can be used to set the number of parameters for which
+    samples are returned (by symmetry they all have the same distribution).
+    This is useful for saving memory in high dimensions.
+    """
+    if n_sample is None:
+        n_sample = n_dim
+        assert n_sample <= n_dim, "so far only set up for nsample <= ndim"
     thetas = np.random.normal(size=(r.shape[0], n_dim))
     # calculate normalisation so sum_i(theta_i^2) = r^2 for each row
     norm = r / np.sqrt(np.sum(thetas ** 2, axis=1))
-    # only return n_sample rows
+    # only return n_sample columns
     thetas = thetas[:, :n_sample]
+    # normailse each column
     thetas *= norm[:, None]
     return thetas
 
 
 def sample_nsphere_shells(r, n_dim, n_sample):
+    """
+    Wrapper calling either sample_nsphere_shells_normal or
+    sample_nsphere_shells_beta depending on the dimension and
+    number of samples required.
+    """
     if n_dim >= 100 and n_sample == 1:
         return sample_nsphere_shells_beta(r, n_dim, n_sample)
     else:
@@ -112,8 +163,8 @@ def sample_nsphere_shells(r, n_dim, n_sample):
 
 def nsphere_r_given_logx(logx, r_max, n_dim):
     """
-    Finds r assuming the prior is an n-dimensional sphere co-centred with a
-    spherically symetric likelihood.
+    Finds r coordinates given input logx values for a uniform prior within an
+    n-dimensional sphere co-centred with a spherically symetric likelihood.
     This will return an answer of the same type (float or numpy array) as the
     input {logx}.
     """
@@ -151,77 +202,14 @@ def nsphere_logvol(dim, radius=1.0):
 
 def log_gaussian_given_r(r, sigma, n_dim):
     """
-    Returns the natural log of a normalised,  uncorrelated gaussian with equal
-    variance in all n_dim dimensions.
+    Returns the natural log of a normalised, uncorrelated gaussian likelihood
+    with equal variance in all n_dim dimensions.
     """
     logl = -0.5 * ((r ** 2) / (sigma ** 2))
     # normalise
     logl -= n_dim * np.log(sigma)
     logl -= np.log(2 * np.pi) * (n_dim / 2.0)
     return logl
-
-
-def log_laplace_given_r(r, sigma, n_dim):
-    """
-    Returns the natural log of a normalised,  uncorrelated laplacian with equal
-    variance in all n_dim dimensions.
-    """
-    logl = np.log(scipy.special.k0(np.sqrt(2) * r / sigma))
-    # normalise
-    logl -= n_dim * np.log(sigma)
-    logl -= np.log(np.pi) * (n_dim / 2.)
-    logl -= scipy.special.gammaln(n_dim / 2.)
-    logl -= np.log(2) * ((n_dim / 2.) - 1)
-    return logl
-
-
-def log_bessel_given_r(r, sigma_in, n_dim, q):
-    """
-    Returns the natural log of a normalised,  uncorrelated bessel with equal
-    variance in all n_dim dimensions.
-    Equals Laplace for q=0 and sigma_in = 1 / sqrt(2)
-    """
-    sigma = sigma_in
-    logl = np.log(scipy.special.kn(q, r / sigma))
-    logl += q * np.log(r)
-    # normalise
-    logl -= (n_dim + q) * np.log(sigma)
-    logl -= np.log(np.pi) * (n_dim / 2.)
-    logl -= scipy.special.gammaln(q + (q + (n_dim / 2.)))
-    logl -= np.log(2) * (q + (n_dim / 2.) - 1)
-    return logl
-
-
-def log_logistic_given_r(r, sigma, n_dim):
-    """Returns the natural log of a logistic function. NB not normalised."""
-    logl = -0.5 * ((r ** 2) / (sigma ** 2))
-    if isinstance(r, np.ndarray):
-        for i, r_i in enumerate(r):
-            logl[i] -= 2 * scipy.misc.logsumexp([0.0, -0.5 * ((r_i ** 2) /
-                                                              (sigma ** 2))])
-    else:
-        logl -= 2 * scipy.misc.logsumexp([0, -0.5 * ((r ** 2) / (sigma ** 2))])
-    # normalise
-    logl -= n_dim * np.log(sigma)
-    logl -= np.log(2 * np.pi) * (n_dim / 2.0)
-    return logl
-
-
-def r_given_log_logistic(logl, sigma, n_dim):
-    """
-    Returns the radius of a given logl for a logistic function. NB not
-    normalised.
-    """
-    # remove normalisation constant
-    c = logl + n_dim * np.log(sigma)
-    c += np.log(2 * np.pi) * (n_dim / 2.0)
-    # we now have C = x / (1 + x ** 2), where x = exp(exponent)
-    # only real solutions when 1 - 2C > 0
-    # in this case x = 0 or x = (1 - 2c) / c
-    # log(x) = log(1 - 2c) - log(c)
-    exponent = log_subtract(0, np.log(2 * c)) - np.log(c)
-    r = np.sqrt(-2 * exponent) * sigma
-    return r
 
 
 def log_exp_power_given_r(r, sigma, n_dim, b=0.5):
@@ -312,7 +300,6 @@ def entropy_num_samples(w):
     if w.shape[0] == 0:
         return 0
     else:
-        # assert w.min() >= 0.0, "Weights must be non-negative!"
         w = np.absolute(w)
         w = w / np.sum(w)
         w = w[np.where(w > 0)]
@@ -400,70 +387,6 @@ def df_unc_rows_to_cols(df_in):
     df_out = df_out[col_out]
     # return df_out with rows in same order as input
     return df_out.loc[row_names]
-# def stats_rows(array, reduce_std=1.0):
-#     """
-#     Get the mean, std, skew and kurtosis of a 1d array or of each row of a 2d
-#     array.
-#     """
-#     # Reduce std argument reduces the standard deviation by a factor of
-#     # 1/sqrt(reduce_std) - this is used for estimating stds on the mean.
-#     assert array.ndim == 1 or array.ndim == 2,  "Input must be 1 or 2d array"
-#     if array.ndim == 1:
-#         stats_output = np.zeros(4)
-#         stats_output[0] = np.mean(array)
-#         stats_output[1] = np.std(array, ddof=1)
-#         stats_output[2] = scipy.stats.skew(array, bias=False)
-#         stats_output[3] = scipy.stats.kurtosis(array)
-#         # reduce std for use in splitting
-#         stats_output[1] = stats_output[1] / np.sqrt(float(reduce_std))
-#     elif array.ndim == 2:
-#         stats_output = np.zeros((array.shape[0], 4))
-#         for i in range(0, array.shape[0]):
-#             stats_output[i, 0] = np.mean(array[i, :])
-#             stats_output[i, 1] = np.std(array[i, :], ddof=1)
-#             stats_output[i, 2] = scipy.stats.skew(array[i, :], bias=False)
-#             stats_output[i, 3] = scipy.stats.kurtosis(array[i, :])
-#         # reduce std for use in splitting
-#         stats_output[:, 1] = stats_output[:, 1] / np.sqrt(float(reduce_std))
-#     return stats_output
-
-
-# def kde_cdf_given_values(x, support):
-#     """
-#     Uses kernel density estimation to output an array of cdf values given
-#     some data points x and a support.
-#
-#     Positional arguments:
-#     x -- array of data point values.
-#     support -- array of values on which to calculate the cdf.
-#     """
-#     bandwidth = 1.06 * x.std() * x.size ** (-1 / 5.)
-#     kernels = []
-#     for x_i in x:
-#         kernel = scipy.stats.norm(x_i, bandwidth).pdf(support)
-#         kernels.append(kernel)
-#     density = np.sum(kernels, axis=0)
-#     density /= scipy.integrate.trapz(density, support)
-#     cdf = np.zeros(density.shape[0])
-#     cdf[0] = density[0]
-#     for i in range(1, density.shape[0]):
-#         cdf[i] = cdf[i - 1] + density[i]
-#     cdf = cdf / np.sum(density)
-#     # adjust for rounding errors
-#     assert cdf.max() <= 1.0001, ("cdf must be approx <= 1.0. cdf=" +
-#                                  str(cdf) + ", density=" + str(density))
-#     cdf[np.where(cdf > 1.0)] = 1.0
-#     return cdf
-#
-#
-# def n_std_difference(values_1, sigmas_1, values_2, sigmas_2):
-#     """
-#     Gives the number of standard deviations difference between two floats or
-#     1d arrays.
-#     Assumes the errors are uncorrelated.
-#     """
-#     sigmas = np.sqrt(sigmas_1 ** 2 + sigmas_2 ** 2)
-#     return (values_1 - values_2) / sigmas
 
 
 def array_ratio_std(values_n, sigmas_n, values_d, sigmas_d):

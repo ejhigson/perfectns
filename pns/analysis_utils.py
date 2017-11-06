@@ -35,7 +35,7 @@ def samples_array_given_run(run):
     samples[:, 1] = run['r']
     samples[:, 2] = run['logx']
     samples[:, 3] = run['thread_labels']
-    # Calculate "change in nlive" after each step
+    # Calculate 'change in nlive' after each step
     samples[:-1, 4] = np.diff(run['nlive_array'])
     samples[-1, 4] = -1  # nlive drops to zero after final point
     samples[:, 5:] = run['theta']
@@ -67,10 +67,10 @@ def dict_given_samples_array(samples, thread_min_max):
     nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
     nlive_array = np.zeros(samples.shape[0]) + nlive_0
     nlive_array[1:] += np.cumsum(samples[:-1, 4])
-    assert nlive_array.min() > 0, "nlive contains 0s or negative values!\n" \
-        "nlive_array = " + str(nlive_array)
-    assert nlive_array[-1] == 1, "final point in nlive_array should be 1!\n" \
-        "nlive_array = " + str(nlive_array)
+    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!\n' \
+        'nlive_array = ' + str(nlive_array)
+    assert nlive_array[-1] == 1, 'final point in nlive_array should be 1!\n' \
+        'nlive_array = ' + str(nlive_array)
     samples_dict = {'logl': samples[:, 0],
                     'r': samples[:, 1],
                     'logx': samples[:, 2],
@@ -117,10 +117,10 @@ def get_nlive_thread_min_max(run):
                   np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
         'Should not have threads with neither start nor end logls'
     # If nlive_array contains zeros then print info and throw error
-    assert nlive_array.min() > 0, "nlive contains 0s or negative values!\n" \
-        "nlive_array = " + str(nlive_array)
-    assert nlive_array[-1] == 1, "final point in nlive_array should be 1!\n" \
-        "nlive_array = " + str(nlive_array)
+    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!\n' \
+        'nlive_array = ' + str(nlive_array)
+    assert nlive_array[-1] == 1, 'final point in nlive_array should be 1!\n' \
+        'nlive_array = ' + str(nlive_array)
     return nlive_array
 
 
@@ -131,14 +131,14 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
     """
     n_threads = len(threads)
     if ns_run['settings']['dynamic_goal'] is not None and ninit_sep:
-        ninit = ns_run["settings"]["ninit"]
+        ninit = ns_run['settings']['ninit']
         inds = np.random.randint(0, ninit, ninit)
         inds = np.append(inds, np.random.randint(ninit, n_threads,
                                                  n_threads - ninit))
     else:
         inds = np.random.randint(0, n_threads, n_threads)
     threads_temp = [threads[i] for i in inds]
-    thread_min_max_temp = ns_run["thread_min_max"][inds]
+    thread_min_max_temp = ns_run['thread_min_max'][inds]
     # construct lrxtnp array from the threads, including an updated nlive
     lrxtnp_temp = threads_temp[0]
     for t in threads_temp[1:]:
@@ -198,8 +198,8 @@ def get_logx(nlive, simulate=False):
     Returns a logx vector showing the expected or simulated logx positions of
     points.
     """
-    assert nlive.min() > 0, "nlive contains zeros or negative values!" \
-        "nlive = " + str(nlive)
+    assert nlive.min() > 0, 'nlive contains zeros or negative values!' \
+        'nlive = ' + str(nlive)
     if simulate:
         logx_steps = np.log(np.random.random(nlive.shape)) / nlive
     else:
@@ -231,7 +231,7 @@ def run_std_simulate(run, estimator_list, **kwargs):
     """
     # NB simulate must be True and analytical_w must be False so these are not
     # taken from kwargs
-    n_simulate = kwargs["n_simulate"]  # No default, must specify
+    n_simulate = kwargs['n_simulate']  # No default, must specify
     return_values = kwargs.get('return_values', False)
     all_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(0, n_simulate):
@@ -251,7 +251,7 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
     for a single nested sampling run.
     """
     ninit_sep = kwargs.get('ninit_sep', True)
-    n_simulate = kwargs["n_simulate"]  # No default, must specify
+    n_simulate = kwargs['n_simulate']  # No default, must specify
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(0, n_simulate):
@@ -271,11 +271,11 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
     sampling run.
     """
     ninit_sep = kwargs.get('ninit_sep', True)
-    n_simulate = kwargs["n_simulate"]  # No default, must specify
-    cred_int = kwargs["cred_int"]   # No default, must specify
+    n_simulate = kwargs['n_simulate']  # No default, must specify
+    cred_int = kwargs['cred_int']   # No default, must specify
     assert min(cred_int, 1. - cred_int) * n_simulate > 1, \
-        "n_simulate = " + str(n_simulate) + " is not big enough to " \
-        "calculate the bootstrap " + str(cred_int) + " CI"
+        'n_simulate = ' + str(n_simulate) + ' is not big enough to ' \
+        'calculate the bootstrap ' + str(cred_int) + ' CI'
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(0, n_simulate):
