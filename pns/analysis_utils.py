@@ -1,5 +1,7 @@
 #!/usr/bin/python
-"""Module for functions used to analyse the nested sampling run's outputs"""
+"""
+Module for functions used to analyse nested sampling runs.
+"""
 
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
@@ -175,7 +177,8 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
 
 def get_logw(logl, nlive_array, simulate=False):
     """
-    tbc
+    Calculates the log weights of each sample given its log likelihood and
+    the local numbers of live points.
     """
     logx_inc_start = np.zeros(logl.shape[0] + 1)
     # find X value for each point (start is at logX=0)

@@ -1,5 +1,9 @@
 #!/usr/bin/python
-"""Functions for generating results."""
+"""
+Functions used to generate the results in:
+'Dynamic nested sampling: an improved algorithm for nested sampling parameter
+estimation and evidence calculation' (Higson et al. 2017).
+"""
 
 import pandas as pd
 import numpy as np
@@ -14,8 +18,17 @@ import pns.estimators as e
 @slu.timing_decorator
 def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     """
-    Generate results using different dynamic goals and output a pandas data
-    frame containing standard deviations and performance gains.
+    Generate results tables showing the standard deviations of the results of
+    repeated calculations and efficiency gains (ratios of variances of results
+    calculations) from different dynamic goals.
+
+    Results are output in pandas data frames, and are also saved in latex
+    format in a .txt file.
+
+    This function was used for Tables 1, 2, 3 and 4, as well as to generate the
+    results shown in figures 6 and 7 of 'Dynamic nested sampling: an improved
+    algorithm for nested sampling parameter estimation and evidence
+    calculation' (Higson et al. 2017).
     """
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
@@ -24,19 +37,19 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     reduce_n_samples_max_frac = kwargs.get('reduce_n_samples_max_frac', 0.02)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
     # make save_name
-    extra_root = "dynamic_test"
+    extra_root = 'dynamic_test'
     for dg in dynamic_goals:
-        extra_root += "_" + str(dg)
+        extra_root += '_' + str(dg)
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root,
                                    include_dg=False)
     save_file = save_dir + '/' + save_root + '.dat'
-    print("Running get_dynamic_results: save file is")
+    print('Running get_dynamic_results: save file is')
     print(save_file)
     # try loading results
     if load:
         try:
             results = pd.read_pickle(save_file)
-            print("Loading results from file:\n" + save_file)
+            print('Loading results from file:\n' + save_file)
             return results
         except OSError:
             pass
@@ -57,14 +70,14 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         settings.dynamic_goal = dynamic_goal
         if tuned_dynamic_ps is not None:
             settings.tuned_dynamic_p = tuned_dynamic_ps[i]
-        print("dynamic_goal = " + str(settings.dynamic_goal))
+        print('dynamic_goal = ' + str(settings.dynamic_goal))
         # get a name for this calculation method
         if dynamic_goal is None:
-            method_names.append("standard")
+            method_names.append('standard')
         else:
-            method_names.append("dyn " + str(settings.dynamic_goal))
+            method_names.append('dyn ' + str(settings.dynamic_goal))
             if settings.tuned_dynamic_p is True:
-                method_names[-1] += " tuned"
+                method_names[-1] += ' tuned'
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
         values = pw.func_on_runs(au.run_estimators, run_list, funcs_list,
@@ -75,37 +88,32 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
                 and i == 0):
             n_samples_max = int(df['n_samples']['mean'] *
                                 (1.0 - reduce_n_samples_max_frac))
-            print("given standard used " + str(df['n_samples']['mean']) +
-                  " calls, set n_samples_max=" + str(n_samples_max))
+            print('given standard used ' + str(df['n_samples']['mean']) +
+                  ' calls, set n_samples_max=' + str(n_samples_max))
         values_list.append(values)
         del run_list
     # analyse data
     # ------------
     # find performance gain (proportional to ratio of errors squared)
     for key, df in df_dict.items():
-        std_ratio = df_dict["standard"].loc["std"] / df.loc["std"]
-        std_ratio_unc = mf.array_ratio_std(df_dict["standard"].loc["std"],
-                                           df_dict["standard"].loc["std_unc"],
-                                           df.loc["std"],
-                                           df.loc["std_unc"])
-        df_dict[key].loc["gain"] = std_ratio ** 2
-        df_dict[key].loc["gain_unc"] = 2 * std_ratio * std_ratio_unc
+        std_ratio = df_dict['standard'].loc['std'] / df.loc['std']
+        std_ratio_unc = mf.array_ratio_std(df_dict['standard'].loc['std'],
+                                           df_dict['standard'].loc['std_unc'],
+                                           df.loc['std'],
+                                           df.loc['std_unc'])
+        df_dict[key].loc['gain'] = std_ratio ** 2
+        df_dict[key].loc['gain_unc'] = 2 * std_ratio * std_ratio_unc
     # make uncertainties appear in seperate columns
     for key, df in df_dict.items():
         df_dict[key] = mf.df_unc_rows_to_cols(df)
         df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
     results = pd.concat(df_dict.values())
-    # Sort the rows into the order needed for the paper
+    # Sort the rows and columns into the order needed for the paper
     row_order = []
     for pref in ['mean', 'std', 'gain']:
         for mn in method_names:
             row_order.append(pref + ' ' + mn)
     results = results.reindex(row_order)
-    # results['calc_type'] = pd.Categorical(results.index,
-    #                                       ['mean', 'std', 'gain'])
-    # results.sort_values(["calc_type", "dynamic_goal"], inplace=True)
-    # del results['calc_type']
-    # put the dynamic goal column first
     cols = list(results)
     cols.insert(0, cols.pop(cols.index('n_samples')))
     cols.insert(1, cols.pop(cols.index('n_samples_unc')))
@@ -113,12 +121,12 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     if save:
         # save the results data frame
         results.to_pickle(save_file)
-        print("Results saved to:\n" + save_file)
+        print('Results saved to:\n' + save_file)
         # save results in latex format
-        latex_save_file = save_dir + '/' + save_root + "_latex.txt"
+        latex_save_file = save_dir + '/' + save_root + '_latex.txt'
         latex_df = slu.latex_format_df(results, cols=None, rows=None,
                                        dp_list=None)
-        with open(latex_save_file, "w") as text_file:
+        with open(latex_save_file, 'w') as text_file:
             print(latex_df.to_latex(), file=text_file)
     return results
 
@@ -127,7 +135,16 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
 def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                           **kwargs):
     """
-    tbc
+    Generate results tables showing the standard deviations of the results of
+    repeated calculations and estimated sampling errors from bootstrap
+    resampling.
+
+    Results are output in pandas data frames, and are also saved in latex
+    format in a .txt file.
+
+    This function was used for Table 5 in 'Dynamic nested sampling: an improved
+    algorithm for nested sampling parameter estimation and evidence
+    calculation' (Higson et al. 2017).
     """
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
@@ -139,17 +156,17 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     n_run_ci = kwargs.get('n_run_ci', n_run)
     cred_int = kwargs.get('cred_int', 0.95)
     # make save_name
-    extra_root = ("bootstrap_results_" + str(n_simulate) + "nsim_" +
-                  str(ninit_sep) + "sep")
+    extra_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
+                  str(ninit_sep) + 'sep')
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
     save_file = save_dir + '/' + save_root + '.dat'
-    print("Running get_bootstrap_results: save file is")
+    print('Running get_bootstrap_results: save file is')
     print(save_file)
     # try loading results
     if load:
         try:
             results = pd.read_pickle(save_file)
-            print("Loading results from file:\n" + save_file)
+            print('Loading results from file:\n' + save_file)
             return results
         except OSError:
             pass
@@ -173,10 +190,10 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # Get the mean bootstrap std estimate as a fraction of the std measured
     # from repeated calculations.
     results.loc['bs std'] = bs_df.loc['mean'] / results.loc['repeats std']
-    bs_std_ratio_unc = mf.array_ratio_std(bs_df.loc["mean"],
-                                          bs_df.loc["mean_unc"],
-                                          results.loc["repeats std"],
-                                          results.loc["repeats std_unc"])
+    bs_std_ratio_unc = mf.array_ratio_std(bs_df.loc['mean'],
+                                          bs_df.loc['mean_unc'],
+                                          results.loc['repeats std'],
+                                          results.loc['repeats std_unc'])
     results.loc['bs std_unc'] = bs_std_ratio_unc
     # multiply by 100 to express as a percentage
     results.loc['bs var'] = 100 * bs_df.loc['std'] / bs_df.loc['mean']
@@ -190,10 +207,10 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         # get mean simulation std estimate a ratio to the std from repeats
         results.loc['sim std'] = (sim_df.loc['mean'] /
                                   results.loc['repeats std'])
-        sim_std_ratio_unc = mf.array_ratio_std(sim_df.loc["mean"],
-                                               sim_df.loc["mean_unc"],
-                                               results.loc["repeats std"],
-                                               results.loc["repeats std_unc"])
+        sim_std_ratio_unc = mf.array_ratio_std(sim_df.loc['mean'],
+                                               sim_df.loc['mean_unc'],
+                                               results.loc['repeats std'],
+                                               results.loc['repeats std_unc'])
         results.loc['sim std_unc'] = sim_std_ratio_unc
         # multiply by 100 to express as a percentage
         results.loc['sim var'] = 100 * sim_df.loc['std'] / sim_df.loc['mean']
@@ -228,11 +245,11 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     if save:
         # save the results data frame
         results.to_pickle(save_file)
-        print("Results saved to:\n" + save_file)
+        print('Results saved to:\n' + save_file)
         # save results in latex format
-        latex_save_file = save_dir + '/' + save_root + "_latex.txt"
+        latex_save_file = save_dir + '/' + save_root + '_latex.txt'
         latex_df = slu.latex_format_df(results, cols=None, rows=None,
                                        dp_list=None)
-        with open(latex_save_file, "w") as text_file:
+        with open(latex_save_file, 'w') as text_file:
             print(latex_df.to_latex(), file=text_file)
     return results

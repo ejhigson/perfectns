@@ -2,6 +2,26 @@
 """
 Contains classes representing estimators f(theta) for use on nested sampling
 output and analytical analysis.
+
+Each estimator class should contain a mandatory member function returning the
+value of the estimator for a nested sampling run:
+
+    def estimator(self, logw, ns_run):
+        ...
+
+and may also contain a function giving its analytical value for some given set
+of calculation settings (for use in checking results):
+
+    def analytical(self, settings):
+        ...
+
+Estimators should also contain class variables:
+
+    name: str
+        used for results tables.
+    latex_name: str
+        used for plotting results diagrams.
+
 """
 
 import numpy as np
@@ -11,47 +31,6 @@ import scipy.misc  # for scipy.misc.logsumexp
 import pns.maths_functions as mf
 
 
-# Checking estimator results
-# --------------------------
-
-
-def check_integrand(logx, func, settings):
-    """
-    Helper function to return integrand L(X) X ftilde(X) for checking
-    estimator values by numerical intergration.
-    """
-    # returns L(X) X ftilde(X) for integrating dlogx
-    # NB this must be normalised by a factor V / Z
-    return (np.exp(settings.logl_given_logx(logx) + logx)
-            * func.ftilde(logx, settings))
-
-
-def check_estimator_values(funcs_list, settings):
-    output = np.zeros(len(funcs_list))
-    for i, f in enumerate(funcs_list):
-        try:
-            output[i] = f.analytical(settings)
-            # print(f.name + " from analytical")
-        except (AttributeError, AssertionError):
-            try:
-                # We want to calculate (V / Z) int L(X) X ftilde(X),
-                # where the V factor comes from integrating normalised
-                # distributions in arbitary prior volumes.
-                # See Keeton (2011) section on the canonical gaussian for more
-                # details.
-                logx_terminate = mf.analytic_logx_terminate(settings)
-                assert logx_terminate is not None, \
-                    "logx_terminate function not set up for current settings"
-                result = scipy.integrate.quad(check_integrand, logx_terminate,
-                                              0.0, args=(f, settings))
-                output[i] = result[0] / np.exp(settings.logz_analytic())
-                # print(f.name + " from integrating = " + str(result[0]) + "
-                # with tollerance " + str(result[1]))
-            except (AttributeError, AssertionError):
-                output[i] = np.nan
-    return output
-
-
 # Estimators
 # ----------
 # A class is used to hold the functions required for each estimator f(theta)
@@ -59,34 +38,45 @@ def check_estimator_values(funcs_list, settings):
 
 class logzEstimator(object):
 
+    """Log of Bayesian evidence."""
+
     name = 'logz'
-    latex_name = '$\mathrm{log} \mathcal{Z}$'
+    latex_name = r'$\mathrm{log} \mathcal{Z}$'
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         return scipy.misc.logsumexp(logw)
 
     def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
         return settings.logz_analytic()
 
 
 class zEstimator(object):
 
+    """Bayesian evidence."""
+
     name = 'z'
     latex_name = '$\mathcal{Z}$'
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         return np.exp(scipy.misc.logsumexp(logw))
 
     def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
         return np.exp(settings.logz_analytic())
 
 
 class n_samplesEstimator(object):
 
+    """Numer of samples in run."""
+
     name = 'n_samples'
     latex_name = '\# samples'
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         return logw.shape[0]
 
 
@@ -96,10 +86,12 @@ class rEstimator:
     latex_name = '$|\\theta|$'
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())
         return (np.sum(w_relative * ns_run['r']) / np.sum(w_relative))
 
     def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
         return 0
 
     def min(self, settings):
@@ -125,6 +117,7 @@ class rconfEstimator(object):
         return 0
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         # get sorted array of p1 values with their posterior weight
         wr = np.zeros((logw.shape[0], 2))
         wr[:, 0] = np.exp(logw - logw.max())
@@ -149,11 +142,13 @@ class theta1Estimator(object):
                            '}}}$')
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())
         return ((np.sum(w_relative * ns_run['theta'][:, self.param_ind - 1])
                 / np.sum(w_relative)))
 
     def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
         return 0.
 
     def ftilde(self, logx, settings):
@@ -178,6 +173,7 @@ class theta1confEstimator(object):
                                '\%}(' + param_str + ')$')
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         wp = np.zeros((logw.shape[0], 2))
         wp[:, 0] = np.exp(logw - logw.max())
         wp[:, 1] = ns_run['theta'][:, self.param_ind - 1]
@@ -201,12 +197,72 @@ class theta1squaredEstimator:
                            '}}}$')
 
     def estimator(self, logw, ns_run):
+        """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())  # protect against overflow
         w_relative /= np.sum(w_relative)
         return np.sum(w_relative *
                       (ns_run['theta'][:, self.param_ind - 1] ** 2))
 
     def ftilde(self, logx, settings):
+        """
+        ftilde(X) is mean of f(theta) on the isolikelihood contour
+        L(theta) = L(X).
+        """
         # by symmetry at each (hyper)spherical isolikelihood contour:
         r = settings.r_given_logx(logx)
         return r ** 2 / settings.n_dim
+
+    def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
+        return check_by_integrating(self.ftilde, settings)
+
+
+# Functions for checking estimator results
+# ----------------------------------------
+
+
+def check_estimator_values(funcs_list, settings):
+    """
+    Return an array of the analytical values of the estimators in
+    funcs_list for the provided settings. If the analytical values
+    are not available they are set to np.nan.
+    """
+    output = np.zeros(len(funcs_list))
+    for i, f in enumerate(funcs_list):
+        try:
+            output[i] = f.analytical(settings)
+        except (AttributeError, AssertionError):
+            output[i] = np.nan
+    return output
+
+
+def check_by_integrating(ftilde, settings):
+    """
+    Return the analytical value of the estimator using numerical
+    integration.
+
+    Chopin and Robert (2010) show that the expectation of some function
+    f(theta) is given by the integral
+
+        int L(X) X ftilde(X) dX / Z,
+
+    where ftilde(X) is mean of f(theta) on the isolikelihood contour
+    L(theta) = L(X).
+    """
+    logx_terminate = mf.analytic_logx_terminate(settings)
+    assert logx_terminate is not None, \
+        "logx_terminate function not set up for current settings"
+    result = scipy.integrate.quad(check_integrand, logx_terminate,
+                                  0.0, args=(ftilde, settings))
+    return result[0] / np.exp(settings.logz_analytic())
+
+
+def check_integrand(logx, ftilde, settings):
+    """
+    Helper function to return integrand L(X) X ftilde(X) for checking
+    estimator values by numerical intergration.
+    """
+    # returns L(X) X ftilde(X) for integrating dlogx
+    # NB this must be normalised by a factor V / Z
+    return (np.exp(settings.logl_given_logx(logx) + logx)
+            * ftilde(logx, settings))
