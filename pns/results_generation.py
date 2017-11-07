@@ -55,9 +55,9 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     # start function
     # --------------
     # get info on the number of samples taken in each run as well
-    funcs_list = [e.n_samplesEstimator()] + funcs_in
+    estimator_list = [e.nSamplesEstimator()] + funcs_in
     func_names = []
-    for func in funcs_list:
+    for func in estimator_list:
         func_names.append(func.name)
     df_dict = {}
     values_list = []
@@ -96,7 +96,7 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         # generate runs and get results
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
-        values = pw.func_on_runs(au.run_estimators, run_list, funcs_list,
+        values = pw.func_on_runs(au.run_estimators, run_list, estimator_list,
                                  parallelise=parallelise)
         df = mf.get_df_row_summary(values, func_names)
         df_dict[method_names[-1]] = df
@@ -113,13 +113,27 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
                                            df.loc['std_unc'])
         df_dict[key].loc['gain'] = std_ratio ** 2
         df_dict[key].loc['gain_unc'] = 2 * std_ratio * std_ratio_unc
-    # make uncertainties appear in seperate columns
+        # We want to see the number of samples (not its std or gain), so set
+        # every row of n_samples column equal to the mean number of samples
+        df_dict[key]['n_samples']['std'] = df['n_samples']['mean']
+        df_dict[key]['n_samples']['std_unc'] = df['n_samples']['mean_unc']
+        df_dict[key]['n_samples']['gain'] = df['n_samples']['mean']
+        df_dict[key]['n_samples']['gain_unc'] = df['n_samples']['mean_unc']
     for key, df in df_dict.items():
+        # make uncertainties appear in seperate columns
         df_dict[key] = mf.df_unc_rows_to_cols(df)
+        # edit keys to show method names
         df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
     results = pd.concat(df_dict.values())
+    # Add true values to test that nested sampling is working correctly - these
+    # should be close to the mean calculation values
+    results.loc['true values'] = np.nan
+    true_values = e.check_estimator_values(estimator_list, settings)
+    for i, est in enumerate(estimator_list):
+        results[est.name]['true values'] = true_values[i]
+        results[est.name + '_unc']['true values'] = 0
     # Sort the rows and columns into the order needed for the paper
-    row_order = []
+    row_order = ['true values']
     for pref in ['mean', 'std', 'gain']:
         for mn in method_names:
             row_order.append(pref + ' ' + mn)
@@ -192,6 +206,15 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                  parallelise=parallelise)
     rep_df = mf.get_df_row_summary(rep_values, e_names)
     results = rep_df.set_index('repeats ' + rep_df.index.astype(str))
+    # Add true values to test that nested sampling is working correctly - these
+    # should be close to the mean calculation values
+    row_order = ['true values', 'true values_unc'] + list(results.index)
+    results.loc['true values'] = np.nan
+    results.loc['true values_unc'] = 0
+    results = results.reindex(row_order)
+    true_values = e.check_estimator_values(estimator_list, settings)
+    for i, est in enumerate(estimator_list):
+        results[est.name]['true values'] = true_values[i]
     # get bootstrap std estimate
     bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
                                 estimator_list, n_simulate=n_simulate,

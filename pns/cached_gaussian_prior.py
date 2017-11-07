@@ -5,7 +5,6 @@ Contains helper functions for the 'gaussian_cached' prior.
 
 
 import numpy as np
-# from numba import jit
 from pynverse import inversefunc
 import pns.save_load_utils as slu
 import pns.maths_functions as mf

@@ -197,6 +197,27 @@ class paramCredEstimator(object):
         # linearly interpolate value
         return np.interp(self.probability, cdf, wp[:, 1])
 
+    def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
+        if self.probability == 0.5:
+            # by symmetry the median of any parameter given spherically
+            # symmetric likelihoods and priors cocentred on zero is zero
+            return 0
+        else:
+            assert type(settings.likelihood).__name__ == 'gaussian', \
+                "so far only set up for Gaussian likelihoods"
+            assert type(settings.prior).__name__ in ['gaussian',
+                                                     'gaussian_cached'], \
+                "so far only set up for Gaussian priors"
+            # the product of two gaussians is another gaussian with sigma:
+            sigma = ((settings.likelihood.likelihood_scale ** -2) +
+                     (settings.prior.prior_scale ** -2)) ** -0.5
+            # find number of sigma from the mean by inverting the CDF of the
+            # normal distribution.
+            # cdf(x) = (1/2) + (1/2) * error_function(x / sqrt(2))
+            z = scipy.special.erfinv((self.probability * 2) - 1) * np.sqrt(2)
+            return z * sigma
+
 
 class paramSquaredMeanEstimator:
 

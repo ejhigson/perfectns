@@ -33,7 +33,7 @@ if calc_type == 'test':
     dynamic_goals = [None, 0, 1]
     tuned_dynamic_ps = [False] * len(dynamic_goals)
     likelihood_list = [likelihoods.gaussian(1)]
-    n_dim_list = [3]
+    n_dim_list = [10]
     rmax_list = [10]
 elif calc_type == 'n_dim' or calc_type == 'prior_scale':
     dynamic_goals = [None, 0, 1]
@@ -55,10 +55,10 @@ elif calc_type == 'Cauchy':
     tuned_dynamic_ps = [False] * (len(dynamic_goals) - 1) + [True]
 
 estimator_list = [e.logzEstimator(),
-                  e.theta1Estimator(),
-                  e.theta1squaredEstimator(),
-                  e.theta1confEstimator(0.5),
-                  e.theta1confEstimator(0.84)]
+                  e.paramMeanEstimator(),
+                  e.paramSquaredMeanEstimator(),
+                  e.paramCredEstimator(0.5),
+                  e.paramCredEstimator(0.84)]
 # Run program
 # -----------
 print("Running dynamic results:")

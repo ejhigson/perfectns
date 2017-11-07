@@ -5,14 +5,13 @@ Module for functions used to analyse nested sampling runs.
 
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
-# from numba import jit
 import pns.maths_functions as mf
 
 
 # Access functions which interface directly with ns runs
 # ------------------------------------------------------
 
-def samples_array_given_run(run):
+def samples_array_given_run(ns_run):
     """
     Converts information on samples in a nested sampling run dictionary into a
     numpy array representation. This allows fast addition of more samples and
@@ -20,7 +19,7 @@ def samples_array_given_run(run):
 
     Parameters
     ----------
-    run: dict
+    ns_run: dict
         Nested sampling run dictionary.
         Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
         'theta'
@@ -32,15 +31,15 @@ def samples_array_given_run(run):
         [logl, r, logx, thread label, change in nlive at sample, (thetas)]
         with each row representing a single sample.
     """
-    samples = np.zeros((run['theta'].shape[0], 5 + run['theta'].shape[1]))
-    samples[:, 0] = run['logl']
-    samples[:, 1] = run['r']
-    samples[:, 2] = run['logx']
-    samples[:, 3] = run['thread_labels']
+    samples = np.zeros((ns_run['logl'].shape[0], 5 + ns_run['theta'].shape[1]))
+    samples[:, 0] = ns_run['logl']
+    samples[:, 1] = ns_run['r']
+    samples[:, 2] = ns_run['logx']
+    samples[:, 3] = ns_run['thread_labels']
     # Calculate 'change in nlive' after each step
-    samples[:-1, 4] = np.diff(run['nlive_array'])
+    samples[:-1, 4] = np.diff(ns_run['nlive_array'])
     samples[-1, 4] = -1  # nlive drops to zero after final point
-    samples[:, 5:] = run['theta']
+    samples[:, 5:] = ns_run['theta']
     return samples
 
 
@@ -61,10 +60,11 @@ def dict_given_samples_array(samples, thread_min_max):
 
     Returns
     -------
-    run: dict
-        Nested sampling run dictionary.
+    ns_run: dict
+        Nested sampling run dictionary corresponding to the samples array.
         Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
         'theta'
+        N.B. this does not contain a record of the run's settings.
     """
     nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
     nlive_array = np.zeros(samples.shape[0]) + nlive_0
@@ -73,19 +73,33 @@ def dict_given_samples_array(samples, thread_min_max):
         'nlive_array = ' + str(nlive_array)
     assert nlive_array[-1] == 1, 'final point in nlive_array should be 1!\n' \
         'nlive_array = ' + str(nlive_array)
-    samples_dict = {'logl': samples[:, 0],
-                    'r': samples[:, 1],
-                    'logx': samples[:, 2],
-                    'thread_labels': samples[:, 3],
-                    'nlive_array': nlive_array,
-                    'thread_min_max': thread_min_max,
-                    'theta': samples[:, 5:]}
-    return samples_dict
+    ns_run = {'logl': samples[:, 0],
+              'r': samples[:, 1],
+              'logx': samples[:, 2],
+              'thread_labels': samples[:, 3],
+              'nlive_array': nlive_array,
+              'thread_min_max': thread_min_max,
+              'theta': samples[:, 5:]}
+    return ns_run
 
 
 def get_run_threads(ns_run):
     """
     Get the individual threads for a nested sampling run.
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+        Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
+        'theta'
+
+    Returns
+    -------
+    threads: list of numpy array
+        Each thread (list element) is a samples array containing columns
+        [logl, r, logx, thread label, change in nlive at sample, (thetas)]
+        with each row representing a single sample.
     """
     samples = samples_array_given_run(ns_run)
     n_threads = ns_run['thread_min_max'].shape[0]
@@ -98,22 +112,30 @@ def get_run_threads(ns_run):
     return threads
 
 
-def get_nlive_thread_min_max(run):
+def get_nlive_thread_min_max(ns_run):
     """
     Calculates the local number of live points for each sample using likelihood
     values and the thread_min_max array.
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+
+    Returns
+    -------
+    nlive_array: 1d numpy array
     """
-    nlive_array = np.zeros(run['logl'].shape[0])
-    lmm_ar = run['thread_min_max']
+    nlive_array = np.zeros(ns_run['logl'].shape[0])
+    lmm_ar = ns_run['thread_min_max']
     # no min logl
     for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
-        nlive_array[np.where(r[1] >= run['logl'])] += 1
+        nlive_array[np.where(r[1] >= ns_run['logl'])] += 1
     # no max logl
     for r in lmm_ar[np.isnan(lmm_ar[:, 1])]:
-        nlive_array[np.where(run['logl'] > r[0])] += 1
+        nlive_array[np.where(ns_run['logl'] > r[0])] += 1
     # both min and max logl
     for r in lmm_ar[~np.isnan(lmm_ar[:, 0]) & ~np.isnan(lmm_ar[:, 1])]:
-        indexes = np.where((r[1] >= run['logl']) & (run['logl'] > r[0]))
+        indexes = np.where((r[1] >= ns_run['logl']) & (ns_run['logl'] > r[0]))
         nlive_array[indexes] += 1
     assert lmm_ar[np.isnan(lmm_ar[:, 0]) &
                   np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
@@ -126,11 +148,27 @@ def get_nlive_thread_min_max(run):
     return nlive_array
 
 
-def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
+def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
     """
     Bootstrap resamples threads of nested sampling run, returning a new
     (resampled) nested sampling run.
+
+    Get the individual threads for a nested sampling run.
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    threads: None or list of numpy arrays, optional
+    ninit_sep: bool
+
+    Returns
+    -------
+    ns_run_temp: dict
+        Nested sampling run dictionary.
     """
+    if threads is None:
+        threads = get_run_threads(ns_run)
     n_threads = len(threads)
     if ns_run['settings']['dynamic_goal'] is not None and ninit_sep:
         ninit = ns_run['settings']['ninit']
@@ -164,7 +202,8 @@ def bootstrap_resample_run(ns_run, threads, ninit_sep=False):
         else:
             # If the point at which this thread started is present multiple
             # times in this bootstrap replication, select one at random to
-            # incriment nlive on.
+            # incriment nlive on. This avoids any systematic bias from e.g.
+            # always choosing the first point.
             lrxtnp_temp[np.random.choice(ind), 4] += 1
     # make run
     ns_run_temp = dict_given_samples_array(lrxtnp_temp, thread_min_max_temp)
@@ -179,19 +218,23 @@ def get_logw(logl, nlive_array, simulate=False):
     """
     Calculates the log weights of each sample given its log likelihood and
     the local numbers of live points.
+
+    Uses the trapezium rule such that the weight of point i is
+    w_i = l_i (X_{i-1} - X_{i+1}) / 2
     """
     logx_inc_start = np.zeros(logl.shape[0] + 1)
     # find X value for each point (start is at logX=0)
     logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
     logw = np.zeros(logl.shape[0])
-    # vectorized trapezium rule:
+    # vectorized trapezium rule: w_i = (X_{i-1} - X_{i+1}) / 2
     logw[:-1] = mf.log_subtract(logx_inc_start[:-2], logx_inc_start[2:])
     logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
     # assign all prior volume between X=0 and the first point to logw[0]
     logw[0] = scipy.misc.logsumexp([logw[0], np.log(0.5) +
                                     mf.log_subtract(logx_inc_start[0],
                                                     logx_inc_start[1])])
-    logw[-1] = logw[-2]  # approximate final element as equal to the one before
+    # approximate final prior volume element as equal to the one before
+    logw[-1] = logw[-2]
     logw += logl
     return logw
 
@@ -215,50 +258,100 @@ def get_logx(nlive, simulate=False):
 # These all have arguments (ns_run, estimator_list, **kwargs)
 
 
-def run_estimators(run, estimator_list, **kwargs):
+def run_estimators(ns_run, estimator_list, **kwargs):
     """
     Calculates values of list of estimators for a single nested sampling run.
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    estimator_list: list of estimator classes, each containing class method
+        estimator(self, logw, ns_run)
+    simulate: bool
+
+    Returns
+    -------
+    output: 1d numpy array
+        Calculation result for each estimator in estimator_list.
     """
     simulate = kwargs.get('simulate', False)
-    logw = get_logw(run['logl'], run['nlive_array'], simulate=simulate)
+    logw = get_logw(ns_run['logl'], ns_run['nlive_array'], simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, f in enumerate(estimator_list):
-        output[i] = f.estimator(logw, run)
+        output[i] = f.estimator(logw, ns_run)
     return output
 
 
-def run_std_simulate(run, estimator_list, **kwargs):
+def run_std_simulate(ns_run, estimator_list, **kwargs):
     """
-    Calculates simulated weight standard deviation estimates for a single
-    nested sampling run.
+    Uses the 'simulated weights' method to calculate an estimate of the
+    standard deviation of the distribution of sampling errors (the
+    uncertainty on the calculation) for a single nested sampling run.
+
+    Note that the simulated weights method is not accurate for parameter
+    estimation calculations.
+
+    For more details about the simulated weights method for estimating sampling
+    errors see 'Sampling errors in nested sampling parameter estimation'
+    (Higson et al. 2017).
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    estimator_list: list of estimator classes, each containing class method
+        estimator(self, logw, ns_run)
+    n_simulate: int
+
+    Returns
+    -------
+    output: 1d numpy array
+        Sampling error on calculation result for each estimator in
+        estimator_list.
     """
-    # NB simulate must be True and analytical_w must be False so these are not
-    # taken from kwargs
     n_simulate = kwargs['n_simulate']  # No default, must specify
-    return_values = kwargs.get('return_values', False)
     all_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(0, n_simulate):
-        all_values[:, i] = run_estimators(run, estimator_list, simulate=True)
+        all_values[:, i] = run_estimators(ns_run, estimator_list,
+                                          simulate=True)
     stds = np.zeros(all_values.shape[0])
     for i, _ in enumerate(stds):
         stds[i] = np.std(all_values[i, :], ddof=1)
-    if return_values:
-        return stds, all_values
-    else:
-        return stds
+    return stds
 
 
 def run_std_bootstrap(ns_run, estimator_list, **kwargs):
     """
-    Calculates bootstrap standard deviation estimates
-    for a single nested sampling run.
+    Uses bootstrap resampling to calculate an estimate of the
+    standard deviation of the distribution of sampling errors (the
+    uncertainty on the calculation) for a single nested sampling run.
+
+    For more details about bootstrap resampling for estimating sampling
+    errors see 'Sampling errors in nested sampling parameter estimation'
+    (Higson et al. 2017).
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    estimator_list: list of estimator classes, each containing class method
+        estimator(self, logw, ns_run)
+    n_simulate: int
+    ninit_sep: bool, optional
+
+    Returns
+    -------
+    output: 1d numpy array
+        Sampling error on calculation result for each estimator in
+        estimator_list.
     """
     ninit_sep = kwargs.get('ninit_sep', True)
     n_simulate = kwargs['n_simulate']  # No default, must specify
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(0, n_simulate):
-        ns_run_temp = bootstrap_resample_run(ns_run, threads,
+        ns_run_temp = bootstrap_resample_run(ns_run, threads=threads,
                                              ninit_sep=ninit_sep)
         bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
         del ns_run_temp
@@ -270,8 +363,29 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
 
 def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
     """
-    Calculates bootstrap confidence interval estimates for a single nested
-    sampling run.
+    Uses bootstrap resampling to calculate credible intervals on the
+    distribution of sampling errors (the uncertainty on the calculation)
+    for a single nested sampling run.
+
+    For more details about bootstrap resampling for estimating sampling
+    errors see 'Sampling errors in nested sampling parameter estimation'
+    (Higson et al. 2017).
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    estimator_list: list of estimator classes, each containing class method
+        estimator(self, logw, ns_run)
+    cred_int: float
+    n_simulate: int
+    ninit_sep: bool, optional
+
+    Returns
+    -------
+    output: 1d numpy array
+        Credible interval on sampling error on calculation result for each
+        estimator in estimator_list.
     """
     ninit_sep = kwargs.get('ninit_sep', True)
     n_simulate = kwargs['n_simulate']  # No default, must specify

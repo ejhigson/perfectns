@@ -45,10 +45,10 @@ settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 ninit_sep = False
 settings.n_dim = 3
 estimator_list = [e.logzEstimator(),
-                  e.theta1Estimator(),
-                  e.theta1squaredEstimator(),
-                  e.theta1confEstimator(0.5),
-                  e.theta1confEstimator(0.84)]
+                  e.paramMeanEstimator(),
+                  e.paramSquaredMeanEstimator(),
+                  e.paramCredEstimator(0.5),
+                  e.paramCredEstimator(0.84)]
 e_names = []
 for est in estimator_list:
     e_names.append(est.name)
@@ -58,6 +58,7 @@ for est in estimator_list:
 print("Running bootstrap results:")
 bootstrap_results = rg.get_bootstrap_results(n_runs, n_simulate,
                                              estimator_list, settings,
+                                             load=load, save=save,
                                              n_simulate_ci=n_simulate_ci,
                                              add_sim_method=add_sim_method,
                                              n_run_ci=n_run_ci,
