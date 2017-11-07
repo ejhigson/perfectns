@@ -6,7 +6,7 @@ nested_sampling(settings).
 """
 
 import pandas as pd
-import pns_settings
+import pns.settings
 import pns.estimators as e
 # import pns.analysis_utils as au
 # import pns.parallelised_wrappers as pw
@@ -15,7 +15,7 @@ import pns.results_generation as rg
 import pns.likelihoods as likelihoods
 # import pns.save_load_utils as slu
 import pns.priors as priors
-settings = pns_settings.PerfectNestedSamplingSettings()
+settings = pns.settings.PerfectNestedSamplingSettings()
 pd.set_option('display.width', 200)
 
 
@@ -28,14 +28,6 @@ n_run_ci = 500
 n_runs = 5000
 n_simulate = 200
 n_simulate_ci = 1000
-# for testing
-parallelise = False
-load = False
-save = False
-n_run_ci = 2
-n_runs = 5
-n_simulate = 20
-n_simulate_ci = 200
 # perfect nested sampling calc type:
 add_sim_method = True
 cred_int = 0.95

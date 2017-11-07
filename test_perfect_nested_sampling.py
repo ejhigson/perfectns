@@ -4,7 +4,7 @@ Runs some tests of perfect_nested_sampling functionality.
 """
 
 import pandas as pd
-import pns_settings
+import pns.settings
 import pns.estimators as e
 import pns.likelihoods as likelihoods
 import pns.nested_sampling as ns
@@ -19,7 +19,7 @@ print('\nTesting perfect_nested_sampling:')
 print('--------------------------------\n')
 
 print('Creating a PerfectNestedSamplingSettings object')
-settings = pns_settings.PerfectNestedSamplingSettings()
+settings = pns.settings.PerfectNestedSamplingSettings()
 print('Setting the likelihood, prior and number of dimensions')
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 settings.prior = priors.gaussian(prior_scale=1)
