@@ -211,53 +211,6 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
     return ns_run_temp
 
 
-# Helper functions
-# ----------------
-
-def get_logw(logl, nlive_array, simulate=False):
-    """
-    Calculates the log weights of each sample given its log likelihood and
-    the local numbers of live points.
-
-    Uses the trapezium rule such that the weight of point i is
-    w_i = l_i (X_{i-1} - X_{i+1}) / 2
-    """
-    logx_inc_start = np.zeros(logl.shape[0] + 1)
-    # find X value for each point (start is at logX=0)
-    logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
-    logw = np.zeros(logl.shape[0])
-    # vectorized trapezium rule: w_i = (X_{i-1} - X_{i+1}) / 2
-    logw[:-1] = mf.log_subtract(logx_inc_start[:-2], logx_inc_start[2:])
-    logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
-    # assign all prior volume between X=0 and the first point to logw[0]
-    logw[0] = scipy.misc.logsumexp([logw[0], np.log(0.5) +
-                                    mf.log_subtract(logx_inc_start[0],
-                                                    logx_inc_start[1])])
-    # approximate final prior volume element as equal to the one before
-    logw[-1] = logw[-2]
-    logw += logl
-    return logw
-
-
-def get_logx(nlive, simulate=False):
-    """
-    Returns a logx vector showing the expected or simulated logx positions of
-    points.
-    """
-    assert nlive.min() > 0, 'nlive contains zeros or negative values!' \
-        'nlive = ' + str(nlive)
-    if simulate:
-        logx_steps = np.log(np.random.random(nlive.shape)) / nlive
-    else:
-        logx_steps = -1 * (nlive ** -1)
-    return np.cumsum(logx_steps)
-
-
-# Functions for output from a single nested sampling run
-# ------------------------------------------------------
-# These all have arguments (ns_run, estimator_list, **kwargs)
-
-
 def run_estimators(ns_run, estimator_list, **kwargs):
     """
     Calculates values of list of estimators for a single nested sampling run.
@@ -268,7 +221,7 @@ def run_estimators(ns_run, estimator_list, **kwargs):
         Nested sampling run dictionary.
     estimator_list: list of estimator classes, each containing class method
         estimator(self, logw, ns_run)
-    simulate: bool
+    simulate: bool, optional
 
     Returns
     -------
@@ -411,3 +364,45 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
         ci_output[i] -= np.interp(1. - cred_int, cdf,
                                   np.sort(bs_values[i, :]))
     return ci_output
+
+
+# Helper functions
+# ----------------
+
+def get_logw(logl, nlive_array, simulate=False):
+    """
+    Calculates the log weights of each sample given its log likelihood and
+    the local numbers of live points.
+
+    Uses the trapezium rule such that the weight of point i is
+    w_i = l_i (X_{i-1} - X_{i+1}) / 2
+    """
+    logx_inc_start = np.zeros(logl.shape[0] + 1)
+    # find X value for each point (start is at logX=0)
+    logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
+    logw = np.zeros(logl.shape[0])
+    # vectorized trapezium rule: w_i = (X_{i-1} - X_{i+1}) / 2
+    logw[:-1] = mf.log_subtract(logx_inc_start[:-2], logx_inc_start[2:])
+    logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
+    # assign all prior volume between X=0 and the first point to logw[0]
+    logw[0] = scipy.misc.logsumexp([logw[0], np.log(0.5) +
+                                    mf.log_subtract(logx_inc_start[0],
+                                                    logx_inc_start[1])])
+    # approximate final prior volume element as equal to the one before
+    logw[-1] = logw[-2]
+    logw += logl
+    return logw
+
+
+def get_logx(nlive, simulate=False):
+    """
+    Returns a logx vector showing the expected or simulated logx positions of
+    points.
+    """
+    assert nlive.min() > 0, 'nlive contains zeros or negative values!' \
+        'nlive = ' + str(nlive)
+    if simulate:
+        logx_steps = np.log(np.random.random(nlive.shape)) / nlive
+    else:
+        logx_steps = -1 * (nlive ** -1)
+    return np.cumsum(logx_steps)

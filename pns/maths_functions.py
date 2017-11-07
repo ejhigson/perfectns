@@ -71,24 +71,24 @@ def analytic_logx_terminate(settings):
     # use r=0 rather than logx=-np.inf as the latter causes numerical problems
     logl_max = settings.logl_given_r(0)
     if settings.logz_analytic() is not None:
-        return logx_terminate_bound(logl_max, settings.zv_termination_fraction,
+        return logx_terminate_bound(logl_max, settings.termination_fraction,
                                     settings.logz_analytic())
 
 
-def logx_terminate_bound(logl_max, zv_termination_fraction, logz_analytic):
+def logx_terminate_bound(logl_max, termination_fraction, logz_analytic):
     """
     Find a lower bound logx_terminate analytically by assuming all likelihood
     at very low X approximately equals the maximum likelihood. This
     approximation breaks down in very high dimensions and the true logx
     terminate required will be larger.
     We want:
-    Z_term = zv_termination_fraction * Z_analytic
+    Z_term = termination_fraction * Z_analytic
            = int_0^Xterm L(X) dX
            approx= Xterm L_max,
     so
-    logx_term = log(zv_termination_fraction) + log(Z_analytic) - logl_max
+    logx_term = log(termination_fraction) + log(Z_analytic) - logl_max
     """
-    return np.log(zv_termination_fraction) + logz_analytic - logl_max
+    return np.log(termination_fraction) + logz_analytic - logl_max
 
 
 def sample_nsphere_shells_beta(r, n_dim, n_sample=None):

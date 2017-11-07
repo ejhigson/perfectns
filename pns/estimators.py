@@ -26,6 +26,7 @@ Estimators should also contain class variables:
 """
 
 import numpy as np
+import pandas as pd
 import scipy
 import scipy.misc  # for scipy.misc.logsumexp
 import pns.maths_functions as mf
@@ -258,19 +259,19 @@ class paramSquaredMeanEstimator:
 # ----------------------------------------
 
 
-def check_estimator_values(funcs_list, settings):
+def get_true_estimator_values(estimator_list, settings):
     """
-    Return an array of the analytical values of the estimators in
-    funcs_list for the provided settings. If the analytical values
-    are not available they are set to np.nan.
+    Return a pandas data frame of the correct values for the estimators in
+    estimator_list given the likelihood and prior in settings. If there is no
+    method for calculating the values set up yet they are set to np.nan.
     """
-    output = np.zeros(len(funcs_list))
-    for i, f in enumerate(funcs_list):
+    output = {}
+    for est in estimator_list:
         try:
-            output[i] = f.analytical(settings)
+            output[est.name] = est.analytical(settings)
         except (AttributeError, AssertionError):
-            output[i] = np.nan
-    return output
+            output[est.name] = np.nan
+    return pd.DataFrame(output, index=['true values'])
 
 
 def check_by_integrating(ftilde, settings):

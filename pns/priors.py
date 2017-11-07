@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Classes representing spherically symetric priors.
+Classes representing spherically symmetric priors.
 
 Each prior class must contain a member function giving the radial
 coordinate r = |theta| as a function of the log fraction of the prior volume
@@ -29,7 +29,7 @@ import pns.cached_gaussian_prior as cgp
 
 class uniform(object):
 
-    """Spherically symetric uniform prior."""
+    """Spherically symmetric uniform prior."""
 
     def __init__(self, prior_scale):
         self.prior_scale = prior_scale
@@ -61,7 +61,7 @@ class uniform(object):
 
 class gaussian(object):
 
-    """Spherically symetric uniform prior."""
+    """Spherically symmetric uniform prior."""
 
     def __init__(self, prior_scale):
         self.prior_scale = prior_scale
@@ -94,8 +94,8 @@ class gaussian(object):
 class gaussian_cached(object):
 
     """
-    Spherically symetric uniform prior.
-    The scipy inverse gamma function is not numerially stable so cache
+    Spherically symmetric uniform prior.
+    The scipy inverse gamma function is not numerically stable so cache
     r_given_logx by using the mpmath logx_given_r and linearly
     interpolating.
     """

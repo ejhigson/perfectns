@@ -11,7 +11,7 @@ import pns.maths_functions as mf
 import pns.analysis_utils as au
 
 
-def perfect_nested_sampling(settings):
+def generate_ns_run(settings):
     """
     Performs perfect nested sampling calculation and returns a nested sampling
     run in the form of a dictionary.
@@ -62,7 +62,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     estimation' (Higson et al. 2017).
 
     The run terminates when the estiamted posterior mass contained in the live
-    points is less than settings.zv_termination_fraction. The evidence in the
+    points is less than settings.termination_fraction. The evidence in the
     remaining live points is estimated as
 
         Z_{live} = average likelihood of live points * prior volume remaining
@@ -76,7 +76,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     run: dict
         Nested sampling run dictionary containing information about the run's
         posterior samples and a record of the settings used. See docstring for
-        perfect_nested_sampling for more details.
+        generate_ns_run for more details.
     """
     # Reset the random seed to avoid repeated results when multiprocessing.
     np.random.seed()
@@ -102,7 +102,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     logtrapz = np.log(0.5 * ((t ** -1) - t))
     # start the array of dead points
     dead_points_list = []
-    while logz_live - np.log(settings.zv_termination_fraction) > logz_dead:
+    while logz_live - np.log(settings.termination_fraction) > logz_dead:
         # add to dead points
         ind = np.where(live_points[:, 0] == live_points[:, 0].min())[0][0]
         dead_points_list.append(copy.deepcopy(live_points[ind, :]))
@@ -172,7 +172,7 @@ def generate_dynamic_run(settings):
     dict
         Nested sampling run dictionary containing information about the run's
         posterior samples and a record of the settings used. See docstring for
-        perfect_nested_sampling for more details.
+        generate_ns_run for more details.
     """
     assert 1 >= settings.dynamic_goal >= 0, 'dynamic_goal = ' + \
         str(settings.dynamic_goal) + ' should be between 0 and 1'

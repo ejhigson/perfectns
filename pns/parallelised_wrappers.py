@@ -41,12 +41,12 @@ def generate_runs(settings, n_repeat, max_worker=None, parallelise=True):
     if parallelise is False:
         print('Warning: generate_runs not parallelised!')
         for _ in tqdm(range(n_repeat), leave=False):
-            run_list.append(ns.perfect_nested_sampling(settings))
+            run_list.append(ns.generate_ns_run(settings))
     else:
         pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_worker)
         futures = []
         for _ in range(n_repeat):
-            futures.append(pool.submit(ns.perfect_nested_sampling, settings))
+            futures.append(pool.submit(ns.generate_ns_run, settings))
         for _, fut in tqdm(enumerate(concurrent.futures.as_completed(futures)),
                            leave=False, total=len(futures)):
             run_list.append(fut.result())

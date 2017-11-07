@@ -44,7 +44,7 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
     save_name += '_' + str(settings.likelihood.likelihood_scale)
     save_name += '_' + type(settings.prior).__name__
     save_name += '_' + str(settings.prior.prior_scale)
-    save_name += '_' + str(settings.zv_termination_fraction) + 'term'
+    save_name += '_' + str(settings.termination_fraction) + 'term'
     save_name += '_' + str(n_repeats) + 'reps'
     save_name += '_' + str(settings.nlive_const) + 'nlive'
     if settings.dynamic_goal is not None or include_dg is False:

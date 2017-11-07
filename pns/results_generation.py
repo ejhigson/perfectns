@@ -127,11 +127,8 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     results = pd.concat(df_dict.values())
     # Add true values to test that nested sampling is working correctly - these
     # should be close to the mean calculation values
-    results.loc['true values'] = np.nan
-    true_values = e.check_estimator_values(estimator_list, settings)
-    for i, est in enumerate(estimator_list):
-        results[est.name]['true values'] = true_values[i]
-        results[est.name + '_unc']['true values'] = 0
+    results = results.append(e.get_true_estimator_values(estimator_list,
+                                                         settings))
     # Sort the rows and columns into the order needed for the paper
     row_order = ['true values']
     for pref in ['mean', 'std', 'gain']:
@@ -201,20 +198,15 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # generate runs
     run_list = pw.get_run_data(settings, n_run, save=save, load=load,
                                parallelise=parallelise)
-    # get std from repeats
+    # Add true values to test that nested sampling is working correctly - these
+    # should be close to the mean calculation values
+    results = e.get_true_estimator_values(estimator_list, settings)
+    # get mean and std of repeated calculations
     rep_values = pw.func_on_runs(au.run_estimators, run_list, estimator_list,
                                  parallelise=parallelise)
     rep_df = mf.get_df_row_summary(rep_values, e_names)
-    results = rep_df.set_index('repeats ' + rep_df.index.astype(str))
-    # Add true values to test that nested sampling is working correctly - these
-    # should be close to the mean calculation values
-    row_order = ['true values', 'true values_unc'] + list(results.index)
-    results.loc['true values'] = np.nan
-    results.loc['true values_unc'] = 0
-    results = results.reindex(row_order)
-    true_values = e.check_estimator_values(estimator_list, settings)
-    for i, est in enumerate(estimator_list):
-        results[est.name]['true values'] = true_values[i]
+    results = results.append(rep_df.set_index('repeats ' +
+                                              rep_df.index.astype(str)))
     # get bootstrap std estimate
     bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
                                 estimator_list, n_simulate=n_simulate,
