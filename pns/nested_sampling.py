@@ -7,7 +7,6 @@ samples for use in evidence calculations and parameter estimation.
 import copy
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
-# perfect nested sampling modules
 import pns.maths_functions as mf
 import pns.analysis_utils as au
 
@@ -59,8 +58,8 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     Performs standard nested sampling using the likelihood and prior specified
     in settings.
 
-    For more details see "Sampling errors in nested sampling parameter
-    estimation" (Higson et al. 2017).
+    For more details see 'Sampling errors in nested sampling parameter
+    estimation' (Higson et al. 2017).
 
     The run terminates when the estiamted posterior mass contained in the live
     points is less than settings.zv_termination_fraction. The evidence in the
@@ -151,9 +150,9 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
 def generate_dynamic_run(settings):
     """
     Generate a dynamic nested sampling run.
-    For details of the dynamic nested sampling algorithm, see "Dynamic nested
+    For details of the dynamic nested sampling algorithm, see 'Dynamic nested
     sampling: an improved algorithm for nested sampling parameter estimation
-    and evidence calculation" (Higson et al. 2017).
+    and evidence calculation' (Higson et al. 2017).
 
     The run terminates when the number of samples reachs some limit
     settings.n_samples_max. If this is not set, the function will estimate the
@@ -175,27 +174,21 @@ def generate_dynamic_run(settings):
         posterior samples and a record of the settings used. See docstring for
         perfect_nested_sampling for more details.
     """
-    assert 1 >= settings.dynamic_goal >= 0, "dynamic_goal = " + \
-        str(settings.dynamic_goal) + " should be between 0 and 1"
+    assert 1 >= settings.dynamic_goal >= 0, 'dynamic_goal = ' + \
+        str(settings.dynamic_goal) + ' should be between 0 and 1'
     np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: inital exploratory standard ns run with ninit live points
     # ----------------------------------------------------------------
     standard_run = generate_standard_run(settings, is_dynamic_initial_run=True)
-    # create "samples" array with columns:
+    # create samples array with columns:
     # [logl, r, logx, thread label, change in nlive, params]
     samples = au.samples_array_given_run(standard_run)
     thread_min_max = standard_run['thread_min_max']
     n_samples = samples.shape[0]
     if settings.n_samples_max is None:
-        print("dns: settings.n_samples_max is None: estimate from nlive_const")
+        print('dns: settings.n_samples_max is None: estimate from nlive_const')
         # estimate number of likelihood calls available
-        n_samples_max = settings.nlive_const * n_samples / settings.ninit
-        # Reduce by small factor so dynamic ns uses fewer likelihood calls than
-        # normal ns. This factor is a function of the dynamic goal as typically
-        # evidence calculations have longer attitional threads than parameter
-        # estimation calculations.
-        n_samples_max *= 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
-                              (settings.nbatch / settings.nlive_const))
+        n_samples_max = n_samples * (settings.nlive_const / settings.ninit)
     else:
         n_samples_max = settings.n_samples_max
     # Step 2: add samples whereever they are most useful
@@ -260,8 +253,8 @@ def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
     """
     if logx_end is None:
         logx_end = settings.logx_terminate
-    assert logx_start > logx_end, "generate_single_thread: logx_start=" + \
-        str(logx_start) + " <= logx_end=" + str(logx_end)
+    assert logx_start > logx_end, 'generate_single_thread: logx_start=' + \
+        str(logx_start) + ' <= logx_end=' + str(logx_end)
     logx_list = generate_thread_logx(logx_end, logx_start=logx_start,
                                      keep_final_point=keep_final_point)
     if not logx_list:  # PEP8 method for testing if sequence is empty
@@ -285,8 +278,8 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     Calculate the relative importance of each point for use in the dynamic
     nested sampling algorithm.
 
-    For more details see "Dynamic nested sampling: an improved algorithm for
-    nested sampling parameter estimation and evidence calculation" (Higson et
+    For more details see 'Dynamic nested sampling: an improved algorithm for
+    nested sampling parameter estimation and evidence calculation' (Higson et
     al. 2017).
     """
     run_dict = au.dict_given_samples_array(samples, thread_min_max)
@@ -312,8 +305,8 @@ def z_importance(w, nlive, exact=False):
     """
     Calculate the relative importance of each point for evidence calculation.
 
-    For more details see "Dynamic nested sampling: an improved algorithm for
-    nested sampling parameter estimation and evidence calculation" (Higson et
+    For more details see 'Dynamic nested sampling: an improved algorithm for
+    nested sampling parameter estimation and evidence calculation' (Higson et
     al. 2017).
     """
     importance = np.cumsum(w)
@@ -331,8 +324,8 @@ def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
     """
     Calculate the relative importance of each point for parameter estimation.
 
-    For more details see "Dynamic nested sampling: an improved algorithm for
-    nested sampling parameter estimation and evidence calculation" (Higson et
+    For more details see 'Dynamic nested sampling: an improved algorithm for
+    nested sampling parameter estimation and evidence calculation' (Higson et
     al. 2017).
     """
     if tuned_dynamic_p is False:
@@ -355,8 +348,8 @@ def min_max_importance(importance, lrxp, settings):
     nested sampling threads.
     """
     assert settings.dynamic_fraction > 0. and settings.dynamic_fraction < 1., \
-        "min_max_importance: settings.dynamic_fraction = " + \
-        str(settings.dynamic_fraction) + " must be in [0, 1]"
+        'min_max_importance: settings.dynamic_fraction = ' + \
+        str(settings.dynamic_fraction) + ' must be in [0, 1]'
     # where to start the additional threads:
     high_importance_inds = np.where(importance > settings.dynamic_fraction)[0]
     if high_importance_inds[0] == 0:  # start from sampling the whole prior
@@ -368,9 +361,9 @@ def min_max_importance(importance, lrxp, settings):
         # may be float comparison errors).
         ind = np.where(lrxp[:, 0] == logl_min)[0]
         assert ind.shape == (1,), \
-            "Should be one unique match for logl=logl_min=" + str(logl_min) + \
-            ". Instead we have matches at indexes " + str(ind) + \
-            " of the lrxp array (shape " + str(lrxp.shape) + ")"
+            'Should be one unique match for logl=logl_min=' + str(logl_min) + \
+            '. Instead we have matches at indexes ' + str(ind) + \
+            ' of the lrxp array (shape ' + str(lrxp.shape) + ')'
         logx_min = lrxp[ind[0], 2]
     # where to end the additional threads:
     if high_importance_inds[-1] == lrxp[:, 0].shape[0] - 1:
@@ -382,8 +375,8 @@ def min_max_importance(importance, lrxp, settings):
         # may be float comparison errors).
         ind = np.where(lrxp[:, 0] == logl_max)[0]
         assert ind.shape == (1,), \
-            "Should be one unique match for logl=logl_max=" + str(logl_max) + \
-            ".\n Instead we have matches at indexes " + str(ind) + \
-            " of the lrxp array (shape " + str(lrxp.shape) + ")"
+            'Should be one unique match for logl=logl_max=' + str(logl_max) + \
+            '.\n Instead we have matches at indexes ' + str(ind) + \
+            ' of the lrxp array (shape ' + str(lrxp.shape) + ')'
         logx_max = lrxp[ind[0], 2]
     return [logl_min, logl_max], [logx_min, logx_max]

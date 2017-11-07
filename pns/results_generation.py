@@ -34,7 +34,6 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     save = kwargs.get('save', True)
     save_dir = kwargs.get('save_dir', 'data')
     parallelise = kwargs.get('parallelise', True)
-    reduce_n_samples_max_frac = kwargs.get('reduce_n_samples_max_frac', 0.02)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
     # make save_name
     extra_root = 'dynamic_test'
@@ -71,6 +70,22 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         if tuned_dynamic_ps is not None:
             settings.tuned_dynamic_p = tuned_dynamic_ps[i]
         print('dynamic_goal = ' + str(settings.dynamic_goal))
+        # if we have already done the standard calculation, set n_samples_max
+        # for dynamic calculations so it is slightly smaller than the number
+        # of samples the standard calculation used (for comparison of
+        # performance)
+        if settings.dynamic_goal is not None and 'standard' in df_dict:
+            n_samples_max = df_dict['standard']['n_samples']['mean']
+            # This factor is a function of the dynamic goal as typically
+            # evidence calculations have longer attitional threads than
+            # parameter estimation calculations.
+            n_samples_max *= 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
+                                  (settings.nbatch / settings.nlive_const))
+            n_samples_max = int(n_samples_max)
+            print('given standard used ' +
+                  str(df_dict['standard']['n_samples']['mean']) +
+                  ' calls, set n_samples_max=' + str(n_samples_max))
+            settings.n_samples_max = n_samples_max
         # get a name for this calculation method
         if dynamic_goal is None:
             method_names.append('standard')
@@ -78,18 +93,13 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
             method_names.append('dyn ' + str(settings.dynamic_goal))
             if settings.tuned_dynamic_p is True:
                 method_names[-1] += ' tuned'
+        # generate runs and get results
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
         values = pw.func_on_runs(au.run_estimators, run_list, funcs_list,
                                  parallelise=parallelise)
         df = mf.get_df_row_summary(values, func_names)
         df_dict[method_names[-1]] = df
-        if (settings.dynamic_goal is None and settings.n_samples_max is None
-                and i == 0):
-            n_samples_max = int(df['n_samples']['mean'] *
-                                (1.0 - reduce_n_samples_max_frac))
-            print('given standard used ' + str(df['n_samples']['mean']) +
-                  ' calls, set n_samples_max=' + str(n_samples_max))
         values_list.append(values)
         del run_list
     # analyse data

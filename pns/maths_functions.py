@@ -138,7 +138,7 @@ def sample_nsphere_shells_normal(r, n_dim, n_sample=None):
     """
     if n_sample is None:
         n_sample = n_dim
-        assert n_sample <= n_dim, "so far only set up for nsample <= ndim"
+        assert n_sample <= n_dim, 'so far only set up for nsample <= ndim'
     thetas = np.random.normal(size=(r.shape[0], n_dim))
     # calculate normalisation so sum_i(theta_i^2) = r^2 for each row
     norm = r / np.sqrt(np.sum(thetas ** 2, axis=1))
@@ -184,8 +184,11 @@ def nsphere_logx_given_r(r, r_max, n_dim):
 
 
 def nsphere_vol(dim, radius=1.0):
-    """Returns hypervolume of a unit nsphere of specified dimension."""
-    # From https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
+    """
+    Returns hypervolume of a unit nsphere of specified dimension. Formulae
+    given at
+    https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
+    """
     const = ((np.pi ** (dim / 2.0)) / scipy.special.gamma((dim / 2.0) + 1.0))
     return const * (radius ** dim)
 
@@ -193,9 +196,9 @@ def nsphere_vol(dim, radius=1.0):
 def nsphere_logvol(dim, radius=1.0):
     """
     Returns the natural log of the hypervolume of a unit nsphere of specified
-    dimension. Useful for very high dimensions.
+    dimension. Useful for very high dimensions. Formulae is from
+    https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
     """
-    # From https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
     return ((np.log(radius) * dim) + (np.log(np.pi) * (dim / 2.0)) -
             (scipy.special.gammaln((dim / 2.0) + 1.0)))
 
@@ -213,9 +216,9 @@ def log_gaussian_given_r(r, sigma, n_dim):
 
 
 def log_exp_power_given_r(r, sigma, n_dim, b=0.5):
-    """Returns the natural log of an exponential power distribution.
+    """
+    Returns the natural log of an exponential power distribution.
     This equals a gaussian distribution when b=1.
-    See http://aurelie.boisbunon.free.fr/downloads/loisSS.pdf for more details
     """
     logl = -0.5 * (((r ** 2) / (sigma ** 2)) ** b)
     # normalise
@@ -229,9 +232,9 @@ def log_exp_power_given_r(r, sigma, n_dim, b=0.5):
 
 
 def r_given_log_exp_power(logl, sigma, n_dim, b=0.5):
-    """Returns the natural log of an exponential power distribution.
+    """
+    Returns the natural log of an exponential power distribution.
     This equals a gaussian distribution when b=1.
-    See http://aurelie.boisbunon.free.fr/downloads/loisSS.pdf for more details
     """
     # remove normalisation constant
     exponent = logl - np.log(n_dim)
@@ -264,7 +267,6 @@ def log_cauchy_given_r(r, sigma, n_dim):
     Returns the natural log of a normalised,  uncorrelated Cauchy distribution
     with 1 degree of freedom.
     """
-    # NB gamma(0.5) = sqrt(pi)
     logl = (-(1 + n_dim) / 2) * np.log(1 + ((r ** 2) / (sigma ** 2)))
     logl += scipy.special.gammaln((1.0 + n_dim) / 2.0)
     logl -= np.log(np.pi) * (n_dim + 1.0) / 2.0  # NB gamma(0.5) = sqrt(pi)
@@ -312,8 +314,8 @@ def log_subtract(loga, logb):
     See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/
     for more details.
     """
-    # assert loga >= logb, "log_subtract: a-b is negative for loga=" + \
-    #                      str(loga) + " and logb=" + str(logb)
+    # assert loga >= logb, 'log_subtract: a-b is negative for loga=' + \
+    #                       str(loga) + ' and logb=' + str(logb)
     return loga + np.log(1 - np.exp(logb - loga))
 
 
@@ -345,8 +347,8 @@ def get_df_row_summary(results_array, row_names):
 def df_unc_rows_to_cols(df_in):
     """
     Transforms a pandas data frame with uncertainties stored in extra rows
-    (with row names suffixed with "_unc" to one with uncertainteis sored in
-    columns (suffixed with "_unc").
+    (with row names suffixed with '_unc' to one with uncertainteis sored in
+    columns (suffixed with '_unc').
 
     I.e. data frame of the form
 
@@ -365,18 +367,18 @@ def df_unc_rows_to_cols(df_in):
     row_names = []
     unc_names = []
     for name in list(df_in.index.values):
-        if name[-4:] != "_unc":
+        if name[-4:] != '_unc':
             row_names.append(name)
         else:
             unc_names.append(name)
     df_values = df_in.loc[row_names]
     df_uncs = df_in.loc[unc_names]
-    # strip "_unc" suffix from row indexes
+    # strip '_unc' suffix from row indexes
     df_uncs.rename(lambda s: s[:-4], inplace=True)
-    # add "_unc" suffix to columns containing uncertainties
+    # add '_unc' suffix to columns containing uncertainties
     df_uncs = df_uncs.add_suffix('_unc')
     # Join values and uncertaintes (if uncertaintes not provided they are
-    # listed as "NaN"
+    # listed as NaN
     df_out = pd.concat([df_values, df_uncs], axis=1)
     # put columns of joined data frame in right order
     col_in = list(df_in)

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
-Contains classes representing estimators f(theta) for use on nested sampling
-output and analytical analysis.
+Contains classes representing quantities which can be calculated from nested
+sampling run.
 
 Each estimator class should contain a mandatory member function returning the
 value of the estimator for a nested sampling run:
@@ -9,12 +9,13 @@ value of the estimator for a nested sampling run:
     def estimator(self, logw, ns_run):
         ...
 
-and may also contain a function giving its analytical value for some given set
-of calculation settings (for use in checking results):
+They may also optionally contain a function giving its analytical value for
+some given set of calculation settings (for use in checking results):
 
     def analytical(self, settings):
         ...
 
+as well as helper functions.
 Estimators should also contain class variables:
 
     name: str
@@ -27,18 +28,16 @@ Estimators should also contain class variables:
 import numpy as np
 import scipy
 import scipy.misc  # for scipy.misc.logsumexp
-# perfect nested sampling modules
 import pns.maths_functions as mf
 
 
 # Estimators
 # ----------
-# A class is used to hold the functions required for each estimator f(theta)
 
 
 class logzEstimator(object):
 
-    """Log of Bayesian evidence."""
+    """Natural log of Bayesian evidence."""
 
     name = 'logz'
     latex_name = r'$\mathrm{log} \mathcal{Z}$'
@@ -68,7 +67,7 @@ class zEstimator(object):
         return np.exp(settings.logz_analytic())
 
 
-class n_samplesEstimator(object):
+class nSamplesEstimator(object):
 
     """Numer of samples in run."""
 
@@ -80,7 +79,9 @@ class n_samplesEstimator(object):
         return logw.shape[0]
 
 
-class rEstimator:
+class rMeanEstimator:
+
+    """Mean of |theta| (the radial distance from the centre)."""
 
     name = 'r'
     latex_name = '$|\\theta|$'
@@ -101,20 +102,18 @@ class rEstimator:
         return settings.r_given_logx(logx)
 
 
-class rconfEstimator(object):
+class rCredEstimator(object):
 
-    def __init__(self, fraction):
-        assert fraction < 1.0 and fraction > 0, ("conf interval fraction = " +
-                                                 str(fraction) +
-                                                 " must be between 0 and 1")
-        self.name = 'rc_' + str(fraction)
-        self.fraction = fraction
+    """One-tailed credible interval on the value of |theta|."""
+
+    def __init__(self, probability):
+        assert 1 > probability > 0, 'credible interval probability = ' + \
+            str(probability) + ' must be between 0 and 1'
+        self.name = 'rc_' + str(probability)
+        self.probability = probability
         # format percent without trailing zeros
-        percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
+        percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
         self.latex_name = '$\mathrm{C.I.}_{' + percent_str + '\%}(|\\theta|)$'
-
-    def min(self, settings):
-        return 0
 
     def estimator(self, logw, ns_run):
         """Returns estimator value for run."""
@@ -130,10 +129,15 @@ class rconfEstimator(object):
             cdf[i + 1] = cdf[i] + 0.5 * (wr[i, 0] + wr[i + 1, 0])
         cdf = cdf / np.sum(wr[:, 0])
         # linearly interpolate value
-        return np.interp(self.fraction, cdf, wr[:, 1])
+        return np.interp(self.probability, cdf, wr[:, 1])
 
 
-class theta1Estimator(object):
+class paramMeanEstimator(object):
+
+    """
+    Mean of a single parameter (single component of theta).
+    By symmetry all parameters have the same distribution.
+    """
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
@@ -155,20 +159,26 @@ class theta1Estimator(object):
         return np.zeros(logx.shape)
 
 
-class theta1confEstimator(object):
+class paramCredEstimator(object):
 
-    def __init__(self, fraction, param_ind=1):
-        assert 1.0 > fraction > 0, \
-            "conf interval fraction = " + str(fraction) + " not <1 and >0"
+    """
+    One-tailed credible interval on the value of a single parameter (component
+    of theta).
+    By symmetry all parameters have the same distribution.
+    """
+
+    def __init__(self, probability, param_ind=1):
+        assert 1 > probability > 0, 'credible interval probability = ' + \
+            str(probability) + ' must be between 0 and 1'
         self.param_ind = param_ind
-        self.name = 't' + str(param_ind) + 'c_' + str(fraction)
-        self.fraction = fraction
+        self.name = 't' + str(param_ind) + 'c_' + str(probability)
+        self.probability = probability
         param_str = '\\theta_{\hat{' + str(param_ind) + '}}'
-        if fraction == 0.5:
+        if probability == 0.5:
             self.latex_name = '$\mathrm{median}(' + param_str + ')$'
         else:
             # format percent without trailing zeros
-            percent_str = ('%f' % (fraction * 100)).rstrip('0').rstrip('.')
+            percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
             self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
                                '\%}(' + param_str + ')$')
 
@@ -185,10 +195,16 @@ class theta1confEstimator(object):
             cdf[i + 1] = cdf[i] + 0.5 * (wp[i, 0] + wp[i + 1, 0])
         cdf = cdf / np.sum(wp[:, 0])
         # linearly interpolate value
-        return np.interp(self.fraction, cdf, wp[:, 1])
+        return np.interp(self.probability, cdf, wp[:, 1])
 
 
-class theta1squaredEstimator:
+class paramSquaredMeanEstimator:
+
+    """
+    Mean of the square of single parameter (second moment of its posterior
+    distribution).
+    By symmetry all parameters have the same distribution.
+    """
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
@@ -251,7 +267,7 @@ def check_by_integrating(ftilde, settings):
     """
     logx_terminate = mf.analytic_logx_terminate(settings)
     assert logx_terminate is not None, \
-        "logx_terminate function not set up for current settings"
+        'logx_terminate function not set up for current settings'
     result = scipy.integrate.quad(check_integrand, logx_terminate,
                                   0.0, args=(ftilde, settings))
     return result[0] / np.exp(settings.logz_analytic())
