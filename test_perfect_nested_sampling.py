@@ -21,10 +21,11 @@ print('--------------------------------\n')
 print('Creating a PerfectNestedSamplingSettings object')
 settings = pns.settings.PerfectNestedSamplingSettings()
 print('Setting the likelihood, prior and number of dimensions')
+print('(you can change the default settings in pns/settings.py)')
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 settings.prior = priors.gaussian(prior_scale=1)
 settings.n_dim = 3
-settings.nlive_const = 1000  # set nlive high for single run tests
+settings.nlive_const = 1000  # set nlive_const high for single run tests
 
 print('Perform standard nested sampling')
 settings.dynamic_goal = None  # specifies standard nested sampling

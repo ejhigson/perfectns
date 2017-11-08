@@ -70,7 +70,7 @@ class zEstimator(object):
 
 class nSamplesEstimator(object):
 
-    """Numer of samples in run."""
+    """Number of samples in run."""
 
     name = 'n_samples'
     latex_name = '\# samples'
@@ -189,7 +189,7 @@ class paramCredEstimator(object):
         wp[:, 0] = np.exp(logw - logw.max())
         wp[:, 1] = ns_run['theta'][:, self.param_ind - 1]
         wp = wp[np.argsort(wp[:, 1], axis=0)]
-        # calculate cdf
+        # calculate CDF
         cdf = np.zeros(wp.shape[0])
         cdf[0] = wp[0, 0] * 0.5
         for i, _ in enumerate(wp[1:, 0]):
@@ -202,7 +202,7 @@ class paramCredEstimator(object):
         """Returns analytical value of estimator given settings."""
         if self.probability == 0.5:
             # by symmetry the median of any parameter given spherically
-            # symmetric likelihoods and priors cocentred on zero is zero
+            # symmetric likelihoods and priors co-centred on zero is zero
             return 0
         else:
             assert type(settings.likelihood).__name__ == 'gaussian', \
@@ -210,12 +210,12 @@ class paramCredEstimator(object):
             assert type(settings.prior).__name__ in ['gaussian',
                                                      'gaussian_cached'], \
                 "so far only set up for Gaussian priors"
-            # the product of two gaussians is another gaussian with sigma:
+            # the product of two Gaussians is another Gaussian with sigma:
             sigma = ((settings.likelihood.likelihood_scale ** -2) +
                      (settings.prior.prior_scale ** -2)) ** -0.5
             # find number of sigma from the mean by inverting the CDF of the
             # normal distribution.
-            # cdf(x) = (1/2) + (1/2) * error_function(x / sqrt(2))
+            # CDF(x) = (1/2) + (1/2) * error_function(x / sqrt(2))
             z = scipy.special.erfinv((self.probability * 2) - 1) * np.sqrt(2)
             return z * sigma
 
@@ -243,10 +243,10 @@ class paramSquaredMeanEstimator:
 
     def ftilde(self, logx, settings):
         """
-        ftilde(X) is mean of f(theta) on the isolikelihood contour
+        ftilde(X) is mean of f(theta) on the iso-likelihood contour
         L(theta) = L(X).
         """
-        # by symmetry at each (hyper)spherical isolikelihood contour:
+        # by symmetry at each (hyper)spherical iso-likelihood contour:
         r = settings.r_given_logx(logx)
         return r ** 2 / settings.n_dim
 
@@ -284,7 +284,7 @@ def check_by_integrating(ftilde, settings):
 
         int L(X) X ftilde(X) dX / Z,
 
-    where ftilde(X) is mean of f(theta) on the isolikelihood contour
+    where ftilde(X) is mean of f(theta) on the iso-likelihood contour
     L(theta) = L(X).
     """
     logx_terminate = mf.analytic_logx_terminate(settings)
@@ -298,9 +298,9 @@ def check_by_integrating(ftilde, settings):
 def check_integrand(logx, ftilde, settings):
     """
     Helper function to return integrand L(X) X ftilde(X) for checking
-    estimator values by numerical intergration.
+    estimator values by numerical integration.
+    Note that the integral must be normalised by multiplying by a factor (1/Z).
     """
     # returns L(X) X ftilde(X) for integrating dlogx
-    # NB this must be normalised by a factor V / Z
     return (np.exp(settings.logl_given_logx(logx) + logx)
             * ftilde(logx, settings))

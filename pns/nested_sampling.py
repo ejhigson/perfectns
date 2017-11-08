@@ -18,7 +18,7 @@ def generate_ns_run(settings):
 
     This function is just a wrapper around the
     generate_standard_run (performs standard nested sampling) and
-    generate_dynamic_run (performs dynamic nested samplign) which are chosen
+    generate_dynamic_run (performs dynamic nested sampling) which are chosen
     depending on the input settings.
 
     Parameters
@@ -30,14 +30,14 @@ def generate_ns_run(settings):
     dict
         Nested sampling run dictionary containing information about the run's
         posterior samples and a record of the settings used. These are as
-        seperate arrays giving values for points in order of increasing
+        separate arrays giving values for points in order of increasing
         likelihood.
         Keys:
             'settings': dict recording settings used.
             'logl': 1d array of log likelihoods.
             'r': 1d array of radial coordinates.
             'logx': 1d array of logx coordinates.
-            'theta': 2d array, each row is sample coordinate. The numer of
+            'theta': 2d array, each row is sample coordinate. The number of
                      co-ordinates saved is controlled by
                      settings.dims_to_sample.
             'nlive_array': 1d array of the local number of live points at each
@@ -61,7 +61,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     For more details see 'Sampling errors in nested sampling parameter
     estimation' (Higson et al. 2017).
 
-    The run terminates when the estiamted posterior mass contained in the live
+    The run terminates when the estimated posterior mass contained in the live
     points is less than settings.termination_fraction. The evidence in the
     remaining live points is estimated as
 
@@ -97,7 +97,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     logz_dead = -np.inf
     logz_live = (scipy.misc.logsumexp(live_points[:, 0]) + logx_i -
                  np.log(nlive_const))
-    # Calculate factor for trapizium rule of geometric series
+    # Calculate factor for trapezium rule of geometric series
     t = np.exp(-1.0 / nlive_const)
     logtrapz = np.log(0.5 * ((t ** -1) - t))
     # start the array of dead points
@@ -117,7 +117,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
         logz_live = (scipy.misc.logsumexp(live_points[:, 0]) + logx_i -
                      np.log(nlive_const))
     points = np.array(dead_points_list)
-    # add remaining live points (sorted by increacing likelihood)
+    # add remaining live points (sorted by increasing likelihood)
     points = np.vstack((points, live_points[np.argsort(live_points[:, 0])]))
     # Create a dictionary representing the nested sampling run
     run = {'settings': settings.get_settings_dict(),
@@ -129,14 +129,14 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     # to the radial coordinate of each point.
     run['theta'] = mf.sample_nsphere_shells(run['r'], settings.n_dim,
                                             settings.dims_to_sample)
-    # Add an array of the local numbe of live points - this equals nlive_const
+    # Add an array of the local number of live points - this equals nlive_const
     # until the run terminates, at which point it reduces by 1 as each thread
     # ends.
     run['nlive_array'] = np.zeros(run['logl'].shape[0]) + nlive_const
     for i in range(1, nlive_const):
         run['nlive_array'][-i] = i
     # Get array of data on threads' beginnings and ends. Each starts by
-    # sampling the whole prior and ends on one of the final live poins.
+    # sampling the whole prior and ends on one of the final live points.
     run['thread_min_max'] = np.zeros((nlive_const, 2))
     run['thread_min_max'][:, 0] = np.nan
     run['thread_min_max'][:, 1] = live_points[:, 0]
@@ -154,7 +154,7 @@ def generate_dynamic_run(settings):
     sampling: an improved algorithm for nested sampling parameter estimation
     and evidence calculation' (Higson et al. 2017).
 
-    The run terminates when the number of samples reachs some limit
+    The run terminates when the number of samples reaches some limit
     settings.n_samples_max. If this is not set, the function will estimate the
     number of samples that a standard nested sampling run with
     settings.nlive_const would use from the number of samples in the initial
@@ -177,8 +177,8 @@ def generate_dynamic_run(settings):
     assert 1 >= settings.dynamic_goal >= 0, 'dynamic_goal = ' + \
         str(settings.dynamic_goal) + ' should be between 0 and 1'
     np.random.seed()  # needed to avoid repeated results when multiprocessing
-    # Step 1: inital exploratory standard ns run with ninit live points
-    # ----------------------------------------------------------------
+    # Step 1: initial exploratory standard ns run with ninit live points
+    # ------------------------------------------------------------------
     standard_run = generate_standard_run(settings, is_dynamic_initial_run=True)
     # create samples array with columns:
     # [logl, r, logx, thread label, change in nlive, params]
@@ -191,8 +191,8 @@ def generate_dynamic_run(settings):
         n_samples_max = n_samples * (settings.nlive_const / settings.ninit)
     else:
         n_samples_max = settings.n_samples_max
-    # Step 2: add samples whereever they are most useful
-    # --------------------------------------------------
+    # Step 2: add samples wherever they are most useful
+    # -------------------------------------------------
     while n_samples < n_samples_max:
         importance = point_importance(samples, thread_min_max, settings)
         logl_min_max, logx_min_max = min_max_importance(importance,
@@ -333,7 +333,6 @@ def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
     else:
         assert tuning_type == 'theta1', 'so far only set up for theta1'
         if tuning_type == 'theta1':
-            # extract theta1 values from lrxp
             f = theta[:, 0]
         # calculate importance in proportion to difference between f values and
         # the calculation mean.
@@ -342,7 +341,7 @@ def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
         return importance / importance.max()
 
 
-def min_max_importance(importance, lrxp, settings):
+def min_max_importance(importance, samples, settings):
     """
     Find the logl and logx values at which to start and end additional dynamic
     nested sampling threads.
@@ -356,27 +355,27 @@ def min_max_importance(importance, lrxp, settings):
         logl_min = np.nan
         logx_min = 0
     else:
-        logl_min = lrxp[:, 0][high_importance_inds[0] - 1]
+        logl_min = samples[:, 0][high_importance_inds[0] - 1]
         # Use lookup to avoid recalculating the logx values (otherwise there
         # may be float comparison errors).
-        ind = np.where(lrxp[:, 0] == logl_min)[0]
+        ind = np.where(samples[:, 0] == logl_min)[0]
         assert ind.shape == (1,), \
             'Should be one unique match for logl=logl_min=' + str(logl_min) + \
             '. Instead we have matches at indexes ' + str(ind) + \
-            ' of the lrxp array (shape ' + str(lrxp.shape) + ')'
-        logx_min = lrxp[ind[0], 2]
+            ' of the samples array (shape ' + str(samples.shape) + ')'
+        logx_min = samples[ind[0], 2]
     # where to end the additional threads:
-    if high_importance_inds[-1] == lrxp[:, 0].shape[0] - 1:
-        logl_max = lrxp[-1, 0]
-        logx_max = lrxp[-1, 2]
+    if high_importance_inds[-1] == samples[:, 0].shape[0] - 1:
+        logl_max = samples[-1, 0]
+        logx_max = samples[-1, 2]
     else:
-        logl_max = lrxp[:, 0][(high_importance_inds[-1] + 1)]
+        logl_max = samples[:, 0][(high_importance_inds[-1] + 1)]
         # Use lookup to avoid recalculating the logx values (otherwise there
         # may be float comparison errors).
-        ind = np.where(lrxp[:, 0] == logl_max)[0]
+        ind = np.where(samples[:, 0] == logl_max)[0]
         assert ind.shape == (1,), \
             'Should be one unique match for logl=logl_max=' + str(logl_max) + \
             '.\n Instead we have matches at indexes ' + str(ind) + \
-            ' of the lrxp array (shape ' + str(lrxp.shape) + ')'
-        logx_max = lrxp[ind[0], 2]
+            ' of the samples array (shape ' + str(samples.shape) + ')'
+        logx_max = samples[ind[0], 2]
     return [logl_min, logl_max], [logx_min, logx_max]

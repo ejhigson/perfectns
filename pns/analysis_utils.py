@@ -202,7 +202,7 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
         else:
             # If the point at which this thread started is present multiple
             # times in this bootstrap replication, select one at random to
-            # incriment nlive on. This avoids any systematic bias from e.g.
+            # increment nlive on. This avoids any systematic bias from e.g.
             # always choosing the first point.
             lrxtnp_temp[np.random.choice(ind), 4] += 1
     # make run
@@ -353,7 +353,7 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
                                              ninit_sep=ninit_sep)
         bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
         del ns_run_temp
-    # estimate specificed confidence intervals
+    # estimate specific confidence intervals
     # formulae for alpha CI on estimator T = 2 T(x) - G^{-1}(T(x*))
     # where G is the CDF of the bootstrap resamples
     expected_estimators = run_estimators(ns_run, estimator_list)
