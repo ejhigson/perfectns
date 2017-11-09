@@ -23,8 +23,8 @@ Prior classes may also optionally contain the inverse function
 
 import numpy as np
 from scipy import interpolate
-import pns.maths_functions as mf
-import pns.cached_gaussian_prior as cgp
+import PerfectNestedSampling.maths_functions as mf
+import PerfectNestedSampling.cached_gaussian_prior as cgp
 
 
 class uniform(object):

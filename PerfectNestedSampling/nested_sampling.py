@@ -7,8 +7,8 @@ samples for use in evidence calculations and parameter estimation.
 import copy
 import numpy as np
 import scipy.misc  # for scipy.misc.logsumexp
-import pns.maths_functions as mf
-import pns.analysis_utils as au
+import PerfectNestedSampling.maths_functions as mf
+import PerfectNestedSampling.analysis_utils as au
 
 
 def generate_ns_run(settings):

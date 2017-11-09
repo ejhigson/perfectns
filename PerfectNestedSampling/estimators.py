@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import scipy.misc  # for scipy.misc.logsumexp
-import pns.maths_functions as mf
+import PerfectNestedSampling.maths_functions as mf
 
 
 # Estimators

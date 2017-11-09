@@ -10,15 +10,15 @@ import re
 import pstats
 import pandas as pd
 import numpy as np
-import pns_settings
-# import pns.estimators as e
-import pns.likelihoods as likelihoods
-import pns.estimators as e
-import pns.nested_sampling as ns
-import pns.analysis_utils as au
-import pns.priors as priors
-# import pns.results_generation as rg
-settings = pns_settings.PerfectNestedSamplingSettings()
+import PerfectNestedSampling_settings
+# import PerfectNestedSampling.estimators as e
+import PerfectNestedSampling.likelihoods as likelihoods
+import PerfectNestedSampling.estimators as e
+import PerfectNestedSampling.nested_sampling as ns
+import PerfectNestedSampling.analysis_utils as au
+import PerfectNestedSampling.priors as priors
+# import PerfectNestedSampling.results_generation as rg
+settings = PerfectNestedSampling_settings.PerfectNestedSamplingSettings()
 # settings.likelihood = likelihoods.exp_power(likelihood_scale=1, power=2)
 # settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)

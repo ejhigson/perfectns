@@ -6,16 +6,16 @@ nested_sampling(settings).
 """
 
 import pandas as pd
-import pns.settings
-import pns.estimators as e
-# import pns.analysis_utils as au
-# import pns.parallelised_wrappers as pw
-# import pns.maths_functions as mf
-import pns.results_generation as rg
-import pns.likelihoods as likelihoods
-# import pns.save_load_utils as slu
-import pns.priors as priors
-settings = pns.settings.PerfectNestedSamplingSettings()
+import PerfectNestedSampling.settings
+import PerfectNestedSampling.estimators as e
+# import PerfectNestedSampling.analysis_utils as au
+# import PerfectNestedSampling.parallelised_wrappers as pw
+# import PerfectNestedSampling.maths_functions as mf
+import PerfectNestedSampling.results_generation as rg
+import PerfectNestedSampling.likelihoods as likelihoods
+# import PerfectNestedSampling.save_load_utils as slu
+import PerfectNestedSampling.priors as priors
+settings = PerfectNestedSampling.settings.PerfectNestedSamplingSettings()
 pd.set_option('display.width', 200)
 
 

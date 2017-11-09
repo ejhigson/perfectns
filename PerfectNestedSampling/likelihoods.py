@@ -25,7 +25,7 @@ given prior and dimension, which is useful for checking results:
         ...
 """
 
-import pns.maths_functions as mf
+import PerfectNestedSampling.maths_functions as mf
 import numpy as np
 
 

@@ -8,8 +8,8 @@ import concurrent.futures
 import numpy as np
 from tqdm import tqdm
 # perfect nested sampling modules
-import pns.nested_sampling as ns
-import pns.save_load_utils as slu
+import PerfectNestedSampling.nested_sampling as ns
+import PerfectNestedSampling.save_load_utils as slu
 
 
 # Parallelised wrappers

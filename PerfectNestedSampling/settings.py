@@ -7,8 +7,8 @@ whether or not dynamic nested sampling is to be used.
 """
 
 import copy
-import pns.priors as priors
-import pns.likelihoods as likelihoods
+import PerfectNestedSampling.priors as priors
+import PerfectNestedSampling.likelihoods as likelihoods
 
 
 class PerfectNestedSamplingSettings(object):

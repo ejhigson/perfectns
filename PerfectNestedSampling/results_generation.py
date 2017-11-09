@@ -8,11 +8,11 @@ estimation and evidence calculation' (Higson et al. 2017).
 import pandas as pd
 import numpy as np
 # perfect nested sampling modules
-import pns.save_load_utils as slu
-import pns.parallelised_wrappers as pw
-import pns.analysis_utils as au
-import pns.maths_functions as mf
-import pns.estimators as e
+import PerfectNestedSampling.save_load_utils as slu
+import PerfectNestedSampling.parallelised_wrappers as pw
+import PerfectNestedSampling.analysis_utils as au
+import PerfectNestedSampling.maths_functions as mf
+import PerfectNestedSampling.estimators as e
 
 
 @slu.timing_decorator
