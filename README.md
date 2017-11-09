@@ -1,6 +1,9 @@
 Perfect Nested Sampling
 =======================
 
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/PerfectNestedSampling/LICENSE)
+
+
 Performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors.
 In these cases the algorithms can be followed "perfectly" (without implementation-specific errors from correlated sampling), making them ideal for studying nested sampling.
 
@@ -26,6 +29,11 @@ This module samples from the known distribution of prior volumes X to generate n
 Parameter vectors theta_i for each point i are sampled from the hyper-spherical shells with radius r_i.
 
 New likelihoods and priors can be added `likelihoods.py` and `priors.py` respectively.
+
+
+### Installation
+
+
 
 ### Examples
 
