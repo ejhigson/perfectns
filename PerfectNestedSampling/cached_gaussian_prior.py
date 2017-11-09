@@ -5,22 +5,11 @@ Contains helper functions for the 'gaussian_cached' prior.
 
 
 import numpy as np
-from pynverse import inversefunc
 import PerfectNestedSampling.save_load_utils as slu
 import PerfectNestedSampling.maths_functions as mf
 
 
 # Maths functions
-
-
-def pynverse_gaussian_r_given_logx(logx, sigma, n_dim):
-    """
-    Use the pynverse package to invert gaussian_logx_given_r to find
-    r corresponding to the input logx.
-    """
-    r = inversefunc(mf.gaussian_logx_given_r, args=(sigma, n_dim),
-                    y_values=logx)
-    return float(r)
 
 
 def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
@@ -56,10 +45,11 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         print(save_name)
         print('Interp file not found - try generating new data')
         r_max = mf.scipy_gaussian_r_given_logx(logx_max, prior_scale, n_dim)
-        r_min = pynverse_gaussian_r_given_logx(logx_min, prior_scale, n_dim)
-        # guard against any errors in interpolation
-        while mf.mpmath_gaussian_logx_given_r(r_min, prior_scale,
-                                              n_dim) > logx_min:
+        # Iteratively reduce r_min until its corresponding logx value is less
+        # than logx_min. This process depends only on mpmath functions which
+        # can handle arbitarily small numbers.
+        r_min = r_max
+        while mf.gaussian_logx_given_r(r_min, prior_scale, n_dim) > logx_min:
             r_min /= 2.0
         r_array = np.linspace(r_min, r_max,
                               int((logx_max - logx_min) * interp_density))

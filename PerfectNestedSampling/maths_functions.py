@@ -23,43 +23,23 @@ def gaussian_r_given_logx(logx, sigma, n_dim):
     return np.sqrt(2 * exponent * sigma ** 2)
 
 
-def scipy_gaussian_logx_given_r(r, sigma, n_dim):
-    """
-    Returns logx coordinate corresponding to r values for a Gaussian prior with
-    the specificed standard deviation and dimension.
-
-    This uses scipy.special.gammainc and requires exponentiating logx, so
-    numerical errors occur with very low logx values.
-    """
-    exponent = 0.5 * (r / sigma) ** 2
-    return np.log(scipy.special.gammainc(n_dim / 2., exponent))
-
-
-def mpmath_gaussian_logx_given_r(r, sigma, n_dim):
+def gaussian_logx_given_r(r, sigma, n_dim):
     """
     Returns logx coordinate corresponding to r values for a Gaussian prior with
     the specificed standard deviation and dimension
 
-    Uses mpmath package for arbitary precision, but only works with float
-    values for r (not arrays).
+    Uses mpmath package for arbitary precision.
     """
     exponent = 0.5 * (r / sigma) ** 2
-    return float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=exponent,
-                                            regularized=True)))
-
-
-def gaussian_logx_given_r(r, sigma, n_dim):
-    """
-    Wrapper for mpmath_gaussian_logx_given_r which allows both float and 1d
-    numpy array inputs for r.
-    """
     if isinstance(r, np.ndarray):  # needed to ensure output is numpy array
         logx = np.zeros(r.shape)
-        for i, r_i in enumerate(r):
-            logx[i] = mpmath_gaussian_logx_given_r(r_i, sigma, n_dim)
+        for i, expo in enumerate(exponent):
+            logx[i] = float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=expo,
+                                                       regularized=True)))
         return logx
     else:
-        return mpmath_gaussian_logx_given_r(r, sigma, n_dim)
+        return float(mpmath.log(mpmath.gammainc(n_dim / 2., a=0, b=exponent,
+                                                regularized=True)))
 
 
 def analytic_logx_terminate(settings):

@@ -21,6 +21,5 @@ setup(name='PerfectNestedSampling',
       install_requires=['numpy',
                         'scipy',
                         'pandas',
-                        'mpmath',
-                        'pynverse'],
+                        'mpmath'],
       packages=['PerfectNestedSampling'])
