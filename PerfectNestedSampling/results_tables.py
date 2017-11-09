@@ -10,7 +10,7 @@ import numpy as np
 # perfect nested sampling modules
 import PerfectNestedSampling.save_load_utils as slu
 import PerfectNestedSampling.parallelised_wrappers as pw
-import PerfectNestedSampling.analysis_utils as au
+import PerfectNestedSampling.analyse_run as ar
 import PerfectNestedSampling.maths_functions as mf
 import PerfectNestedSampling.estimators as e
 
@@ -96,7 +96,7 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         # generate runs and get results
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save)
-        values = pw.func_on_runs(au.run_estimators, run_list, estimator_list,
+        values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
                                  parallelise=parallelise)
         df = mf.get_df_row_summary(values, func_names)
         df_dict[method_names[-1]] = df
@@ -202,13 +202,13 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # should be close to the mean calculation values
     results = e.get_true_estimator_values(estimator_list, settings)
     # get mean and std of repeated calculations
-    rep_values = pw.func_on_runs(au.run_estimators, run_list, estimator_list,
+    rep_values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
                                  parallelise=parallelise)
     rep_df = mf.get_df_row_summary(rep_values, e_names)
     results = results.append(rep_df.set_index('repeats ' +
                                               rep_df.index.astype(str)))
     # get bootstrap std estimate
-    bs_values = pw.func_on_runs(au.run_std_bootstrap, run_list,
+    bs_values = pw.func_on_runs(ar.run_std_bootstrap, run_list,
                                 estimator_list, n_simulate=n_simulate,
                                 parallelise=parallelise)
     bs_df = mf.get_df_row_summary(bs_values, e_names)
@@ -225,7 +225,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results.loc['bs var_unc'] = 100 * bs_df.loc['std_unc'] / bs_df.loc['mean']
     if add_sim_method:
         # get std from simulation estimate
-        sim_values = pw.func_on_runs(au.run_std_simulate, run_list,
+        sim_values = pw.func_on_runs(ar.run_std_simulate, run_list,
                                      estimator_list, n_simulate=n_simulate,
                                      parallelise=parallelise)
         sim_df = mf.get_df_row_summary(sim_values, e_names)
@@ -242,7 +242,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         results.loc['sim var_unc'] = 100 * (sim_df.loc['std_unc'] /
                                             sim_df.loc['mean'])
     # get bootstrap CI estimates
-    bs_cis = pw.func_on_runs(au.run_ci_bootstrap, run_list[:n_run_ci],
+    bs_cis = pw.func_on_runs(ar.run_ci_bootstrap, run_list[:n_run_ci],
                              estimator_list, n_simulate=n_simulate_ci,
                              cred_int=cred_int, parallelise=parallelise)
     bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)

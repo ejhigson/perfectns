@@ -33,7 +33,7 @@ See the documentation in each file for more details.
 
 ### Setup
 
-PerfectNestedSampling requires python 3.x and the numpy, scipy, pandas and mpmath packages.
+PerfectNestedSampling requires python 3.x and the numpy, scipy, pandas, mpmath and tqdm packages.
 To install PerfectNestedSampling and all its dependencies with pip, use
 
 ```

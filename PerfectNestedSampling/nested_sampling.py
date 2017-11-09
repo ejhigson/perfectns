@@ -6,9 +6,9 @@ samples for use in evidence calculations and parameter estimation.
 
 import copy
 import numpy as np
-import scipy.misc  # for scipy.misc.logsumexp
+import scipy.misc
 import PerfectNestedSampling.maths_functions as mf
-import PerfectNestedSampling.analysis_utils as au
+import PerfectNestedSampling.analyse_run as ar
 
 
 def generate_ns_run(settings):
@@ -182,7 +182,7 @@ def generate_dynamic_run(settings):
     standard_run = generate_standard_run(settings, is_dynamic_initial_run=True)
     # create samples array with columns:
     # [logl, r, logx, thread label, change in nlive, params]
-    samples = au.samples_array_given_run(standard_run)
+    samples = ar.samples_array_given_run(standard_run)
     thread_min_max = standard_run['thread_min_max']
     n_samples = samples.shape[0]
     if settings.n_samples_max is None:
@@ -222,7 +222,7 @@ def generate_dynamic_run(settings):
     # To compute nlive from the changes in nlive at each step, first find nlive
     # for the first point (= the number of threads which sample from the entire
     # prior)
-    run = au.dict_given_samples_array(samples, thread_min_max)
+    run = ar.dict_given_samples_array(samples, thread_min_max)
     run['settings'] = settings.get_settings_dict()
     return run
 
@@ -282,8 +282,8 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     nested sampling parameter estimation and evidence calculation' (Higson et
     al. 2017).
     """
-    run_dict = au.dict_given_samples_array(samples, thread_min_max)
-    logw = au.get_logw(run_dict['logl'], run_dict['nlive_array'],
+    run_dict = ar.dict_given_samples_array(samples, thread_min_max)
+    logw = ar.get_logw(run_dict['logl'], run_dict['nlive_array'],
                        simulate=simulate)
     # subtract logw.max() to avoids numerical errors with very small numbers
     w_relative = np.exp(logw - logw.max())

@@ -8,9 +8,9 @@ import PerfectNestedSampling.settings
 import PerfectNestedSampling.estimators as e
 import PerfectNestedSampling.likelihoods as likelihoods
 import PerfectNestedSampling.nested_sampling as ns
-import PerfectNestedSampling.results_generation as rg
+import PerfectNestedSampling.results_tables as rt
 import PerfectNestedSampling.priors as priors
-import PerfectNestedSampling.analysis_utils as au
+import PerfectNestedSampling.analyse_run as ar
 # import PerfectNestedSampling.parallelised_wrappers as pw
 pd.set_option('display.width', 200)
 
@@ -42,9 +42,9 @@ estimator_list = [e.logzEstimator(),
                   e.paramCredEstimator(0.5),
                   e.paramCredEstimator(0.84)]
 single_run_tests = e.get_true_estimator_values(estimator_list, settings)
-single_run_tests.loc['standard run'] = au.run_estimators(standard_ns_run,
+single_run_tests.loc['standard run'] = ar.run_estimators(standard_ns_run,
                                                          estimator_list)
-single_run_tests.loc['dynamic run'] = au.run_estimators(dynamic_ns_run,
+single_run_tests.loc['dynamic run'] = ar.run_estimators(dynamic_ns_run,
                                                         estimator_list)
 print(single_run_tests)
 
@@ -54,7 +54,7 @@ settings.nlive_const = 100  # return to default nlive_const for multi-run tests
 n_runs = 10
 
 
-dynamic_tests = rg.get_dynamic_results(n_runs, [None, 0, 1],
+dynamic_tests = rt.get_dynamic_results(n_runs, [None, 0, 1],
                                        estimator_list, settings,
                                        load=False, save=False,
                                        parallelise=False)
@@ -63,7 +63,7 @@ print(dynamic_tests)
 print('\nCheck bootstrap error estimates:')
 print('--------------------------------\n')
 
-bootstrap_tests = rg.get_bootstrap_results(n_runs, 20,
+bootstrap_tests = rt.get_bootstrap_results(n_runs, 20,
                                            estimator_list, settings,
                                            load=False, save=False,
                                            n_simulate_ci=100,

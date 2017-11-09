@@ -1,15 +1,38 @@
 #!/usr/bin/python
 """
-Module for functions used to analyse nested sampling runs.
+Module for functions used to analyse nested sampling runs, perform calculations
+and estimate sampling errors.
 """
 
 import numpy as np
-import scipy.misc  # for scipy.misc.logsumexp
+import scipy.misc
 import PerfectNestedSampling.maths_functions as mf
 
 
-# Access functions which interface directly with ns runs
-# ------------------------------------------------------
+def run_estimators(ns_run, estimator_list, **kwargs):
+    """
+    Calculates values of list of estimators for a single nested sampling run.
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    estimator_list: list of estimator classes, each containing class method
+        estimator(self, logw, ns_run)
+    simulate: bool, optional
+
+    Returns
+    -------
+    output: 1d numpy array
+        Calculation result for each estimator in estimator_list.
+    """
+    simulate = kwargs.get('simulate', False)
+    logw = get_logw(ns_run['logl'], ns_run['nlive_array'], simulate=simulate)
+    output = np.zeros(len(estimator_list))
+    for i, f in enumerate(estimator_list):
+        output[i] = f.estimator(logw, ns_run)
+    return output
+
 
 def samples_array_given_run(ns_run):
     """
@@ -148,6 +171,10 @@ def get_nlive_thread_min_max(ns_run):
     return nlive_array
 
 
+# Functions for estimating sampling errors
+# ----------------------------------------
+
+
 def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
     """
     Bootstrap resamples threads of nested sampling run, returning a new
@@ -209,31 +236,6 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
     ns_run_temp = dict_given_samples_array(lrxtnp_temp, thread_min_max_temp)
     ns_run_temp['settings'] = ns_run['settings']
     return ns_run_temp
-
-
-def run_estimators(ns_run, estimator_list, **kwargs):
-    """
-    Calculates values of list of estimators for a single nested sampling run.
-
-    Parameters
-    ----------
-    ns_run: dict
-        Nested sampling run dictionary.
-    estimator_list: list of estimator classes, each containing class method
-        estimator(self, logw, ns_run)
-    simulate: bool, optional
-
-    Returns
-    -------
-    output: 1d numpy array
-        Calculation result for each estimator in estimator_list.
-    """
-    simulate = kwargs.get('simulate', False)
-    logw = get_logw(ns_run['logl'], ns_run['nlive_array'], simulate=simulate)
-    output = np.zeros(len(estimator_list))
-    for i, f in enumerate(estimator_list):
-        output[i] = f.estimator(logw, ns_run)
-    return output
 
 
 def run_std_simulate(ns_run, estimator_list, **kwargs):
