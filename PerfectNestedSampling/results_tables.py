@@ -16,11 +16,13 @@ import PerfectNestedSampling.estimators as e
 
 
 @slu.timing_decorator
-def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
+def get_dynamic_results(n_run, dynamic_goals_in, funcs_in, settings, **kwargs):
     """
     Generate results tables showing the standard deviations of the results of
     repeated calculations and efficiency gains (ratios of variances of results
-    calculations) from different dynamic goals.
+    calculations) from different dynamic goals. To make the comparison fair,
+    for dynamic nested sampling settings.n_samples_max is set to slightly below
+    the mean number of samples used by standard nested sampling.
 
     Results are output in pandas data frames, and are also saved in latex
     format in a .txt file.
@@ -30,11 +32,15 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     algorithm for nested sampling parameter estimation and evidence
     calculation' (Higson et al. 2017).
     """
-    load = kwargs.get('load', True)
-    save = kwargs.get('save', True)
+    load = kwargs.get('load', False)
+    save = kwargs.get('save', False)
     save_dir = kwargs.get('save_dir', 'data')
     parallelise = kwargs.get('parallelise', True)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
+    # First we run a standard nested sampling run for comparison:
+    dynamic_goals = [None] + dynamic_goals_in
+    if tuned_dynamic_ps is not None:
+        tuned_dynamic_ps = [False] + tuned_dynamic_ps
     # make save_name
     extra_root = 'dynamic_test'
     for dg in dynamic_goals:
@@ -42,13 +48,11 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root,
                                    include_dg=False)
     save_file = save_dir + '/' + save_root + '.dat'
-    print('Running get_dynamic_results: save file is')
-    print(save_file)
     # try loading results
     if load:
         try:
             results = pd.read_pickle(save_file)
-            print('Loading results from file:\n' + save_file)
+            print('get_dynamic_results: loading results from\n' + save_file)
             return results
         except OSError:
             pass
@@ -72,20 +76,18 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         print('dynamic_goal = ' + str(settings.dynamic_goal))
         # if we have already done the standard calculation, set n_samples_max
         # for dynamic calculations so it is slightly smaller than the number
-        # of samples the standard calculation used (for comparison of
-        # performance)
+        # of samples the standard calculation used to ensure a fair comparison
+        # of performance. Otherwise dynamic nested sampling will end up using
+        # more samples than standard nested sampling as it does not terminate
+        # until after the number of samples is greater than n_samples_max.
         if settings.dynamic_goal is not None and 'standard' in df_dict:
             n_samples_max = df_dict['standard']['n_samples']['mean']
             # This factor is a function of the dynamic goal as typically
             # evidence calculations have longer attitional threads than
             # parameter estimation calculations.
-            n_samples_max *= 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
-                                  (settings.nbatch / settings.nlive_const))
-            n_samples_max = int(n_samples_max)
-            print('given standard used ' +
-                  str(df_dict['standard']['n_samples']['mean']) +
-                  ' calls, set n_samples_max=' + str(n_samples_max))
-            settings.n_samples_max = n_samples_max
+            reduce_factor = 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
+                                 (settings.nbatch / settings.nlive_const))
+            settings.n_samples_max = int(n_samples_max * reduce_factor)
         # get a name for this calculation method
         if dynamic_goal is None:
             method_names.append('standard')
@@ -116,39 +118,37 @@ def get_dynamic_results(n_run, dynamic_goals, funcs_in, settings, **kwargs):
         # We want to see the number of samples (not its std or gain), so set
         # every row of n_samples column equal to the mean number of samples
         df_dict[key]['n_samples']['std'] = df['n_samples']['mean']
-        df_dict[key]['n_samples']['std_unc'] = df['n_samples']['mean_unc']
         df_dict[key]['n_samples']['gain'] = df['n_samples']['mean']
-        df_dict[key]['n_samples']['gain_unc'] = df['n_samples']['mean_unc']
     for key, df in df_dict.items():
         # make uncertainties appear in seperate columns
         df_dict[key] = mf.df_unc_rows_to_cols(df)
+        # Delete uncertainty on mean number of samples as not interested in it
+        del df_dict[key]['n_samples_unc']
         # edit keys to show method names
         df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
     results = pd.concat(df_dict.values())
-    # Add true values to test that nested sampling is working correctly - these
-    # should be close to the mean calculation values
-    results = results.append(e.get_true_estimator_values(estimator_list,
-                                                         settings))
-    # Sort the rows and columns into the order needed for the paper
+    # Get true values to test that nested sampling is working correctly - the
+    # mean calculation values should be close to these
+    true_values = e.get_true_estimator_values(estimator_list, settings)
+    for est in estimator_list:
+        true_values[est.name + '_unc'] = 0
+    # Get the correct column order before concatenating true_values otherwise
+    # column order is messed up
+    col_order = list(results)
+    col_order.insert(0, col_order.pop(col_order.index('n_samples')))
+    # add true values and reorder
+    results = pd.concat((results, true_values))
+    results = results.loc[:, col_order]
+    # Sort the rows into the order we want for the paper
     row_order = ['true values']
     for pref in ['mean', 'std', 'gain']:
         for mn in method_names:
             row_order.append(pref + ' ' + mn)
     results = results.reindex(row_order)
-    cols = list(results)
-    cols.insert(0, cols.pop(cols.index('n_samples')))
-    cols.insert(1, cols.pop(cols.index('n_samples_unc')))
-    results = results.loc[:, cols]
     if save:
         # save the results data frame
+        print('get_dynamic_results: saving results to\n' + save_file)
         results.to_pickle(save_file)
-        print('Results saved to:\n' + save_file)
-        # save results in latex format
-        latex_save_file = save_dir + '/' + save_root + '_latex.txt'
-        latex_df = slu.latex_format_df(results, cols=None, rows=None,
-                                       dp_list=None)
-        with open(latex_save_file, 'w') as text_file:
-            print(latex_df.to_latex(), file=text_file)
     return results
 
 
@@ -167,8 +167,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     algorithm for nested sampling parameter estimation and evidence
     calculation' (Higson et al. 2017).
     """
-    load = kwargs.get('load', True)
-    save = kwargs.get('save', True)
+    load = kwargs.get('load', False)
+    save = kwargs.get('save', False)
     save_dir = kwargs.get('save_dir', 'data')
     ninit_sep = kwargs.get('ninit_sep', False)
     parallelise = kwargs.get('parallelise', True)
@@ -181,13 +181,11 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                   str(ninit_sep) + 'sep')
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
     save_file = save_dir + '/' + save_root + '.dat'
-    print('Running get_bootstrap_results: save file is')
-    print(save_file)
     # try loading results
     if load:
         try:
             results = pd.read_pickle(save_file)
-            print('Loading results from file:\n' + save_file)
+            print('get_bootstrap_results: loading results from\n' + save_file)
             return results
         except OSError:
             pass
@@ -201,6 +199,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # Add true values to test that nested sampling is working correctly - these
     # should be close to the mean calculation values
     results = e.get_true_estimator_values(estimator_list, settings)
+    results.loc['true values_unc'] = 0
     # get mean and std of repeated calculations
     rep_values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
                                  parallelise=parallelise)
@@ -269,12 +268,6 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results = mf.df_unc_rows_to_cols(results)
     if save:
         # save the results data frame
+        print('get_bootstrap_results: results saved to\n' + save_file)
         results.to_pickle(save_file)
-        print('Results saved to:\n' + save_file)
-        # save results in latex format
-        latex_save_file = save_dir + '/' + save_root + '_latex.txt'
-        latex_df = slu.latex_format_df(results, cols=None, rows=None,
-                                       dp_list=None)
-        with open(latex_save_file, 'w') as text_file:
-            print(latex_df.to_latex(), file=text_file)
     return results

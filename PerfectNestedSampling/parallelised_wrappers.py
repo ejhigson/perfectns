@@ -71,7 +71,8 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     print('func_on_runs: calculating ' + single_run_func.__name__ + ' for ' +
           str(len(run_list)) + ' runs')
     if parallelise:
-        # if max_worker is None this defaults to number of processors on the machine * 5
+        # if max_worker is None this defaults to number of processors on the
+        # machine * 5
         pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_worker)
         futures = []
         for run in run_list:
@@ -122,8 +123,8 @@ def get_run_data(settings, n_repeat, max_worker=None, parallelise=True,
         list of n_repeat nested sampling runs.
     """
     save_name = slu.data_save_name(settings, n_repeat)
-    print('get_run_data: ' + save_name)
     if load:
+        print('get_run_data: ' + save_name)
         try:
             data = slu.pickle_load(save_name)
         except OSError:  # FileNotFoundError is a subclass of OSError
@@ -142,10 +143,9 @@ def get_run_data(settings, n_repeat, max_worker=None, parallelise=True,
                 del data
                 load = False
     if not load:
-        print('Generate new runs')
         data = generate_runs(settings, n_repeat, max_worker=max_worker,
                              parallelise=parallelise)
         if save:
-            print('Saving runs')
+            print('Generated new runs: saving to ' + save_name)
             slu.pickle_save(data, save_name)
     return data

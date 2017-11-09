@@ -26,7 +26,6 @@ PerfectNestedSampling/settings.py)')
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 settings.prior = priors.gaussian(prior_scale=1)
 settings.n_dim = 3
-settings.nlive_const = 1000  # set nlive_const high for single run tests
 
 print('Perform standard nested sampling')
 settings.dynamic_goal = None  # specifies standard nested sampling
@@ -54,10 +53,9 @@ settings.nlive_const = 100  # return to default nlive_const for multi-run tests
 n_runs = 10
 
 
-dynamic_tests = rt.get_dynamic_results(n_runs, [None, 0, 1],
+dynamic_tests = rt.get_dynamic_results(n_runs, [0, 1],
                                        estimator_list, settings,
-                                       load=False, save=False,
-                                       parallelise=False)
+                                       parallelise=True)
 print(dynamic_tests)
 
 print('\nCheck bootstrap error estimates:')
@@ -65,11 +63,10 @@ print('--------------------------------\n')
 
 bootstrap_tests = rt.get_bootstrap_results(n_runs, 20,
                                            estimator_list, settings,
-                                           load=False, save=False,
                                            n_simulate_ci=100,
                                            add_sim_method=True,
                                            n_run_ci=2,
                                            cred_int=0.95,
                                            ninit_sep=False,
-                                           parallelise=False)
+                                           parallelise=True)
 print(bootstrap_tests)

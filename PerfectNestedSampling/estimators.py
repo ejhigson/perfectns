@@ -142,7 +142,7 @@ class paramMeanEstimator(object):
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
-        self.name = 't' + str(param_ind)
+        self.name = 'theta' + str(param_ind)
         self.latex_name = ('$\\overline{\\theta_{\hat{' + str(param_ind) +
                            '}}}$')
 
@@ -172,12 +172,14 @@ class paramCredEstimator(object):
         assert 1 > probability > 0, 'credible interval probability = ' + \
             str(probability) + ' must be between 0 and 1'
         self.param_ind = param_ind
-        self.name = 't' + str(param_ind) + 'c_' + str(probability)
+        self.name = 'theta' + str(param_ind) + 'c_' + str(probability)
         self.probability = probability
         param_str = '\\theta_{\hat{' + str(param_ind) + '}}'
         if probability == 0.5:
+            self.name = 'Median(theta' + str(param_ind) + ')'
             self.latex_name = '$\mathrm{median}(' + param_str + ')$'
         else:
+            self.name = 'theta' + str(param_ind) + 'c_' + str(probability)
             # format percent without trailing zeros
             percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
             self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
@@ -230,7 +232,7 @@ class paramSquaredMeanEstimator:
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
-        self.name = 't' + str(param_ind) + 'squ'
+        self.name = 'theta' + str(param_ind) + 'squ'
         self.latex_name = ('$\\overline{\\theta^2_{\hat{' + str(param_ind) +
                            '}}}$')
 
@@ -264,14 +266,20 @@ def get_true_estimator_values(estimator_list, settings):
     Return a pandas data frame of the correct values for the estimators in
     estimator_list given the likelihood and prior in settings. If there is no
     method for calculating the values set up yet they are set to np.nan.
+
+    Preserves the order of the input estimators in the data frame columns.
     """
     output = {}
+    ordered_cols = []
     for est in estimator_list:
+        ordered_cols.append(est.name)
         try:
             output[est.name] = est.analytical(settings)
         except (AttributeError, AssertionError):
             output[est.name] = np.nan
-    return pd.DataFrame(output, index=['true values'])
+    df = pd.DataFrame(output, index=['true values'])
+    df = df[ordered_cols]  # needed to have columns correct order
+    return df
 
 
 def check_by_integrating(ftilde, settings):
