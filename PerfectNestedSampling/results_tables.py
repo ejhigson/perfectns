@@ -7,7 +7,6 @@ estimation and evidence calculation' (Higson et al. 2017).
 
 import pandas as pd
 import numpy as np
-# perfect nested sampling modules
 import PerfectNestedSampling.save_load_utils as slu
 import PerfectNestedSampling.parallelised_wrappers as pw
 import PerfectNestedSampling.analyse_run as ar
@@ -16,21 +15,57 @@ import PerfectNestedSampling.estimators as e
 
 
 @slu.timing_decorator
-def get_dynamic_results(n_run, dynamic_goals_in, funcs_in, settings, **kwargs):
+def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
+                        **kwargs):
     """
-    Generate results tables showing the standard deviations of the results of
+    Generate data frame showing the standard deviations of the results of
     repeated calculations and efficiency gains (ratios of variances of results
     calculations) from different dynamic goals. To make the comparison fair,
     for dynamic nested sampling settings.n_samples_max is set to slightly below
     the mean number of samples used by standard nested sampling.
 
-    Results are output in pandas data frames, and are also saved in latex
-    format in a .txt file.
-
     This function was used for Tables 1, 2, 3 and 4, as well as to generate the
     results shown in figures 6 and 7 of 'Dynamic nested sampling: an improved
     algorithm for nested sampling parameter estimation and evidence
-    calculation' (Higson et al. 2017).
+    calculation' (Higson et al. 2017). See the paper for a more detailed
+    description.
+
+    Parameters
+    ----------
+    n_run: int
+        how many runs to use
+    dynamic_goals_in: list of floats
+        which dynamic goals to test
+    estimator_list_in: list of estimator objects
+    settings: PerfectNestedSamplingSettings object
+    load: bool, optional
+        should run data and results be loaded if available?
+    save: bool, optional
+        should run data and results be saved?
+    parallelise: bool, optional
+    tuned_dynamic_ps: list of bools, same length as dynamic_goals_in, optional
+
+    Returns
+    -------
+    results: pandas data frame
+        results data frame.
+        Contains two columns for each estimator - the second column (with
+        '_unc' appended to the title) shows the numerical uncertainty in the
+        first column.
+        Contains rows:
+            true values: analytical values of estimators for this likelihood
+                and posterior if available
+            mean [dynamic goal]: mean calculation result for standard nested
+                sampling and dynamic nested sampling with each input dynamic
+                goal.
+            std [dynamic goal]: standard deviation of results for standard
+                nested sampling and dynamic nested sampling with each input
+                dynamic goal.
+            gain [dynamic goal]: the efficiency gain (computational speedup)
+                from dynamic nested sampling compared to standard nested
+                sampling. This equals (variance of standard results) /
+                (variance of dynamic results); see the dynamic nested
+                sampling paper for more details.
     """
     load = kwargs.get('load', False)
     save = kwargs.get('save', False)
@@ -59,7 +94,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, funcs_in, settings, **kwargs):
     # start function
     # --------------
     # get info on the number of samples taken in each run as well
-    estimator_list = [e.nSamplesEstimator()] + funcs_in
+    estimator_list = [e.nSamplesEstimator()] + estimator_list_in
     func_names = []
     for func in estimator_list:
         func_names.append(func.name)
@@ -126,6 +161,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, funcs_in, settings, **kwargs):
         del df_dict[key]['n_samples_unc']
         # edit keys to show method names
         df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
+    # Combine all results into one data frame
     results = pd.concat(df_dict.values())
     # Get true values to test that nested sampling is working correctly - the
     # mean calculation values should be close to these
@@ -156,16 +192,69 @@ def get_dynamic_results(n_run, dynamic_goals_in, funcs_in, settings, **kwargs):
 def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                           **kwargs):
     """
-    Generate results tables showing the standard deviations of the results of
+    Generate data frame showing the standard deviations of the results of
     repeated calculations and estimated sampling errors from bootstrap
     resampling.
 
-    Results are output in pandas data frames, and are also saved in latex
-    format in a .txt file.
-
     This function was used for Table 5 in 'Dynamic nested sampling: an improved
     algorithm for nested sampling parameter estimation and evidence
-    calculation' (Higson et al. 2017).
+    calculation' (Higson et al. 2017). See the paper for more details.
+
+    Parameters
+    ----------
+    n_run: int
+        how many runs to use
+    n_simulate: int
+        how many times to resample the nested sampling run in each bootstrap
+        standard deviation estimate.
+    estimator_list: list of estimator objects
+    settings: PerfectNestedSamplingSettings object
+    load: bool, optional
+        should run data and results be loaded if available?
+    save: bool, optional
+        should run data and results be saved?
+    parallelise: bool, optional
+    add_sim_method: bool, optional
+        should we also calculate standard deviations using the simulated
+        weights method for comparison with bootstrap resampling? This method is
+        inaccurate for parameter estimation.
+    n_simulate_ci: int, optional
+        how many times to resample the nested sampling run in each bootstrap
+        credible interval estimate. These may require more simulations than the
+        standard deviation estimate.
+    n_run_ci: int, optional
+        how many runs to use for each credible interval estimate. You may want
+        to set this to lower than n_run if n_simulate_ci is large as otherwise
+        the credible interval estimate may take a long time.
+    cred_int: float, optional
+        one-tailed credible interval to caclulate
+
+    Returns
+    -------
+    results: pandas data frame
+        results data frame.
+        Contains two columns for each estimator - the second column (with
+        '_unc' appended to the title) shows the numerical uncertainty in the
+        first column.
+        Contains rows:
+            true values: analytical values of estimators for this likelihood
+                and posterior if available
+            repeats mean: mean calculation result
+            repeats std: standard deviation of calculation results
+            bs std / repeats std: mean bootstrap standard deviation estimate as
+                a fraction of the standard deviation of repeated results.
+            bs estimate % variation: standard deviation of bootstrap estimates
+                as a percentage of the mean estimate.
+            [only if add sim method is True]:
+                sim std / repeats std: as for 'bs std / repeats std' but with
+                    simulation method standard deviation estimates.
+                sim estimate % variation: as for 'bs estimate % variation' but
+                    with simulation method standard deviation estimates.
+            bs [cred_int] CI: mean bootstrap credible interval estimate.
+            bs +-1std % coverage: % of calculation results falling within +- 1
+                mean bootstrap standard deviation estimate of the mean.
+            bs [cred_int] CI % coverage: % of calculation results which are
+                less than the mean bootstrap credible interval estimate.
     """
     load = kwargs.get('load', False)
     save = kwargs.get('save', False)
@@ -213,15 +302,18 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     bs_df = mf.get_df_row_summary(bs_values, e_names)
     # Get the mean bootstrap std estimate as a fraction of the std measured
     # from repeated calculations.
-    results.loc['bs std'] = bs_df.loc['mean'] / results.loc['repeats std']
+    results.loc['bs std / repeats std'] = (bs_df.loc['mean'] /
+                                           results.loc['repeats std'])
     bs_std_ratio_unc = mf.array_ratio_std(bs_df.loc['mean'],
                                           bs_df.loc['mean_unc'],
                                           results.loc['repeats std'],
                                           results.loc['repeats std_unc'])
-    results.loc['bs std_unc'] = bs_std_ratio_unc
+    results.loc['bs std / repeats std_unc'] = bs_std_ratio_unc
     # multiply by 100 to express as a percentage
-    results.loc['bs var'] = 100 * bs_df.loc['std'] / bs_df.loc['mean']
-    results.loc['bs var_unc'] = 100 * bs_df.loc['std_unc'] / bs_df.loc['mean']
+    results.loc['bs estimate % variation'] = 100 * (bs_df.loc['std'] /
+                                                    bs_df.loc['mean'])
+    results.loc['bs estimate % variation_unc'] = 100 * (bs_df.loc['std_unc'] /
+                                                        bs_df.loc['mean'])
     if add_sim_method:
         # get std from simulation estimate
         sim_values = pw.func_on_runs(ar.run_std_simulate, run_list,
@@ -229,17 +321,19 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                      parallelise=parallelise)
         sim_df = mf.get_df_row_summary(sim_values, e_names)
         # get mean simulation std estimate a ratio to the std from repeats
-        results.loc['sim std'] = (sim_df.loc['mean'] /
-                                  results.loc['repeats std'])
+        results.loc['sim std / repeats std'] = (sim_df.loc['mean'] /
+                                                results.loc['repeats std'])
         sim_std_ratio_unc = mf.array_ratio_std(sim_df.loc['mean'],
                                                sim_df.loc['mean_unc'],
                                                results.loc['repeats std'],
                                                results.loc['repeats std_unc'])
-        results.loc['sim std_unc'] = sim_std_ratio_unc
+        results.loc['sim std / repeats std_unc'] = sim_std_ratio_unc
         # multiply by 100 to express as a percentage
-        results.loc['sim var'] = 100 * sim_df.loc['std'] / sim_df.loc['mean']
-        results.loc['sim var_unc'] = 100 * (sim_df.loc['std_unc'] /
-                                            sim_df.loc['mean'])
+        results.loc['sim estimate % variation'] = 100 * (sim_df.loc['std'] /
+                                                         sim_df.loc['mean'])
+        results.loc['sim estimate % variation_unc'] = (100 *
+                                                       sim_df.loc['std_unc'] /
+                                                       sim_df.loc['mean'])
     # get bootstrap CI estimates
     bs_cis = pw.func_on_runs(ar.run_ci_bootstrap, run_list[:n_run_ci],
                              estimator_list, n_simulate=n_simulate_ci,
@@ -256,7 +350,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                        (rep_values[i, :] < max_value[i]))
         coverage[i] = ind[0].shape[0] / rep_values.shape[1]
     # multiply by 100 to express as a percentage
-    results.loc['bs +-1std cov'] = coverage * 100
+    results.loc['bs +-1std % coverage'] = coverage * 100
     # add conf interval coverage
     max_value = results.loc['bs ' + str(cred_int) + ' CI'].values
     ci_coverage = np.zeros(rep_values.shape[0])
@@ -264,7 +358,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         ind = np.where(rep_values[i, :] < max_value[i])
         ci_coverage[i] = ind[0].shape[0] / rep_values.shape[1]
     # multiply by 100 to express as a percentage
-    results.loc['bs ' + str(cred_int) + ' CI cov'] = ci_coverage * 100
+    results.loc['bs ' + str(cred_int) + ' CI % coverage'] = ci_coverage * 100
     results = mf.df_unc_rows_to_cols(results)
     if save:
         # save the results data frame

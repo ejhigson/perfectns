@@ -186,7 +186,6 @@ def generate_dynamic_run(settings):
     thread_min_max = standard_run['thread_min_max']
     n_samples = samples.shape[0]
     if settings.n_samples_max is None:
-        print('dns: settings.n_samples_max is None: estimate from nlive_const')
         # estimate number of likelihood calls available
         n_samples_max = n_samples * (settings.nlive_const / settings.ninit)
     else:
