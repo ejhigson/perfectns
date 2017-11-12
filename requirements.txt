@@ -1,0 +1,9 @@
+# PerfectNestedSampling requirements
+# ----------------------------------
+# pip install all requirements with
+# $ pip install -r requirements.txt
+numpy
+scipy
+pandas
+mpmath
+tqdm
