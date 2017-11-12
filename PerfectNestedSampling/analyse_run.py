@@ -135,42 +135,6 @@ def get_run_threads(ns_run):
     return threads
 
 
-def get_nlive_thread_min_max(ns_run):
-    """
-    Calculates the local number of live points for each sample using likelihood
-    values and the thread_min_max array.
-    Parameters
-    ----------
-    ns_run: dict
-        Nested sampling run dictionary.
-
-    Returns
-    -------
-    nlive_array: 1d numpy array
-    """
-    nlive_array = np.zeros(ns_run['logl'].shape[0])
-    lmm_ar = ns_run['thread_min_max']
-    # no min logl
-    for r in lmm_ar[np.isnan(lmm_ar[:, 0])]:
-        nlive_array[np.where(r[1] >= ns_run['logl'])] += 1
-    # no max logl
-    for r in lmm_ar[np.isnan(lmm_ar[:, 1])]:
-        nlive_array[np.where(ns_run['logl'] > r[0])] += 1
-    # both min and max logl
-    for r in lmm_ar[~np.isnan(lmm_ar[:, 0]) & ~np.isnan(lmm_ar[:, 1])]:
-        indexes = np.where((r[1] >= ns_run['logl']) & (ns_run['logl'] > r[0]))
-        nlive_array[indexes] += 1
-    assert lmm_ar[np.isnan(lmm_ar[:, 0]) &
-                  np.isnan(lmm_ar[:, 1])].shape[0] == 0, \
-        'Should not have threads with neither start nor end logls'
-    # If nlive_array contains zeros then print info and throw error
-    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!\n' \
-        'nlive_array = ' + str(nlive_array)
-    assert nlive_array[-1] == 1, 'final point in nlive_array should be 1!\n' \
-        'nlive_array = ' + str(nlive_array)
-    return nlive_array
-
-
 # Functions for estimating sampling errors
 # ----------------------------------------
 

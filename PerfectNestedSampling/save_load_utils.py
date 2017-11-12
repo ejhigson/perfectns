@@ -10,7 +10,7 @@ import os.path  # for saving and reading data
 
 def timing_decorator(func):
     """
-    Outputs the time a function takes to execute.
+    Prints the time a function takes to execute.
     """
     @wraps(func)
     def wrapper(*args, **kw):
@@ -29,12 +29,12 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
     """
     Make a standard save name format for data with a given set of settings.
     """
-    save_name = settings.data_version
+    save_name = ''
     if extra_root is not None:
-        save_name += '_' + str(extra_root)
+        save_name += str(extra_root) + '_'
     if include_dg:
-        save_name += '_dg' + str(settings.dynamic_goal)
-    save_name += '_' + str(settings.n_dim) + 'd'
+        save_name += 'dg' + str(settings.dynamic_goal) + '_'
+    save_name += str(settings.n_dim) + 'd_'
     # add likelihood and prior info
     save_name += '_' + type(settings.likelihood).__name__
     if type(settings.likelihood).__name__ == 'exp_power':

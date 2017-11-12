@@ -35,8 +35,6 @@ class PerfectNestedSamplingSettings(object):
         A likelihood object. See likelihoods.py for more details.
     nlive_const: int
         The number of live points for standard nested sampling.
-    data_version: str
-        Prefix for save names
     termination_fraction: float
         Standard nested sampling runs will terminate when the posterior mass
         remaining (estimated from the live points) is less than
@@ -75,7 +73,6 @@ class PerfectNestedSamplingSettings(object):
             # calculation settings
             # --------------------
             'nlive_const': 200,
-            'data_version': 'v09',
             'dims_to_sample': 1,
             'termination_fraction': 0.001,
             # Dynamic nested sampling settings - only used if dynamic_goal is

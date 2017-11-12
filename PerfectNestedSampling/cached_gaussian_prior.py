@@ -34,8 +34,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     else:
         logx_max = kwargs.get('logx_max', -200)
     interp_density = kwargs.get('interp_density', 10)
-    version = 'v01'
-    save_name = 'interp_gauss_prior_' + version + '_' + str(n_dim) + 'd_' + \
+    save_name = 'interp_gauss_prior_' + str(n_dim) + 'd_' + \
                 str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' + \
                 str(logx_max) + 'xmax_' + str(interp_density) + 'id'
     try:
@@ -54,8 +53,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         r_array = np.linspace(r_min, r_max,
                               int((logx_max - logx_min) * interp_density))
         logx_array = mf.gaussian_logx_given_r(r_array, prior_scale, n_dim)
-        interp_dict = {'version': version,
-                       'interp_density': interp_density,
+        interp_dict = {'interp_density': interp_density,
                        'logx_min': logx_min,
                        'n_dim': n_dim,
                        'prior_scale': prior_scale,
