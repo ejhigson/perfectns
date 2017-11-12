@@ -181,6 +181,9 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         for mn in method_names:
             row_order.append(pref + ' ' + mn)
     results = results.reindex(row_order)
+    # get rid of the 'gain standard' row as it compares standard nested
+    # sampling to its self.
+    results.drop('gain standard', inplace=True)
     if save:
         # save the results data frame
         print('get_dynamic_results: saving results to\n' + save_file)
@@ -351,6 +354,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         coverage[i] = ind[0].shape[0] / rep_values.shape[1]
     # multiply by 100 to express as a percentage
     results.loc['bs +-1std % coverage'] = coverage * 100
+    # set uncertainty on empirical measurement of coverage to zero
+    results.loc['bs +-1std % coverage_unc'] = 0
     # add conf interval coverage
     max_value = results.loc['bs ' + str(cred_int) + ' CI'].values
     ci_coverage = np.zeros(rep_values.shape[0])
@@ -359,6 +364,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         ci_coverage[i] = ind[0].shape[0] / rep_values.shape[1]
     # multiply by 100 to express as a percentage
     results.loc['bs ' + str(cred_int) + ' CI % coverage'] = ci_coverage * 100
+    # set uncertainty on empirical measurement of coverage to zero
+    results.loc['bs ' + str(cred_int) + ' CI % coverage_unc'] = 0
     results = mf.df_unc_rows_to_cols(results)
     if save:
         # save the results data frame

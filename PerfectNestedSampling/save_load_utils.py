@@ -34,7 +34,7 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
         save_name += str(extra_root) + '_'
     if include_dg:
         save_name += 'dg' + str(settings.dynamic_goal) + '_'
-    save_name += str(settings.n_dim) + 'd_'
+    save_name += str(settings.n_dim) + 'd'
     # add likelihood and prior info
     save_name += '_' + type(settings.likelihood).__name__
     if type(settings.likelihood).__name__ == 'exp_power':
