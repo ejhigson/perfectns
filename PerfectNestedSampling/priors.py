@@ -129,9 +129,8 @@ class gaussian_cached(object):
                 ind = np.where(logx <= self.interp_d['logx_array'].max())[0]
                 r[ind] = self.interp_f(logx[ind])
                 ind = np.where(logx > self.interp_d['logx_array'].max())[0]
-                r[ind] = mf.scipy_gaussian_r_given_logx(logx[ind],
-                                                        self.prior_scale,
-                                                        n_dim)
+                r[ind] = mf.gaussian_r_given_logx(logx[ind], self.prior_scale,
+                                                  n_dim)
                 assert np.count_nonzero(r) == r.shape[0], \
                     'r contains zeros! r = ' + str(r)
                 return r
@@ -139,9 +138,8 @@ class gaussian_cached(object):
                 if logx <= self.interp_d['logx_array'].max():
                     return self.interp_f(logx)
                 else:
-                    return mf.scipy_gaussian_r_given_logx(logx,
-                                                          self.prior_scale,
-                                                          n_dim)
+                    return mf.gaussian_r_given_logx(logx, self.prior_scale,
+                                                    n_dim)
         except ValueError:
             print('ValueError in r_given_logx for gaussian prior')
             print('logx_interp is ', self.interp_d['logx_array'])

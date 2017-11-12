@@ -282,8 +282,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     al. 2017).
     """
     run_dict = ar.dict_given_samples_array(samples, thread_min_max)
-    logw = ar.get_logw(run_dict['logl'], run_dict['nlive_array'],
-                       simulate=simulate)
+    logw = ar.get_logw(run_dict, simulate=simulate)
     # subtract logw.max() to avoids numerical errors with very small numbers
     w_relative = np.exp(logw - logw.max())
     if settings.dynamic_goal == 0:

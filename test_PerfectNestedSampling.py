@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Runs some tests of perfect_nested_sampling functionality.
+Demonstrate the Perfect Nested Sampling module.
 """
 
 import pandas as pd

@@ -43,7 +43,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     except OSError:  # FileNotFoundError is a subclass of OSError
         print(save_name)
         print('Interp file not found - try generating new data')
-        r_max = mf.scipy_gaussian_r_given_logx(logx_max, prior_scale, n_dim)
+        r_max = mf.gaussian_r_given_logx(logx_max, prior_scale, n_dim)
         # Iteratively reduce r_min until its corresponding logx value is less
         # than logx_min. This process depends only on mpmath functions which
         # can handle arbitarily small numbers.

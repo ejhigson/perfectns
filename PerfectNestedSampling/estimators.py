@@ -118,17 +118,21 @@ class rCredEstimator(object):
 
     def estimator(self, logw, ns_run):
         """Returns estimator value for run."""
-        # get sorted array of p1 values with their posterior weight
+        # get sorted array of r values with their posterior weight
         wr = np.zeros((logw.shape[0], 2))
         wr[:, 0] = np.exp(logw - logw.max())
         wr[:, 1] = ns_run['r']
         wr = wr[np.argsort(wr[:, 1], axis=0)]
+        # calculate cumulative distribution function (cdf)
+        # Adjust by subtracting 0.5 * weight of first point to correct skew
+        # - otherwise we need cdf=1 to return the last value but will return
+        # the smallest value if cdf<the fractional weight of the first point.
+        # This should not much matter as typically points' relative weights
+        # will be very small compared to self.probability or
+        # 1-self.probability.
+        cdf = np.cumsum(wr[:, 0]) - (wr[0, 0] / 2)
+        cdf /= np.sum(wr[:, 0])
         # calculate cdf
-        cdf = np.zeros(wr.shape[0])
-        cdf[0] = wr[0, 0] * 0.5
-        for i, _ in enumerate(wr[1:, 0]):
-            cdf[i + 1] = cdf[i] + 0.5 * (wr[i, 0] + wr[i + 1, 0])
-        cdf = cdf / np.sum(wr[:, 0])
         # linearly interpolate value
         return np.interp(self.probability, cdf, wr[:, 1])
 
@@ -187,16 +191,20 @@ class paramCredEstimator(object):
 
     def estimator(self, logw, ns_run):
         """Returns estimator value for run."""
+        # get sorted array of parameter values with their posterior weight
         wp = np.zeros((logw.shape[0], 2))
         wp[:, 0] = np.exp(logw - logw.max())
         wp[:, 1] = ns_run['theta'][:, self.param_ind - 1]
         wp = wp[np.argsort(wp[:, 1], axis=0)]
-        # calculate CDF
-        cdf = np.zeros(wp.shape[0])
-        cdf[0] = wp[0, 0] * 0.5
-        for i, _ in enumerate(wp[1:, 0]):
-            cdf[i + 1] = cdf[i] + 0.5 * (wp[i, 0] + wp[i + 1, 0])
-        cdf = cdf / np.sum(wp[:, 0])
+        # calculate cumulative distribution function (cdf)
+        # Adjust by subtracting 0.5 * weight of first point to correct skew
+        # - otherwise we need cdf=1 to return the last value but will return
+        # the smallest value if cdf<the fractional weight of the first point.
+        # This should not much matter as typically points' relative weights
+        # will be very small compared to self.probability or
+        # 1-self.probability.
+        cdf = np.cumsum(wp[:, 0]) - (wp[0, 0] / 2)
+        cdf /= np.sum(wp[:, 0])
         # linearly interpolate value
         return np.interp(self.probability, cdf, wp[:, 1])
 

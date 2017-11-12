@@ -27,7 +27,7 @@ def run_estimators(ns_run, estimator_list, **kwargs):
         Calculation result for each estimator in estimator_list.
     """
     simulate = kwargs.get('simulate', False)
-    logw = get_logw(ns_run['logl'], ns_run['nlive_array'], simulate=simulate)
+    logw = get_logw(ns_run, simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, f in enumerate(estimator_list):
         output[i] = f.estimator(logw, ns_run)
@@ -335,7 +335,7 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
 # Helper functions
 # ----------------
 
-def get_logw(logl, nlive_array, simulate=False):
+def get_logw(ns_run, simulate=False):
     """
     Calculates the log posterior weights of the samples (using logarithms to
     avoid overflow errors with very large or small values).
@@ -345,11 +345,13 @@ def get_logw(logl, nlive_array, simulate=False):
 
     Parameters
     ----------
-    logl: 1d numpy array
-        Ordered loglikelihood values of points.
-    nlive_array: 1d numpy array
-        Ordered local number of live points present at each point's
-        isolikelihood contour.
+    ns_run: dict
+        Nested sampling run dictionary containing keys:
+        logl: 1d numpy array
+            Ordered loglikelihood values of points.
+        nlive_array: 1d numpy array
+            Ordered local number of live points present at each point's
+            isolikelihood contour.
     simulate: bool, optional
         Should log prior volumes logx be simulated from their distribution (if
         false their expected values are used)
@@ -360,8 +362,8 @@ def get_logw(logl, nlive_array, simulate=False):
         Log posterior masses of points
     """
     # find logX value for each point
-    logx = get_logx(nlive_array, simulate=simulate)
-    logw = np.zeros(logl.shape[0])
+    logx = get_logx(ns_run['nlive_array'], simulate=simulate)
+    logw = np.zeros(ns_run['logl'].shape[0])
     # Vectorized trapezium rule: w_i proportional to (X_{i-1} - X_{i+1}) / 2
     logw[1:-1] = mf.log_subtract(logx[:-2], logx[2:]) - np.log(2)
     # Assign all prior volume closest to first point X_first to that point:
@@ -373,7 +375,7 @@ def get_logw(logl, nlive_array, simulate=False):
     # that is from logx=log((X_penultimate + X_last) / 2) to logx=-inf
     logw[-1] = scipy.misc.logsumexp([logx[-2], logx[-1]]) - np.log(2)
     # multiply by likelihood (add in log space)
-    logw += logl
+    logw += ns_run['logl']
     return logw
 
 
