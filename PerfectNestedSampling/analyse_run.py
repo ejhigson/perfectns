@@ -337,25 +337,42 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
 
 def get_logw(logl, nlive_array, simulate=False):
     """
-    Calculates the log weights of each sample given its log likelihood and
-    the local numbers of live points.
+    Calculates the log posterior weights of the samples (using logarithms to
+    avoid overflow errors with very large or small values).
 
     Uses the trapezium rule such that the weight of point i is
     w_i = l_i (X_{i-1} - X_{i+1}) / 2
+
+    Parameters
+    ----------
+    logl: 1d numpy array
+        Ordered loglikelihood values of points.
+    nlive_array: 1d numpy array
+        Ordered local number of live points present at each point's
+        isolikelihood contour.
+    simulate: bool, optional
+        Should log prior volumes logx be simulated from their distribution (if
+        false their expected values are used)
+
+    Returns
+    -------
+    logw: 1d numpy array
+        Log posterior masses of points
     """
-    logx_inc_start = np.zeros(logl.shape[0] + 1)
-    # find X value for each point (start is at logX=0)
-    logx_inc_start[1:] = get_logx(nlive_array, simulate=simulate)
+    # find logX value for each point
+    logx = get_logx(nlive_array, simulate=simulate)
     logw = np.zeros(logl.shape[0])
-    # vectorized trapezium rule: w_i = (X_{i-1} - X_{i+1}) / 2
-    logw[:-1] = mf.log_subtract(logx_inc_start[:-2], logx_inc_start[2:])
-    logw -= np.log(2)  # divide by 2 as per trapezium rule formulae
-    # assign all prior volume between X=0 and the first point to logw[0]
-    logw[0] = scipy.misc.logsumexp([logw[0], np.log(0.5) +
-                                    mf.log_subtract(logx_inc_start[0],
-                                                    logx_inc_start[1])])
-    # approximate final prior volume element as equal to the one before
-    logw[-1] = logw[-2]
+    # Vectorized trapezium rule: w_i proportional to (X_{i-1} - X_{i+1}) / 2
+    logw[1:-1] = mf.log_subtract(logx[:-2], logx[2:]) - np.log(2)
+    # Assign all prior volume closest to first point X_first to that point:
+    # that is from logx=0 to logx=log((X_first + X_second) / 2)
+    logw[0] = mf.log_subtract(0,
+                              scipy.misc.logsumexp([logx[0], logx[1]]) -
+                              np.log(2))
+    # Assign all prior volume closest to final point X_last to that point:
+    # that is from logx=log((X_penultimate + X_last) / 2) to logx=-inf
+    logw[-1] = scipy.misc.logsumexp([logx[-2], logx[-1]]) - np.log(2)
+    # multiply by likelihood (add in log space)
     logw += logl
     return logw
 
@@ -364,6 +381,29 @@ def get_logx(nlive, simulate=False):
     """
     Returns a logx vector showing the expected or simulated logx positions of
     points.
+
+    The shrinkage factor between two points
+        t_i = X_{i-1} / X_{i}
+    is distributed as the largest of n_i uniform random variables between 1 and
+    0, where n_i is the local number of live points.
+
+    We are interested in
+        log(t_i) = logX_{i-1} - logX_{i}
+    which has expected value -1/n_i.
+
+    Parameters
+    ----------
+    nlive_array: 1d numpy array
+        Ordered local number of live points present at each point's
+        isolikelihood contour.
+    simulate: bool, optional
+        Should log prior volumes logx be simulated from their distribution (if
+        False their expected values are used)
+
+    Returns
+    -------
+    logw: 1d numpy array
+        Log posterior masses of points
     """
     assert nlive.min() > 0, 'nlive contains zeros or negative values!' \
         'nlive = ' + str(nlive)
