@@ -72,6 +72,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     save_dir = kwargs.get('save_dir', 'data')
     parallelise = kwargs.get('parallelise', True)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
+    # store the input settings.n_samples_max as we are going to edit it
+    n_samples_max_in = settings.n_samples_max
     # First we run a standard nested sampling run for comparison:
     dynamic_goals = [None] + dynamic_goals_in
     if tuned_dynamic_ps is not None:
@@ -139,6 +141,9 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         df_dict[method_names[-1]] = df
         values_list.append(values)
         del run_list
+    # Restore settings.n_samples_max to its original value to ensure the
+    # function does not edit the settings object
+    settings.n_samples_max = n_samples_max_in
     # analyse data
     # ------------
     # find performance gain (proportional to ratio of errors squared)

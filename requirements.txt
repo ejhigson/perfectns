@@ -2,8 +2,9 @@
 # ----------------------------------
 # pip install all requirements with
 # $ pip install -r requirements.txt
-numpy
+numpy >= 1.13
 scipy
 pandas
 mpmath
 tqdm
+futures  # part of core for Python >= 3.2
