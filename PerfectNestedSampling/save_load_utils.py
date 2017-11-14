@@ -59,10 +59,11 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
 
 
 @timing_decorator
-def pickle_save(data, name, path='data/', extension='.dat'):
+def pickle_save(data, name, path='data/', extension='.dat',
+                overwrite_existing=False):
     """Saves object with pickle,  appending name with the time file exists."""
     filename = path + name + extension
-    if os.path.isfile(filename):
+    if os.path.isfile(filename) and not overwrite_existing:
         filename = path + name + '_' + time.asctime().replace(' ', '_')
         filename += extension
         print('File already exists! Saving with time appended')
