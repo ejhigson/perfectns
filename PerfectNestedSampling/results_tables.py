@@ -42,6 +42,9 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         should run data and results be loaded if available?
     save: bool, optional
         should run data and results be saved?
+    overwrite_existing: bool, optional
+        if a file exists already but we generate new run data, should we
+        overwrite the existing file when saved?
     parallelise: bool, optional
     tuned_dynamic_ps: list of bools, same length as dynamic_goals_in, optional
 
@@ -72,6 +75,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     save_dir = kwargs.get('save_dir', 'data')
     parallelise = kwargs.get('parallelise', True)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
+    overwrite_existing = kwargs.get('overwrite_existing', True)
     # store the input settings.n_samples_max as we are going to edit it
     n_samples_max_in = settings.n_samples_max
     # First we run a standard nested sampling run for comparison:
@@ -134,7 +138,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
                 method_names[-1] += ' tuned'
         # generate runs and get results
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
-                                   load=load, save=save)
+                                   load=load, save=save,
+                                   overwrite_existing=overwrite_existing)
         values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
                                  parallelise=parallelise)
         df = mf.get_df_row_summary(values, func_names)
