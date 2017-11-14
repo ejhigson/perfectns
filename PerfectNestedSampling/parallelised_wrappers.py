@@ -89,7 +89,7 @@ def generate_runs(settings, n_repeat, max_worker=None, parallelise=True):
 
 def get_run_data(settings, n_repeat, **kwargs):
     """
-    Tests if runs with the specified settings are already loaded. If not
+    Tests if runs with the specified settings are already cached. If not
     the runs are generated and saved.
 
     Parameters
@@ -111,6 +111,9 @@ def get_run_data(settings, n_repeat, **kwargs):
     overwrite_existing: bool, optional
         if a file exists already but we generate new run data, should we
         overwrite the existing file when saved?
+    check_loaded_settings: bool, optional
+        if we load a cached file, should we check if the loaded file's settings
+        match the current settings (and generate fresh runs if they do not)?
 
     Returns
     -------
@@ -122,6 +125,7 @@ def get_run_data(settings, n_repeat, **kwargs):
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
     overwrite_existing = kwargs.get('overwrite_existing', False)
+    check_loaded_settings = kwargs.get('check_loaded_settings', False)
     save_name = slu.data_save_name(settings, n_repeat)
     if load:
         print('get_run_data: ' + save_name)
@@ -135,11 +139,11 @@ def get_run_data(settings, n_repeat, **kwargs):
                   'overwriting current file')
             load = False
             overwrite_existing = True
-        else:
-            # ensure the loaded settings match the current settings
+        if check_loaded_settings:
+            # Assume all runs in the loaded list have the same settings, in
+            # which case we only need check the first one.
             if settings.get_settings_dict() == data[0]['settings']:
                 print('Loaded settings = current settings')
-                # print(settings.get_settings_dict())
             else:
                 print('Loaded settings =')
                 print(data[0]['settings'])
