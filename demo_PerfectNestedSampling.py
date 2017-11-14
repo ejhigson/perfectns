@@ -26,11 +26,11 @@ print('First create a PerfectNestedSamplingSettings object.')
 settings = PerfectNestedSampling.settings.PerfectNestedSamplingSettings()
 print('Set the likelihood, prior and number of dimensions; you can change \
 the default settings in settings.py')
-print('Here we use a 3d spherically symmetric Gaussian likelihood with \
-sigma=1 and a Gaussian prior with sigma=10')
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
 settings.prior = priors.gaussian(prior_scale=10)
-settings.n_dim = 3
+settings.n_dim = 10
+print('Here we use a 10d spherically symmetric Gaussian likelihood with \
+sigma=1 and a Gaussian prior with sigma=10')
 
 print('Perform standard nested sampling.')
 settings.dynamic_goal = None  # specifies standard nested sampling
@@ -53,7 +53,7 @@ print('\t- the log evidence')
 print('\t- the mean of the first parameter theta1')
 print('\t- second moment of theta1')
 print('\t- the median of theta1')
-print('\t- and 85% one-tailed credibile interval on theta1')
+print('\t- and 84% one-tailed credibile interval on theta1')
 print('By symmetry the posterior distribituon for any of the n_dim parameters \
 is the same.')
 print('In these cases the posterior distribution is known so we can calculate \
@@ -77,12 +77,7 @@ single_run_tests.loc['standard unc'] = ar.run_std_bootstrap(standard_ns_run,
 single_run_tests.loc['dynamic unc'] = ar.run_std_bootstrap(dynamic_ns_run,
                                                            estimator_list,
                                                            n_simulate=200)
-
 print(single_run_tests.loc[['standard unc', 'dynamic unc']])
-
-print('The calculation results should agree with the true values to within \
-+- 2 standard deviations of the calculated sampling errors distributions \
-most of the time.')
 
 print('\nGenerate and analyse many runs in parallel:\n')
 
@@ -103,22 +98,58 @@ print('\nCompare dynamic and standard nested sampling performance:')
 print('---------------------------------------------------------')
 
 print(rt.get_dynamic_results.__doc__)
+print('Lets now compare the performance of dynamic and standard nested \
+sampling, using the 10d Gaussian likelihood and prior.')
+print('We use the same code that was used for Table 1 of the dynamic nested \
+sampling paper, although only use ' + str(n_runs) + ' runs instead of 5000.')
+print('Tables 1, 2 and 3 can also be replicated by changing the settings.')
+print('See the paper for more details.')
+settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
+settings.prior = priors.gaussian(prior_scale=10)
+settings.n_dim = 10
+estimator_list = [e.logzEstimator(),
+                  e.paramMeanEstimator(),
+                  e.paramCredEstimator(0.5),
+                  e.paramCredEstimator(0.84)]
 dynamic_tests = rt.get_dynamic_results(n_runs, [0, 1],
                                        estimator_list, settings,
                                        parallelise=True)
 print(dynamic_tests)
 
+print('You should see that dynamic nested sampling targeted at parameter \
+estimation (dynamic goal=1, final row) increases efficiency of parameter \
+estimation (columns other than logz) by a factor of around 3 to 4.')
+
 print('\nCompare bootstrap error estimates to observed results distribution:')
 print('-------------------------------------------------------------------')
 
-settings.dynamic_goal = 0.5
 print(rt.get_bootstrap_results.__doc__)
-bootstrap_tests = rt.get_bootstrap_results(n_runs, 20,
+
+print('Lets check if the bootstrap estimates of parameter estimation sampling \
+errors are accurate, using a 3d Gaussian likelihood and Gaussian prior.')
+print('This is the same code that was used for Table 5 of the dynamic nested \
+sampling paper, although only use ' + str(n_runs) + ' runs instead of 5000.')
+print('See the paper for more details.')
+
+settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
+settings.prior = priors.gaussian(prior_scale=10)
+settings.n_dim = 3
+estimator_list = [e.paramMeanEstimator(),
+                  e.paramSquaredMeanEstimator(),
+                  e.paramCredEstimator(0.5),
+                  e.paramCredEstimator(0.84)]
+settings.dynamic_goal = 1
+
+bootstrap_tests = rt.get_bootstrap_results(n_runs, 200,
                                            estimator_list, settings,
-                                           n_simulate_ci=100,
-                                           add_sim_method=True,
-                                           n_run_ci=2,
+                                           n_run_ci=int(n_runs / 5),
+                                           n_simulate_ci=1000,
+                                           add_sim_method=False,
                                            cred_int=0.95,
                                            ninit_sep=False,
                                            parallelise=True)
 print(bootstrap_tests)
+
+
+print('You should see that the ratio of the bootstrap error estimates to \
+the standard deviation of results (row 4) has values close to 1.')
