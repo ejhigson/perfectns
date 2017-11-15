@@ -170,34 +170,34 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
         inds = np.random.randint(0, n_threads, n_threads)
     threads_temp = [threads[i] for i in inds]
     thread_min_max_temp = ns_run['thread_min_max'][inds]
-    # construct lrxtnp array from the threads, including an updated nlive
-    lrxtnp_temp = threads_temp[0]
+    # construct samples array from the threads, including an updated nlive
+    samples_temp = threads_temp[0]
     for t in threads_temp[1:]:
-        lrxtnp_temp = np.vstack((lrxtnp_temp, t))
-    lrxtnp_temp = lrxtnp_temp[np.argsort(lrxtnp_temp[:, 0])]
+        samples_temp = np.vstack((samples_temp, t))
+    samples_temp = samples_temp[np.argsort(samples_temp[:, 0])]
     # update the changes in live points column for threads which start part way
     # through the run. These are only present in dynamic nested sampling.
     logl_starts = thread_min_max_temp[:, 0]
     for logl_start in logl_starts[~np.isnan(logl_starts)]:
-        ind = np.where(lrxtnp_temp[:, 0] == logl_start)[0]
+        ind = np.where(samples_temp[:, 0] == logl_start)[0]
         if ind.shape == (1,):
             # If the point at which this thread started is present exactly
             # once in this bootstrap replication:
-            lrxtnp_temp[ind[0], 4] += 1
+            samples_temp[ind[0], 4] += 1
         elif ind.shape == (0,):
             # If the point with the likelihood at which the thread started
             # is not present in this particular bootstrap replication,
             # approximate it with the point with the nearest likelihood.
-            ind_closest = np.argmin(np.abs(lrxtnp_temp[:, 0] - logl_start))
-            lrxtnp_temp[ind_closest, 4] += 1
+            ind_closest = np.argmin(np.abs(samples_temp[:, 0] - logl_start))
+            samples_temp[ind_closest, 4] += 1
         else:
             # If the point at which this thread started is present multiple
             # times in this bootstrap replication, select one at random to
             # increment nlive on. This avoids any systematic bias from e.g.
             # always choosing the first point.
-            lrxtnp_temp[np.random.choice(ind), 4] += 1
+            samples_temp[np.random.choice(ind), 4] += 1
     # make run
-    ns_run_temp = dict_given_samples_array(lrxtnp_temp, thread_min_max_temp)
+    ns_run_temp = dict_given_samples_array(samples_temp, thread_min_max_temp)
     ns_run_temp['settings'] = ns_run['settings']
     return ns_run_temp
 

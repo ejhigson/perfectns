@@ -124,7 +124,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         if settings.dynamic_goal is not None and 'standard' in df_dict:
             n_samples_max = df_dict['standard']['n_samples']['mean']
             # This factor is a function of the dynamic goal as typically
-            # evidence calculations have longer attitional threads than
+            # evidence calculations have longer additional threads than
             # parameter estimation calculations.
             reduce_factor = 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
                                  (settings.nbatch / settings.nlive_const))
@@ -133,7 +133,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         if dynamic_goal is None:
             method_names.append('standard')
         else:
-            method_names.append('dyn ' + str(settings.dynamic_goal))
+            method_names.append('dynamic ' + str(settings.dynamic_goal))
             if settings.tuned_dynamic_p is True:
                 method_names[-1] += ' tuned'
         # generate runs and get results
@@ -158,14 +158,14 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
                                            df_dict['standard'].loc['std_unc'],
                                            df.loc['std'],
                                            df.loc['std_unc'])
-        df_dict[key].loc['gain'] = std_ratio ** 2
-        df_dict[key].loc['gain_unc'] = 2 * std_ratio * std_ratio_unc
+        df_dict[key].loc['efficiency gain'] = std_ratio ** 2
+        df_dict[key].loc['efficiency gain_unc'] = 2 * std_ratio * std_ratio_unc
         # We want to see the number of samples (not its std or gain), so set
         # every row of n_samples column equal to the mean number of samples
         df_dict[key]['n_samples']['std'] = df['n_samples']['mean']
-        df_dict[key]['n_samples']['gain'] = df['n_samples']['mean']
+        df_dict[key]['n_samples']['efficiency gain'] = df['n_samples']['mean']
     for key, df in df_dict.items():
-        # make uncertainties appear in seperate columns
+        # make uncertainties appear in separate columns
         df_dict[key] = mf.df_unc_rows_to_cols(df)
         # Delete uncertainty on mean number of samples as not interested in it
         del df_dict[key]['n_samples_unc']
@@ -187,13 +187,13 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     results = results.loc[:, col_order]
     # Sort the rows into the order we want for the paper
     row_order = ['true values']
-    for pref in ['mean', 'std', 'gain']:
+    for pref in ['mean', 'std', 'efficiency gain']:
         for mn in method_names:
             row_order.append(pref + ' ' + mn)
     results = results.reindex(row_order)
-    # get rid of the 'gain standard' row as it compares standard nested
-    # sampling to its self.
-    results.drop('gain standard', inplace=True)
+    # get rid of the 'efficiency gain standard' row as it compares standard
+    # nested sampling to its self and so always has value 1.
+    results.drop('efficiency gain standard', inplace=True)
     if save:
         # save the results data frame
         print('get_dynamic_results: saving results to\n' + save_file)
@@ -240,7 +240,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         to set this to lower than n_run if n_simulate_ci is large as otherwise
         the credible interval estimate may take a long time.
     cred_int: float, optional
-        one-tailed credible interval to caclulate
+        one-tailed credible interval to calculate
 
     Returns
     -------
@@ -366,7 +366,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results.loc['bs +-1std % coverage'] = coverage * 100
     # set uncertainty on empirical measurement of coverage to zero
     results.loc['bs +-1std % coverage_unc'] = 0
-    # add conf interval coverage
+    # add credible interval coverage
     max_value = results.loc['bs ' + str(cred_int) + ' CI'].values
     ci_coverage = np.zeros(rep_values.shape[0])
     for i, _ in enumerate(coverage):

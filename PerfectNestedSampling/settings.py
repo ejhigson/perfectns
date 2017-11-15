@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
 Defines base class which holds settings for performing perfect nested sampling.
-This inludes likelihood and prior objects as well as the parameters controlling
+This includes likelihood and prior objects as well as the parameters controlling
 how the calculation is performed - for example the number of live points and
 whether or not dynamic nested sampling is to be used.
 """

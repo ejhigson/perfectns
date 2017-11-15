@@ -5,7 +5,7 @@
 import time
 import pickle
 from functools import wraps
-import os.path  # for saving and reading data
+import os.path
 
 
 def timing_decorator(func):

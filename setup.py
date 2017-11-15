@@ -11,7 +11,7 @@ def read_file(fname):
 
 
 setup(name='PerfectNestedSampling',
-      version='0.0.1',
+      version='1.0.0',
       author='Edward Higson',
       author_email='ejhigson@gmail.com',
       description=('Performs dynamic and standard nested sampling for '

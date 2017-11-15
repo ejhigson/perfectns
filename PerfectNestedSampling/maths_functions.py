@@ -7,7 +7,7 @@ import pandas as pd
 import scipy
 import scipy.stats
 import scipy.special
-import scipy.misc  # for logsumexp
+import scipy.misc
 import mpmath
 
 
@@ -124,7 +124,7 @@ def sample_nsphere_shells_normal(r, n_dim, n_sample=None):
     norm = r / np.sqrt(np.sum(thetas ** 2, axis=1))
     # only return n_sample columns
     thetas = thetas[:, :n_sample]
-    # normailse each column
+    # normalise each column
     thetas *= norm[:, None]
     return thetas
 
@@ -144,7 +144,7 @@ def sample_nsphere_shells(r, n_dim, n_sample):
 def nsphere_r_given_logx(logx, r_max, n_dim):
     """
     Finds r coordinates given input logx values for a uniform prior within an
-    n-dimensional sphere co-centred with a spherically symetric likelihood.
+    n-dimensional sphere co-centred with a spherically symmetric likelihood.
     This will return an answer of the same type (float or numpy array) as the
     input {logx}.
     """
@@ -155,7 +155,7 @@ def nsphere_r_given_logx(logx, r_max, n_dim):
 def nsphere_logx_given_r(r, r_max, n_dim):
     """
     Finds logx assuming the prior is an n-dimensional sphere co-centred with a
-    spherically symetric likelihood.
+    spherically symmetric likelihood.
     This will return an answer of the same type (float or numpy array) as the
     input {r}.
     """
@@ -185,7 +185,7 @@ def nsphere_logvol(dim, radius=1.0):
 
 def log_gaussian_given_r(r, sigma, n_dim):
     """
-    Returns the natural log of a normalised, uncorrelated gaussian likelihood
+    Returns the natural log of a normalised, uncorrelated Gaussian likelihood
     with equal variance in all n_dim dimensions.
     """
     logl = -0.5 * ((r ** 2) / (sigma ** 2))
@@ -198,7 +198,7 @@ def log_gaussian_given_r(r, sigma, n_dim):
 def log_exp_power_given_r(r, sigma, n_dim, b=0.5):
     """
     Returns the natural log of an exponential power distribution.
-    This equals a gaussian distribution when b=1.
+    This equals a Gaussian distribution when b=1.
     """
     logl = -0.5 * (((r ** 2) / (sigma ** 2)) ** b)
     # normalise
@@ -231,7 +231,7 @@ def r_given_log_exp_power(logl, sigma, n_dim, b=0.5):
 
 def r_given_log_gaussian(logl, sigma, n_dim):
     """
-    Returns the radius of a given logl for a normalised,  uncorrelated gaussian
+    Returns the radius of a given logl for a normalised,  uncorrelated Gaussian
     with equal variance in all n_dim dimensions.
     """
     # remove normalisation constant
@@ -276,7 +276,7 @@ def entropy_num_samples(w):
     """
     Return the entropy of a set of weighted samples from their weights.
     This takes the absolute value of weights first.
-    If np.sum(w) is not 1 the function rerenormalises it to 1 for the
+    If np.sum(w) is not 1 the function re-normalises it to 1 for the
     calculation.
     """
     if w.shape[0] == 0:
@@ -327,7 +327,7 @@ def get_df_row_summary(results_array, row_names):
 def df_unc_rows_to_cols(df_in):
     """
     Transforms a pandas data frame with uncertainties stored in extra rows
-    (with row names suffixed with '_unc' to one with uncertainteis sored in
+    (with row names suffixed with '_unc' to one with uncertainties sorted in
     columns (suffixed with '_unc').
 
     I.e. data frame of the form
@@ -357,7 +357,7 @@ def df_unc_rows_to_cols(df_in):
     df_uncs.rename(lambda s: s[:-4], inplace=True)
     # add '_unc' suffix to columns containing uncertainties
     df_uncs = df_uncs.add_suffix('_unc')
-    # Join values and uncertaintes (if uncertaintes not provided they are
+    # Join values and uncertainties (if uncertainties not provided they are
     # listed as NaN
     df_out = pd.concat([df_values, df_uncs], axis=1)
     # put columns of joined data frame in right order

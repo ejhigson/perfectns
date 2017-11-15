@@ -1,6 +1,9 @@
 #!/usr/bin/python
 """
 Contains helper functions for the 'gaussian_cached' prior.
+
+This is needed as the 'gaussian' prior suffers from overflow errors for very
+low values of X, which are reached in high dimensional problems.
 """
 
 
@@ -46,7 +49,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         r_max = mf.gaussian_r_given_logx(logx_max, prior_scale, n_dim)
         # Iteratively reduce r_min until its corresponding logx value is less
         # than logx_min. This process depends only on mpmath functions which
-        # can handle arbitarily small numbers.
+        # can handle arbitrarily small numbers.
         r_min = r_max
         while mf.gaussian_logx_given_r(r_min, prior_scale, n_dim) > logx_min:
             r_min /= 2.0

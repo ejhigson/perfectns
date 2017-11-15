@@ -7,7 +7,6 @@ on them in parallel, using the concurrent.futures module.
 import concurrent.futures
 import numpy as np
 from tqdm import tqdm
-# perfect nested sampling modules
 import PerfectNestedSampling.nested_sampling as ns
 import PerfectNestedSampling.save_load_utils as slu
 

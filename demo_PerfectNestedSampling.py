@@ -53,11 +53,12 @@ print('\t- the log evidence')
 print('\t- the mean of the first parameter theta1')
 print('\t- second moment of theta1')
 print('\t- the median of theta1')
-print('\t- and 84% one-tailed credibile interval on theta1')
-print('By symmetry the posterior distribituon for any of the n_dim parameters \
+print('\t- and 84% one-tailed credible interval on theta1')
+print('By symmetry the posterior distribution for any of the n_dim parameters \
 is the same.')
-print('In these cases the posterior distribution is known so we can calculate \
-the true values analytically and check our results.')
+print('In this case we can calculate the posterior distribution and the true \
+values of these quantities given the posterior analytically and check our \
+results.')
 single_run_tests = e.get_true_estimator_values(estimator_list, settings)
 single_run_tests.loc['standard run'] = ar.run_estimators(standard_ns_run,
                                                          estimator_list)
@@ -68,7 +69,7 @@ print(single_run_tests)
 print('\nEstimate calculation errors:\n')
 
 print('We can estimate the numerical uncertainties on these results by \
-caclulating the standard deviation of the sampling errors distributions for \
+calculating the standard deviation of the sampling errors distributions for \
 each run using resampling.')
 
 single_run_tests.loc['standard unc'] = ar.run_std_bootstrap(standard_ns_run,
@@ -97,11 +98,13 @@ print(multi_run_tests.loc[['mean', 'std']])
 print('\nCompare dynamic and standard nested sampling performance:')
 print('---------------------------------------------------------')
 
+n_runs = 200
 print(rt.get_dynamic_results.__doc__)
 print('Lets now compare the performance of dynamic and standard nested \
 sampling, using the 10d Gaussian likelihood and prior.')
-print('We use the same code that was used for Table 1 of the dynamic nested \
-sampling paper, although only use ' + str(n_runs) + ' runs instead of 5000.')
+print('This is the same code that was used for Table 1 of the dynamic nested \
+sampling paper, although we only use ' + str(n_runs) + ' runs instead of \
+5000.')
 print('Tables 1, 2 and 3 can also be replicated by changing the settings.')
 print('See the paper for more details.')
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
@@ -116,19 +119,23 @@ dynamic_tests = rt.get_dynamic_results(n_runs, [0, 1],
                                        parallelise=True)
 print(dynamic_tests)
 
-print('You should see that dynamic nested sampling targeted at parameter \
-estimation (dynamic goal=1, final row) increases efficiency of parameter \
-estimation (columns other than logz) by a factor of around 3 to 4.')
+print('Looking at the final row of the table, you should see that dynamic \
+nested sampling targeted at parameter estimation (dynamic goal=1) has an \
+efficiency gain (equivalent computational speedup) for parameter estimation \
+(columns other than logz) of factor of around 3 to 4 compared to standard \
+nested sampling')
 
 print('\nCompare bootstrap error estimates to observed results distribution:')
 print('-------------------------------------------------------------------')
 
 print(rt.get_bootstrap_results.__doc__)
 
+n_runs = 100
 print('Lets check if the bootstrap estimates of parameter estimation sampling \
 errors are accurate, using a 3d Gaussian likelihood and Gaussian prior.')
 print('This is the same code that was used for Table 5 of the dynamic nested \
-sampling paper, although only use ' + str(n_runs) + ' runs instead of 5000.')
+sampling paper, although we only use ' + str(n_runs) + ' runs instead of \
+5000.')
 print('See the paper for more details.')
 
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
