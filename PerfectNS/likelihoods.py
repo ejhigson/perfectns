@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Classes representing spherically symmetric likelihoods.
 
@@ -9,8 +9,7 @@ as a function of the radial coordinate r = |theta| and the number of dimensions
         ...
 
 The number of dimensions is not stored in this class but in the
-PerfectNestedSamplingSettings object to ensure it is the same for the
-likelihood and the prior.
+PerfectNSSettings object to ensure it is the same for the likelihood and the prior.
 
 Likelihood classes may also optionally contain the inverse function
 
@@ -25,7 +24,7 @@ given prior and dimension, which is useful for checking results:
         ...
 """
 
-import PerfectNestedSampling.maths_functions as mf
+import PerfectNS.maths_functions as mf
 import numpy as np
 
 

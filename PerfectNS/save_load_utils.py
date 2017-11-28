@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """Contains helper functions for saving, loading and input/output."""
 
 

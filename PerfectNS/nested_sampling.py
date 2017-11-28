@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Functions which perform standard and dynamic nested sampling runs and generate
 samples for use in evidence calculations and parameter estimation.
@@ -7,8 +7,8 @@ samples for use in evidence calculations and parameter estimation.
 import copy
 import numpy as np
 import scipy.misc
-import PerfectNestedSampling.maths_functions as mf
-import PerfectNestedSampling.analyse_run as ar
+import PerfectNS.maths_functions as mf
+import PerfectNS.analyse_run as ar
 
 
 def generate_ns_run(settings):
@@ -23,7 +23,7 @@ def generate_ns_run(settings):
 
     Parameters
     ----------
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
 
     Returns
     -------
@@ -69,7 +69,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
 
     Parameters
     ----------
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
 
     Returns
     -------
@@ -162,7 +162,7 @@ def generate_dynamic_run(settings):
 
     Parameters
     ----------
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
         settings.dynamic_goal controls whether the algorithm aims to increase
         parameter estimation accuracy (dynamic_goal=1), evidence accuracy
         (dynamic_goal=0) or places some weight on both.

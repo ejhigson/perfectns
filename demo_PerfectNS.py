@@ -1,18 +1,18 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
-Demonstrate the Perfect Nested Sampling module.
+Demonstrate the PerfectNS module.
 """
 
 import pandas as pd
-import PerfectNestedSampling.settings
-import PerfectNestedSampling.estimators as e
-import PerfectNestedSampling.likelihoods as likelihoods
-import PerfectNestedSampling.nested_sampling as ns
-import PerfectNestedSampling.results_tables as rt
-import PerfectNestedSampling.priors as priors
-import PerfectNestedSampling.analyse_run as ar
-import PerfectNestedSampling.maths_functions as mf
-import PerfectNestedSampling.parallelised_wrappers as pw
+import PerfectNS.settings
+import PerfectNS.estimators as e
+import PerfectNS.likelihoods as likelihoods
+import PerfectNS.nested_sampling as ns
+import PerfectNS.results_tables as rt
+import PerfectNS.priors as priors
+import PerfectNS.analyse_run as ar
+import PerfectNS.maths_functions as mf
+import PerfectNS.parallelised_wrappers as pw
 pd.set_option('display.width', 200)
 
 
@@ -22,8 +22,8 @@ print('-----------------------')
 
 print('\nGenerate nested sampling runs:\n')
 
-print('First create a PerfectNestedSamplingSettings object.')
-settings = PerfectNestedSampling.settings.PerfectNestedSamplingSettings()
+print('First create a PerfectNSSettings object.')
+settings = PerfectNS.settings.PerfectNSSettings()
 print('Set the likelihood, prior and number of dimensions; you can change \
 the default settings in settings.py')
 settings.likelihood = likelihoods.gaussian(likelihood_scale=1)

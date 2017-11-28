@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Contains classes representing quantities which can be calculated from nested
 sampling run.
@@ -28,8 +28,8 @@ Estimators should also contain class variables:
 import numpy as np
 import pandas as pd
 import scipy
-import scipy.misc  # for scipy.misc.logsumexp
-import PerfectNestedSampling.maths_functions as mf
+import scipy.misc
+import PerfectNS.maths_functions as mf
 
 
 # Estimators

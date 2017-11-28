@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Wrapper functions for generating nested sampling runs and performing functions
 on them in parallel, using the concurrent.futures module.
@@ -7,8 +7,8 @@ on them in parallel, using the concurrent.futures module.
 import concurrent.futures
 import numpy as np
 from tqdm import tqdm
-import PerfectNestedSampling.nested_sampling as ns
-import PerfectNestedSampling.save_load_utils as slu
+import PerfectNS.nested_sampling as ns
+import PerfectNS.save_load_utils as slu
 
 
 @slu.timing_decorator
@@ -53,7 +53,7 @@ def generate_runs(settings, n_repeat, max_worker=None, parallelise=True):
 
     Parameters
     ----------
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
     n_repeat: int
         Number of nested sampling runs to generate.
     parallelise: bool, optional
@@ -93,7 +93,7 @@ def get_run_data(settings, n_repeat, **kwargs):
 
     Parameters
     ----------
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
     n_repeat: int
         Number of nested sampling runs to generate.
     parallelise: bool, optional

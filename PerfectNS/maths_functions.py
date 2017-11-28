@@ -1,5 +1,5 @@
-#!/usr/bin/python
-"""Contains mathematical functions used in perfect nested sampling."""
+#!/usr/bin/env python
+"""Contains mathematical functions used in the PerfectNS package."""
 
 
 import numpy as np

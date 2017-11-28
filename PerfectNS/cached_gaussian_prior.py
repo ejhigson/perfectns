@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Contains helper functions for the 'gaussian_cached' prior.
 
@@ -8,8 +8,8 @@ low values of X, which are reached in high dimensional problems.
 
 
 import numpy as np
-import PerfectNestedSampling.save_load_utils as slu
-import PerfectNestedSampling.maths_functions as mf
+import PerfectNS.save_load_utils as slu
+import PerfectNS.maths_functions as mf
 
 
 # Maths functions

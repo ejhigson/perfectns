@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Defines base class which holds settings for performing perfect nested sampling.
 This includes likelihood and prior objects as well as the parameters controlling
@@ -7,11 +7,11 @@ whether or not dynamic nested sampling is to be used.
 """
 
 import copy
-import PerfectNestedSampling.priors as priors
-import PerfectNestedSampling.likelihoods as likelihoods
+import PerfectNS.priors as priors
+import PerfectNS.likelihoods as likelihoods
 
 
-class PerfectNestedSamplingSettings(object):
+class PerfectNSSettings(object):
 
     """
     Controls how Perfect Nested Sampling is performed.

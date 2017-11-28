@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Functions used to generate the results in:
 'Dynamic nested sampling: an improved algorithm for nested sampling parameter
@@ -7,11 +7,11 @@ estimation and evidence calculation' (Higson et al. 2017).
 
 import pandas as pd
 import numpy as np
-import PerfectNestedSampling.save_load_utils as slu
-import PerfectNestedSampling.parallelised_wrappers as pw
-import PerfectNestedSampling.analyse_run as ar
-import PerfectNestedSampling.maths_functions as mf
-import PerfectNestedSampling.estimators as e
+import PerfectNS.save_load_utils as slu
+import PerfectNS.parallelised_wrappers as pw
+import PerfectNS.analyse_run as ar
+import PerfectNS.maths_functions as mf
+import PerfectNS.estimators as e
 
 
 @slu.timing_decorator
@@ -37,7 +37,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     dynamic_goals_in: list of floats
         which dynamic goals to test
     estimator_list_in: list of estimator objects
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
     load: bool, optional
         should run data and results be loaded if available?
     save: bool, optional
@@ -221,7 +221,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         how many times to resample the nested sampling run in each bootstrap
         standard deviation estimate.
     estimator_list: list of estimator objects
-    settings: PerfectNestedSamplingSettings object
+    settings: PerfectNSSettings object
     load: bool, optional
         should run data and results be loaded if available?
     save: bool, optional

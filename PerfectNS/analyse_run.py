@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
-Module for functions used to analyse nested sampling runs, perform calculations
-and estimate sampling errors.
+Functions used to analyse nested sampling runs, perform calculations and
+estimate sampling errors.
 """
 
 import numpy as np
 import scipy.misc
-import PerfectNestedSampling.maths_functions as mf
+import PerfectNS.maths_functions as mf
 
 
 def run_estimators(ns_run, estimator_list, **kwargs):
