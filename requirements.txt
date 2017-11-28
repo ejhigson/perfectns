@@ -3,7 +3,7 @@
 # pip install all requirements with
 # $ pip install -r requirements.txt
 numpy >= 1.13
-scipy
+scipy >= 0.18.1
 pandas
 mpmath
 tqdm
