@@ -10,17 +10,17 @@ def read_file(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-setup(name='PerfectNestedSampling',
+setup(name='PerfectNS',
       version='1.0.0',
       author='Edward Higson',
       author_email='ejhigson@gmail.com',
       description=('Performs dynamic and standard nested sampling for '
                    'spherically symmetric likelihoods and priors.'),
-      url='https://github.com/ejhigson/PerfectNestedSampling',
+      url='https://github.com/ejhigson/PerfectNS',
       long_description=read_file('README.md'),
       install_requires=['numpy',
                         'scipy',
                         'pandas',
                         'mpmath',
                         'tqdm'],
-      packages=['PerfectNestedSampling'])
+      packages=['PerfectNS'])
