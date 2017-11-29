@@ -81,7 +81,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     load = kwargs.get('load', False)
     save = kwargs.get('save', False)
     save_dir = kwargs.get('save_dir', 'data')
-    max_workers = kwargs.get('max_workers', True)
+    max_workers = kwargs.get('max_workers', None)
     parallelise = kwargs.get('parallelise', True)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
     overwrite_existing = kwargs.get('overwrite_existing', True)
@@ -290,7 +290,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     """
     load = kwargs.get('load', False)
     save = kwargs.get('save', False)
-    max_workers = kwargs.get('max_workers', True)
+    max_workers = kwargs.get('max_workers', None)
     save_dir = kwargs.get('save_dir', 'data')
     ninit_sep = kwargs.get('ninit_sep', False)
     parallelise = kwargs.get('parallelise', True)

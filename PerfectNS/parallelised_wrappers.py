@@ -95,6 +95,7 @@ def generate_runs(settings, n_repeat, max_workers=None, parallelise=True):
     run_list
         list of n_repeat nested sampling runs.
     """
+    print("max_workers = ", max_workers)
     run_list = []
     if parallelise is False:
         print('Warning: generate_runs not parallelised!')
