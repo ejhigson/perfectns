@@ -16,16 +16,39 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     """
     Performs input analysis function on a list of nested sampling runs.
     Parallelised by default.
+
+    Parameters
+    ----------
+    single_run_func: function
+        Function acting on a nested sampling run with arguments
+            ns_run
+            estimator_list
+            **kwargs
+        Must return a 1-dimensional numpy array of the same length as
+        estimator_list
+    run_list: list of nested sampling run dictionaries
+    estimator_list: list of estimator objects
+    parallelise: bool, optional
+        Should the calculations on each run be done in parallel?
+    max_workers: int or None, optional
+        Number of processes.
+        If max_workers is None then concurrent.futures.ProcessPoolExecutor
+        defaults to using the number of processors of the machine.
+        N.B. If max_workers=None and running on supercomputer clusters with
+        multiple nodes, this may default to the number of processors on a
+        single node and therefore there will be no speedup from multiple
+        nodes (must specify manually in this case).
+    Returns
+    -------
+    all_values: numpy array
     """
-    max_worker = kwargs.get('max_worker', None)
+    max_workers = kwargs.get('max_workers', None)
     parallelise = kwargs.get('parallelise', True)
     results_list = []
     print('func_on_runs: calculating ' + single_run_func.__name__ + ' for ' +
           str(len(run_list)) + ' runs')
     if parallelise:
-        # if max_worker is None this defaults to number of processors on the
-        # machine * 5
-        pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_worker)
+        pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
         futures = []
         for run in run_list:
             futures.append(pool.submit(single_run_func, run,
@@ -47,7 +70,7 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
 
 
 @slu.timing_decorator
-def generate_runs(settings, n_repeat, max_worker=None, parallelise=True):
+def generate_runs(settings, n_repeat, max_workers=None, parallelise=True):
     """
     Generate n_repeat nested sampling runs in parallel.
 
@@ -57,11 +80,15 @@ def generate_runs(settings, n_repeat, max_worker=None, parallelise=True):
     n_repeat: int
         Number of nested sampling runs to generate.
     parallelise: bool, optional
-        Should runs be generated in parallel
-    max_worker: int or None, optional
-        Number of processes. If max_worker is None then
-        concurrent.futures.ProcessPoolExecutor defaults to 5 * the number
-        processors of the machine.
+        Should runs be generated in parallel?
+    max_workers: int or None, optional
+        Number of processes.
+        If max_workers is None then concurrent.futures.ProcessPoolExecutor
+        defaults to using the number of processors of the machine.
+        N.B. If max_workers=None and running on supercomputer clusters with
+        multiple nodes, this may default to the number of processors on a
+        single node and therefore there will be no speedup from multiple
+        nodes (must specify manually in this case).
 
     Returns
     -------
@@ -74,7 +101,7 @@ def generate_runs(settings, n_repeat, max_worker=None, parallelise=True):
         for _ in tqdm(range(n_repeat), leave=False):
             run_list.append(ns.generate_ns_run(settings))
     else:
-        pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_worker)
+        pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
         futures = []
         for _ in range(n_repeat):
             futures.append(pool.submit(ns.generate_ns_run, settings))
@@ -97,11 +124,15 @@ def get_run_data(settings, n_repeat, **kwargs):
     n_repeat: int
         Number of nested sampling runs to generate.
     parallelise: bool, optional
-        Should runs be generated in parallel
-    max_worker: int or None
-        Number of processes. If max_worker is None then
-        concurrent.futures.ProcessPoolExecutor defaults to 5 * the number
-        processors of the machine.
+        Should runs be generated in parallel?
+    max_workers: int or None, optional
+        Number of processes.
+        If max_workers is None then concurrent.futures.ProcessPoolExecutor
+        defaults to using the number of processors of the machine.
+        N.B. If max_workers=None and running on supercomputer clusters with
+        multiple nodes, this may default to the number of processors on a
+        single node and therefore there will be no speedup from multiple
+        nodes (must specify manually in this case).
     load: bool
         Should previously saved runs be loaded? If False, new runs are
         generated.
@@ -120,7 +151,7 @@ def get_run_data(settings, n_repeat, **kwargs):
         list of n_repeat nested sampling runs.
     """
     parallelise = kwargs.get('parallelise', True)
-    max_worker = kwargs.get('max_worker', None)
+    max_workers = kwargs.get('max_workers', None)
     load = kwargs.get('load', True)
     save = kwargs.get('save', True)
     overwrite_existing = kwargs.get('overwrite_existing', False)
@@ -151,7 +182,7 @@ def get_run_data(settings, n_repeat, **kwargs):
                 del data
                 load = False
     if not load:
-        data = generate_runs(settings, n_repeat, max_worker=max_worker,
+        data = generate_runs(settings, n_repeat, max_workers=max_workers,
                              parallelise=parallelise)
         if save:
             print('Generated new runs: saving to ' + save_name)

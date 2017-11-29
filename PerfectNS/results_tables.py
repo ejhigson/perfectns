@@ -47,6 +47,14 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         overwrite the existing file when saved?
     parallelise: bool, optional
     tuned_dynamic_ps: list of bools, same length as dynamic_goals_in, optional
+    max_workers: int or None, optional
+        Number of processes.
+        If max_workers is None then concurrent.futures.ProcessPoolExecutor
+        defaults to using the number of processors of the machine.
+        N.B. If max_workers=None and running on supercomputer clusters with
+        multiple nodes, this may default to the number of processors on a
+        single node and therefore there will be no speedup from multiple
+        nodes (must specify manually in this case).
 
     Returns
     -------
@@ -73,10 +81,11 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     load = kwargs.get('load', False)
     save = kwargs.get('save', False)
     save_dir = kwargs.get('save_dir', 'data')
+    max_workers = kwargs.get('max_workers', True)
     parallelise = kwargs.get('parallelise', True)
     tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
     overwrite_existing = kwargs.get('overwrite_existing', True)
-    # store the input settings.n_samples_max as we are going to edit it
+    # Store the input settings.n_samples_max as we are going to edit it
     n_samples_max_in = settings.n_samples_max
     # First we run a standard nested sampling run for comparison:
     dynamic_goals = [None] + dynamic_goals_in
@@ -139,8 +148,10 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         # generate runs and get results
         run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save,
+                                   max_workers=max_workers,
                                    overwrite_existing=overwrite_existing)
         values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
+                                 max_workers=max_workers,
                                  parallelise=parallelise)
         df = mf.get_df_row_summary(values, func_names)
         df_dict[method_names[-1]] = df
@@ -241,6 +252,14 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         the credible interval estimate may take a long time.
     cred_int: float, optional
         one-tailed credible interval to calculate
+    max_workers: int or None, optional
+        Number of processes.
+        If max_workers is None then concurrent.futures.ProcessPoolExecutor
+        defaults to using the number of processors of the machine.
+        N.B. If max_workers=None and running on supercomputer clusters with
+        multiple nodes, this may default to the number of processors on a
+        single node and therefore there will be no speedup from multiple
+        nodes (must specify manually in this case).
 
     Returns
     -------
@@ -271,6 +290,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     """
     load = kwargs.get('load', False)
     save = kwargs.get('save', False)
+    max_workers = kwargs.get('max_workers', True)
     save_dir = kwargs.get('save_dir', 'data')
     ninit_sep = kwargs.get('ninit_sep', False)
     parallelise = kwargs.get('parallelise', True)
@@ -297,6 +317,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         e_names.append(est.name)
     # generate runs
     run_list = pw.get_run_data(settings, n_run, save=save, load=load,
+                               max_workers=max_workers,
                                parallelise=parallelise)
     # Add true values to test that nested sampling is working correctly - these
     # should be close to the mean calculation values
@@ -304,6 +325,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results.loc['true values_unc'] = 0
     # get mean and std of repeated calculations
     rep_values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
+                                 max_workers=max_workers,
                                  parallelise=parallelise)
     rep_df = mf.get_df_row_summary(rep_values, e_names)
     results = results.append(rep_df.set_index('repeats ' +
@@ -311,6 +333,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # get bootstrap std estimate
     bs_values = pw.func_on_runs(ar.run_std_bootstrap, run_list,
                                 estimator_list, n_simulate=n_simulate,
+                                max_workers=max_workers,
                                 parallelise=parallelise)
     bs_df = mf.get_df_row_summary(bs_values, e_names)
     # Get the mean bootstrap std estimate as a fraction of the std measured
@@ -331,6 +354,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         # get std from simulation estimate
         sim_values = pw.func_on_runs(ar.run_std_simulate, run_list,
                                      estimator_list, n_simulate=n_simulate,
+                                     max_workers=max_workers,
                                      parallelise=parallelise)
         sim_df = mf.get_df_row_summary(sim_values, e_names)
         # get mean simulation std estimate a ratio to the std from repeats
@@ -350,6 +374,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # get bootstrap CI estimates
     bs_cis = pw.func_on_runs(ar.run_ci_bootstrap, run_list[:n_run_ci],
                              estimator_list, n_simulate=n_simulate_ci,
+                             max_workers=max_workers,
                              cred_int=cred_int, parallelise=parallelise)
     bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
     results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
