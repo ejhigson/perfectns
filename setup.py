@@ -1,5 +1,5 @@
 import os
-from distutils.core import setup
+from setuptools import setup
 
 
 def read_file(fname):
@@ -23,4 +23,6 @@ setup(name='PerfectNS',
                         'pandas',
                         'mpmath',
                         'tqdm'],
+      test_suite='nose.collector',
+      tests_require=['nose'],
       packages=['PerfectNS'])

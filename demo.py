@@ -82,7 +82,7 @@ print(single_run_tests.loc[['standard unc', 'dynamic unc']])
 
 print('\nGenerate and analyse many runs in parallel:\n')
 
-n_runs = 100
+n_runs = 2
 print('Generate ' + str(n_runs) + ' runs in parallel using the \
 concurrent.futures module.')
 run_list = pw.generate_runs(SETTINGS, n_runs, parallelise=True)
@@ -98,7 +98,7 @@ print(multi_run_tests.loc[['mean', 'std']])
 print('\nCompare dynamic and standard nested sampling performance:')
 print('---------------------------------------------------------')
 
-n_runs = 200
+n_runs = 2
 print(rt.get_dynamic_results.__doc__)
 print('Lets now compare the performance of dynamic and standard nested \
 sampling, using the 10d Gaussian likelihood and prior.')
@@ -130,7 +130,7 @@ print('-------------------------------------------------------------------')
 
 print(rt.get_bootstrap_results.__doc__)
 
-n_runs = 100
+n_runs = 2
 print('Lets check if the bootstrap estimates of parameter estimation sampling \
 errors are accurate, using a 3d Gaussian likelihood and Gaussian prior.')
 print('This is the same code that was used for Table 5 of the dynamic nested \
@@ -149,8 +149,8 @@ SETTINGS.dynamic_goal = 1
 
 bootstrap_tests = rt.get_bootstrap_results(n_runs, 200,
                                            estimator_list, SETTINGS,
-                                           n_run_ci=int(n_runs / 5),
-                                           n_simulate_ci=1000,
+                                           n_run_ci=2,
+                                           n_simulate_ci=200,
                                            add_sim_method=False,
                                            cred_int=0.95,
                                            ninit_sep=False,
