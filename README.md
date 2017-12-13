@@ -27,15 +27,15 @@ Nested statistically estimating the shrinkage in the fraction of the prior volum
 This module generates nested sampling runs by sampling from the known distribution of prior volumes X, then using the prior to find the corresponding radial coordinates r(X) and the likelihood to find the likelihood values L(r(X)).
 Parameter vectors theta_i for each point i are sampled from the hyper-spherical shell with radius r_i.
 
-##### Implementation
-
-New likelihoods and priors can be added to `likelihoods.py` and `priors.py`, and new parameter estimation quantities can be added to `estimators.py`.
-See the documentation in each file for more details.
+### Implementation
 
 The package uses log likelihoods and log point weights throughout to prevent overflow errors from extreme numerical values - this is particularly important in high dimensions.
 Most of the computation is done within the numpy package for computational efficiency.
 
-### Setup and testing
+New likelihoods and priors can be added to `likelihoods.py` and `priors.py`, and new parameter estimation quantities can be added to `estimators.py`.
+See the documentation in each file for more details.
+
+### Installation and testing
 
 PerfectNS works for Python 2 (>= 2.7.10) and Python 3.
 To pip install the requirements use
@@ -46,10 +46,10 @@ pip install -r requirements.txt --user
 To install PerfectNS as a pip module for importing in other file locations, use
 
 ```
-pip install file_location/PerfectNS --user
+pip install your_file_path/PerfectNS --user
 ```
 
-You can check your installation has worked ok using the test suite (this requires `nose`)
+You can check your installation is working using the test suite (this requires `nose`)
 
 ```
 python setup.py test
@@ -60,7 +60,5 @@ python setup.py test
 
 The `demo.ipynb` notebook contains a demonstration of PerfectNS's functionality.
 
-##### Replicating results from the dynamic nested sampling paper
-
-The results table generating functions used for the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459) are demonstrated in `demo.ipynb`.
+The results table generating functions used for the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459) are shown in `demo.ipynb`.
 Any of the results can be replicated from these functions by choosing the settings to match those described. Note that the paper uses nbatch=1 and dynamic_fraction=0.9 throughout, and uses the 'cached_gaussian' prior in place of the 'gaussian' prior when the number of dimensions is 100 or more.
