@@ -1,0 +1,15 @@
+# Data
+data/*
+*.dat
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+*.egg
+
+# jupyter checkpoints
+.ipynb_checkpoints
