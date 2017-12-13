@@ -20,7 +20,7 @@ This module uses special cases where uncorrelated samples can be easily drawn fr
 ##### Likelihoods and Priors
 
 This module uses only spherical likelihoods and priors L(r) and P(r), where the radial coordinate r = |theta|.
-Any perfect nested sampling evidence or parameter estimation calculation is equivalent to some problem with spherically symmetric likelihoods and priors (see Section 3 of [Higson (2017a)](https://arxiv.org/abs/1703.09701) for more details), so with suitable choices of L(r), P(r) and the parameter estimation quantity a wide variety of tests can be performed with this package.
+Any perfect nested sampling evidence or parameter estimation calculation is equivalent to some problem with spherically symmetric likelihoods and priors (see Section 3 of [Higson (2017b)](https://arxiv.org/abs/1703.09701) for more details), so with suitable choices of L(r), P(r) and the parameter estimation quantity a wide variety of tests can be performed with this package.
 L(r) must be a monotonically decreasing function of the radius r, so that the likelihood increases as r decreases to a maximum at r=0.
 
 Nested statistically estimating the shrinkage in the fraction of the prior volume remaining X.
@@ -49,6 +49,8 @@ You can check your installation is working using the test suite (this requires `
 ```
 python setup.py test
 ```
+
+##### Examples
 
 The `demo.ipynb` notebook contains a demonstration of PerfectNS's functionality.
 
