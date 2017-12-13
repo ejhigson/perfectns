@@ -23,21 +23,21 @@ print('-----------------------')
 print('\nGenerate nested sampling runs:\n')
 
 print('First create a PerfectNSSettings object.')
-settings = PerfectNS.settings.PerfectNSSettings()
+SETTINGS = PerfectNS.settings.PerfectNSSettings()
 print('Set the likelihood, prior and number of dimensions; you can change \
 the default settings in settings.py')
-settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-settings.prior = priors.gaussian(prior_scale=10)
-settings.n_dim = 10
+SETTINGS.likelihood = likelihoods.gaussian(likelihood_scale=1)
+SETTINGS.prior = priors.gaussian(prior_scale=10)
+SETTINGS.n_dim = 10
 print('Here we use a 10d spherically symmetric Gaussian likelihood with \
 sigma=1 and a Gaussian prior with sigma=10')
 
 print('Perform standard nested sampling.')
-settings.dynamic_goal = None  # specifies standard nested sampling
-standard_ns_run = ns.generate_ns_run(settings)
+SETTINGS.dynamic_goal = None  # specifies standard nested sampling
+standard_ns_run = ns.generate_ns_run(SETTINGS)
 print('Perform dynamic nested sampling.')
-settings.dynamic_goal = 0.5  # dynamic nested sampling
-dynamic_ns_run = ns.generate_ns_run(settings)
+SETTINGS.dynamic_goal = 0.5  # dynamic nested sampling
+dynamic_ns_run = ns.generate_ns_run(SETTINGS)
 
 print('\nEvidence and parameter estimation calculations:\n')
 
@@ -59,7 +59,7 @@ is the same.')
 print('In this case we can calculate the posterior distribution and the true \
 values of these quantities given the posterior analytically and check our \
 results.')
-single_run_tests = e.get_true_estimator_values(estimator_list, settings)
+single_run_tests = e.get_true_estimator_values(estimator_list, SETTINGS)
 single_run_tests.loc['standard run'] = ar.run_estimators(standard_ns_run,
                                                          estimator_list)
 single_run_tests.loc['dynamic run'] = ar.run_estimators(dynamic_ns_run,
@@ -85,7 +85,7 @@ print('\nGenerate and analyse many runs in parallel:\n')
 n_runs = 100
 print('Generate ' + str(n_runs) + ' runs in parallel using the \
 concurrent.futures module.')
-run_list = pw.generate_runs(settings, n_runs, parallelise=True)
+run_list = pw.generate_runs(SETTINGS, n_runs, parallelise=True)
 print('Calculate estimators for each run in parallel.')
 values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
                          parallelise=True)
@@ -107,15 +107,15 @@ sampling paper, although we only use ' + str(n_runs) + ' runs instead of \
 5000.')
 print('Tables 1, 2 and 3 can also be replicated by changing the settings.')
 print('See the paper for more details.')
-settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-settings.prior = priors.gaussian(prior_scale=10)
-settings.n_dim = 10
+SETTINGS.likelihood = likelihoods.gaussian(likelihood_scale=1)
+SETTINGS.prior = priors.gaussian(prior_scale=10)
+SETTINGS.n_dim = 10
 estimator_list = [e.logzEstimator(),
                   e.paramMeanEstimator(),
                   e.paramCredEstimator(0.5),
                   e.paramCredEstimator(0.84)]
 dynamic_tests = rt.get_dynamic_results(n_runs, [0, 1],
-                                       estimator_list, settings,
+                                       estimator_list, SETTINGS,
                                        parallelise=True)
 print(dynamic_tests)
 
@@ -138,17 +138,17 @@ sampling paper, although we only use ' + str(n_runs) + ' runs instead of \
 5000.')
 print('See the paper for more details.')
 
-settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-settings.prior = priors.gaussian(prior_scale=10)
-settings.n_dim = 3
+SETTINGS.likelihood = likelihoods.gaussian(likelihood_scale=1)
+SETTINGS.prior = priors.gaussian(prior_scale=10)
+SETTINGS.n_dim = 3
 estimator_list = [e.paramMeanEstimator(),
                   e.paramSquaredMeanEstimator(),
                   e.paramCredEstimator(0.5),
                   e.paramCredEstimator(0.84)]
-settings.dynamic_goal = 1
+SETTINGS.dynamic_goal = 1
 
 bootstrap_tests = rt.get_bootstrap_results(n_runs, 200,
-                                           estimator_list, settings,
+                                           estimator_list, SETTINGS,
                                            n_run_ci=int(n_runs / 5),
                                            n_simulate_ci=1000,
                                            add_sim_method=False,

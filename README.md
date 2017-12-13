@@ -6,16 +6,16 @@ Perfect Nested Sampling
 
 Performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
 In these cases the algorithms can be followed "perfectly" (without implementation-specific errors from correlated sampling), making them ideal for studying nested sampling.
-This package contains the code used to generate results in the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
+This package contains the code used to generate results in the [dynamic nested sampling paper (Higson 2017a)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
 
 ### Background
 
 Nested sampling is a method for Bayesian computation which given some likelihood L(theta) and prior P(theta) will generate posterior samples and an estimate of the Bayesian evidence Z; for more details see [Skilling's original nested sampling paper](https://projecteuclid.org/euclid.ba/1340370944) and the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
-The module also includes an implementation of nested sampling error estimates using resampling (described in [this paper](https://arxiv.org/abs/1703.09701)).
+The module also includes an implementation of nested sampling error estimates using resampling (described in [Higson (2017b)](https://arxiv.org/abs/1703.09701)).
 
 Nested sampling works by sampling some number of points randomly from the prior then iteratively replacing the point with the lowest likelihood with another point sampled from the region of the prior with a higher likelihood.
 Generating uncorrelated samples within the likelihood constraint is computationally challenging and can only be done approximately by software such as MultiNest and PolyChord.
-This module uses special cases where uncorrelated samples can be easily drawn from within some iso-likelihood contour to perform nested sampling perfectly.
+This module uses special cases where uncorrelated samples can be easily drawn from within some iso-likelihood contour to perform nested sampling perfectly in the manner described by [Keeton (2010)](https://academic.oup.com/mnras/article/414/2/1418/977810).
 
 ### Likelihoods and Priors
 
@@ -54,12 +54,12 @@ pip install file_location/PerfectNestedSampling --user
 To see a demonstration of how the package works, run
 
 ```
-python demo_PerfectNestedSampling.py
+python demo.py
 ```
 
 This covers essentially all the package's functionality and doubles as a test; if it runs ok then everything should be working.
 
 ##### Replicating results from the dynamic nested sampling paper
 
-The `demo_PerfectNestedSampling.py` script illustrates the use of the results table generating functions used for the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
+The `demo.py` script illustrates the use of the results table generating functions used for the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
 Any of the results can be replicated from these functions by choosing the settings to match those described. Note that the paper uses nbatch=1 and dynamic_fraction=0.9 throughout, and uses the 'cached_gaussian' prior in place of the 'gaussian' prior when the number of dimensions is 100 or more.
