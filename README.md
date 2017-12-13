@@ -1,7 +1,7 @@
 Perfect Nested Sampling
 =======================
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/PerfectNestedSampling/LICENSE)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/PerfectNS/LICENSE)
 
 
 Performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
@@ -35,29 +35,35 @@ See the documentation in each file for more details.
 The package uses log likelihoods and log point weights throughout to prevent overflow errors from extreme numerical values - this is particularly important in high dimensions.
 Most of the computation is done within the numpy package for computational efficiency.
 
-### Setup
+### Setup and testing
 
-PerfectNestedSampling works for Python 2 (>= 2.7.10) and Python 3.
+PerfectNS works for Python 2 (>= 2.7.10) and Python 3.
 To pip install the requirements use
 ```
 pip install -r requirements.txt --user
 ```
 
-To install PerfectNestedSampling as a pip module for importing in other file locations, use
+To install PerfectNS as a pip module for importing in other file locations, use
 
 ```
-pip install file_location/PerfectNestedSampling --user
+pip install file_location/PerfectNS --user
 ```
 
-### Examples and testing
+You can test the installation with
+
+```
+python setup.py test
+```
+The test suite uses nose.
+
+
+### Examples
 
 To see a demonstration of how the package works, run
 
 ```
 python demo.py
 ```
-
-This covers essentially all the package's functionality and doubles as a test; if it runs ok then everything should be working.
 
 ##### Replicating results from the dynamic nested sampling paper
 
