@@ -49,23 +49,18 @@ To install PerfectNS as a pip module for importing in other file locations, use
 pip install file_location/PerfectNS --user
 ```
 
-You can test the installation with
+You can check your installation has worked ok using the test suite (this requires `nose`)
 
 ```
 python setup.py test
 ```
-The test suite uses nose.
 
 
 ### Examples
 
-To see a demonstration of how the package works, run
-
-```
-python demo.py
-```
+The `demo.ipynb` notebook contains a demonstration of PerfectNS's functionality.
 
 ##### Replicating results from the dynamic nested sampling paper
 
-The `demo.py` script illustrates the use of the results table generating functions used for the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
+The results table generating functions used for the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459) are demonstrated in `demo.ipynb`.
 Any of the results can be replicated from these functions by choosing the settings to match those described. Note that the paper uses nbatch=1 and dynamic_fraction=0.9 throughout, and uses the 'cached_gaussian' prior in place of the 'gaussian' prior when the number of dimensions is 100 or more.
