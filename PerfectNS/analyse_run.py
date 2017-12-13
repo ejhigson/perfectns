@@ -29,8 +29,8 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     simulate = kwargs.get('simulate', False)
     logw = get_logw(ns_run, simulate=simulate)
     output = np.zeros(len(estimator_list))
-    for i, f in enumerate(estimator_list):
-        output[i] = f.estimator(logw, ns_run)
+    for i, est in enumerate(estimator_list):
+        output[i] = est.estimator(logw, ns_run)
     return output
 
 
@@ -172,8 +172,8 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
     thread_min_max_temp = ns_run['thread_min_max'][inds]
     # construct samples array from the threads, including an updated nlive
     samples_temp = threads_temp[0]
-    for t in threads_temp[1:]:
-        samples_temp = np.vstack((samples_temp, t))
+    for thread in threads_temp[1:]:
+        samples_temp = np.vstack((samples_temp, thread))
     samples_temp = samples_temp[np.argsort(samples_temp[:, 0])]
     # update the changes in live points column for threads which start part way
     # through the run. These are only present in dynamic nested sampling.

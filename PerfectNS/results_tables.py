@@ -131,7 +131,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         # more samples than standard nested sampling as it does not terminate
         # until after the number of samples is greater than n_samples_max.
         if settings.dynamic_goal is not None and 'standard' in df_dict:
-            n_samples_max = df_dict['standard']['n_samples']['mean']
+            n_samples_max = df_dict['standard'].loc['mean', 'n_samples']
             # This factor is a function of the dynamic goal as typically
             # evidence calculations have longer additional threads than
             # parameter estimation calculations.
@@ -173,8 +173,9 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         df_dict[key].loc['efficiency gain_unc'] = 2 * std_ratio * std_ratio_unc
         # We want to see the number of samples (not its std or gain), so set
         # every row of n_samples column equal to the mean number of samples
-        df_dict[key]['n_samples']['std'] = df['n_samples']['mean']
-        df_dict[key]['n_samples']['efficiency gain'] = df['n_samples']['mean']
+        df_dict[key].loc['std', 'n_samples'] = df.loc['mean', 'n_samples']
+        df_dict[key].loc['efficiency gain', 'n_samples'] = df.loc['mean',
+                                                                  'n_samples']
     for key, df in df_dict.items():
         # make uncertainties appear in separate columns
         df_dict[key] = mf.df_unc_rows_to_cols(df)
@@ -199,8 +200,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     # Sort the rows into the order we want for the paper
     row_order = ['true values']
     for pref in ['mean', 'std', 'efficiency gain']:
-        for mn in method_names:
-            row_order.append(pref + ' ' + mn)
+        for name in method_names:
+            row_order.append(pref + ' ' + name)
     results = results.reindex(row_order)
     # get rid of the 'efficiency gain standard' row as it compares standard
     # nested sampling to its self and so always has value 1.

@@ -6,11 +6,11 @@ Perfect Nested Sampling
 
 Performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
 In these cases the algorithms can be followed "perfectly" (without implementation-specific errors from correlated sampling), making them ideal for studying nested sampling.
-This package contains the code used to generate results in the [dynamic nested sampling paper (Higson 2017a)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
+This package contains the code used to generate results in the [dynamic nested sampling paper (Higson, 2017a)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
 
 ### Background
 
-Nested sampling is a method for Bayesian computation which given some likelihood L(theta) and prior P(theta) will generate posterior samples and an estimate of the Bayesian evidence Z; for more details see [Skilling's original nested sampling paper](https://projecteuclid.org/euclid.ba/1340370944) and the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
+Nested sampling is a method for Bayesian computation which given some likelihood L(theta) and prior P(theta) will generate posterior samples and an estimate of the Bayesian evidence Z; for more details see [Skilling (2006)](https://projecteuclid.org/euclid.ba/1340370944) and the [dynamic nested sampling paper](https://arxiv.org/abs/1704.03459).
 The module also includes an implementation of nested sampling error estimates using resampling (described in [Higson (2017b)](https://arxiv.org/abs/1703.09701)).
 
 Nested sampling works by sampling some number of points randomly from the prior then iteratively replacing the point with the lowest likelihood with another point sampled from the region of the prior with a higher likelihood.

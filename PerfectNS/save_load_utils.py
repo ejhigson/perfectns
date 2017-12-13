@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-"""Contains helper functions for saving, loading and input/output."""
+"""
+Contains helper functions for saving, loading and input/output.
+"""
 
 
 import time
@@ -13,14 +15,17 @@ def timing_decorator(func):
     Prints the time a function takes to execute.
     """
     @wraps(func)
-    def wrapper(*args, **kw):
+    def wrapper(*args, **kwargs):
         """
         Wrapper for printing execution time.
         """
+        print_time = kwargs.pop('print_time', True)
         start_time = time.time()
-        result = func(*args, **kw)
-        end_time = time.time()
-        print(func.__name__ + ' took %.3f seconds' % (end_time - start_time))
+        result = func(*args, **kwargs)
+        if print_time:
+            end_time = time.time()
+            print(func.__name__ + ' took %.3f seconds' %
+                  (end_time - start_time))
         return result
     return wrapper
 
@@ -59,15 +64,19 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
 
 
 @timing_decorator
-def pickle_save(data, name, path='data/', extension='.dat',
-                overwrite_existing=False):
+def pickle_save(data, name, **kwargs):
     """Saves object with pickle,  appending name with the time file exists."""
+    path = kwargs.get('path', 'data/')
+    extension = kwargs.get('extension', '.dat')
+    overwrite_existing = kwargs.get('overwrite_existing', False)
+    print_filename = kwargs.get('print_filename', True)
     filename = path + name + extension
     if os.path.isfile(filename) and not overwrite_existing:
         filename = path + name + '_' + time.asctime().replace(' ', '_')
         filename += extension
         print('File already exists! Saving with time appended')
-    print(filename)
+    if print_filename:
+        print(filename)
     try:
         outfile = open(filename, 'wb')
         pickle.dump(data, outfile)
@@ -78,8 +87,10 @@ def pickle_save(data, name, path='data/', extension='.dat',
 
 
 @timing_decorator
-def pickle_load(name, path='data/', extension='.dat'):
+def pickle_load(name, **kwargs):
     """Load data with pickle."""
+    path = kwargs.get('path', 'data/')
+    extension = kwargs.get('extension', '.dat')
     filename = path + name + extension
     infile = open(filename, 'rb')
     data = pickle.load(infile)

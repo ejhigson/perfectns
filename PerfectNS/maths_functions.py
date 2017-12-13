@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-"""Contains mathematical functions used in the PerfectNS package."""
+"""
+Contains mathematical functions used in the PerfectNS package.
+"""
 
 
 import numpy as np
