@@ -6,7 +6,7 @@ samples for use in evidence calculations and parameter estimation.
 
 import copy
 import numpy as np
-import scipy.misc
+import scipy.special
 import PerfectNS.maths_functions as mf
 import PerfectNS.analyse_run as ar
 
@@ -95,7 +95,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     # termination condition variables
     logx_i = 0.0
     logz_dead = -np.inf
-    logz_live = (scipy.misc.logsumexp(live_points[:, 0]) + logx_i -
+    logz_live = (scipy.special.logsumexp(live_points[:, 0]) + logx_i -
                  np.log(nlive_const))
     # Calculate factor for trapezium rule of geometric series
     t = np.exp(-1.0 / nlive_const)
@@ -108,13 +108,13 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
         dead_points_list.append(copy.deepcopy(live_points[ind, :]))
         # update dead evidence estimates
         logx_i += -1.0 / nlive_const
-        logz_dead = scipy.misc.logsumexp((logz_dead, live_points[ind, 0] +
-                                          logtrapz + logx_i))
+        logz_dead = scipy.special.logsumexp((logz_dead, live_points[ind, 0] +
+                                             logtrapz + logx_i))
         # add new point
         live_points[ind, 2] += np.log(np.random.random())
         live_points[ind, 1] = settings.r_given_logx(live_points[ind, 2])
         live_points[ind, 0] = settings.logl_given_r(live_points[ind, 1])
-        logz_live = (scipy.misc.logsumexp(live_points[:, 0]) + logx_i -
+        logz_live = (scipy.special.logsumexp(live_points[:, 0]) + logx_i -
                      np.log(nlive_const))
     points = np.array(dead_points_list)
     # add remaining live points (sorted by increasing likelihood)
@@ -299,7 +299,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
         return importance / importance.max()
 
 
-def z_importance(w, nlive, exact=False):
+def z_importance(w_relative, nlive, exact=False):
     """
     Calculate the relative importance of each point for evidence calculation.
 
@@ -307,18 +307,19 @@ def z_importance(w, nlive, exact=False):
     nested sampling parameter estimation and evidence calculation' (Higson et
     al. 2017).
     """
-    importance = np.cumsum(w)
+    importance = np.cumsum(w_relative)
     importance = importance.max() - importance
     if exact:
         importance *= (((nlive ** 2) - 3) * (nlive ** 1.5))
         importance /= (((nlive + 1) ** 3) * ((nlive + 2) ** 1.5))
-        importance += w * (nlive ** 0.5) / ((nlive + 2) ** 1.5)
+        importance += w_relative * (nlive ** 0.5) / ((nlive + 2) ** 1.5)
     else:
         importance *= 1.0 / nlive
     return importance / importance.max()
 
 
-def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
+def p_importance(theta, w_relative, tuned_dynamic_p=False,
+                 tuning_type='theta1'):
     """
     Calculate the relative importance of each point for parameter estimation.
 
@@ -327,15 +328,15 @@ def p_importance(theta, w, tuned_dynamic_p=False, tuning_type='theta1'):
     al. 2017).
     """
     if tuned_dynamic_p is False:
-        return w / w.max()
+        return w_relative / w_relative.max()
     else:
         assert tuning_type == 'theta1', 'so far only set up for theta1'
         if tuning_type == 'theta1':
             f = theta[:, 0]
         # calculate importance in proportion to difference between f values and
         # the calculation mean.
-        fabs = np.absolute(f - (np.sum(f * w) / np.sum(w)))
-        importance = fabs * w
+        fabs = np.absolute(f - (np.sum(f * w_relative) / np.sum(w_relative)))
+        importance = fabs * w_relative
         return importance / importance.max()
 
 
