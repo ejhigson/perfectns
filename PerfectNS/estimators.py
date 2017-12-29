@@ -83,13 +83,26 @@ class rMeanEstimator:
 
     """Mean of |theta| (the radial distance from the centre)."""
 
-    name = 'r'
-    latex_name = '$|\\theta|$'
+    def __init__(self, from_theta=False):
+        self.name = 'r'
+        self.latex_name = '$|\\theta|$'
+        self.from_theta = from_theta
 
     def estimator(self, logw, ns_run):
         """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())
-        return (np.sum(w_relative * ns_run['r']) / np.sum(w_relative))
+        if self.from_theta:
+            # If run contains a dims_to_sample setting, check that samples from
+            # every dimension are included
+            try:
+                assert (ns_run['settings']['dims_to_sample'] ==
+                        ns_run['settings']['n_dim']), "Cannot work out radius!"
+            except KeyError:
+                pass
+            r = np.sqrt(np.sum(ns_run['theta'] ** 2, axis=1))
+        else:
+            r = ns_run['r']
+        return (np.sum(w_relative * r) / np.sum(w_relative))
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
