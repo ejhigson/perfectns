@@ -44,7 +44,7 @@ To pip install PerfectNS and its requirements:
 pip install PerfectNS
 ```
 
-You can check your installation is working using the test suite (this requires `nose`):
+You can check your installation is working using the test suite (this requires nose):
 
 ```
 python setup.py test
