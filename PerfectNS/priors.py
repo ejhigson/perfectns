@@ -22,7 +22,7 @@ Prior classes may also optionally contain the inverse function
 """
 
 import numpy as np
-from scipy import interpolate
+import scipy
 import PerfectNS.maths_functions as mf
 import PerfectNS.cached_gaussian_prior as cgp
 
@@ -102,13 +102,17 @@ class gaussian_cached(object):
 
     def __init__(self, prior_scale, **kwargs):
         self.prior_scale = prior_scale
+        self.save_dict = kwargs.get('save_dict', True)
         # if n_dim is specified we can cache the interpolation now.
         # Otherwise wait until r_given_logx is called.
         if 'n_dim' in kwargs:
             self.interp_d = cgp.interp_r_logx_dict(kwargs['n_dim'],
-                                                   self.prior_scale)
-            self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
-                                                 self.interp_d['r_array'])
+                                                   self.prior_scale,
+                                                   save_dict=self.save_dict)
+            self.interp_f = scipy.interpolate.interp1d(self.
+                                                       interp_d['logx_array'],
+                                                       self.
+                                                       interp_d['r_array'])
         else:
             self.interp_d = {'n_dim': None, 'prior_scale': None}
 
@@ -168,6 +172,9 @@ class gaussian_cached(object):
                   str(n_dim) + ', ' + str(self.prior_scale) + ') =! cached ' +
                   '(n_dim, prior_scale) = (' + str(self.interp_d['n_dim']) +
                   ', ' + str(self.prior_scale) + ')')
-            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale)
-            self.interp_f = interpolate.interp1d(self.interp_d['logx_array'],
-                                                 self.interp_d['r_array'])
+            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale,
+                                                   save_dict=self.save_dict)
+            self.interp_f = scipy.interpolate.interp1d(self
+                                                       .interp_d['logx_array'],
+                                                       self
+                                                       .interp_d['r_array'])

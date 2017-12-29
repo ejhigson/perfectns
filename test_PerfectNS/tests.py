@@ -15,6 +15,7 @@ import PerfectNS.analyse_run as ar
 
 
 class TestPerfectNS(unittest.TestCase):
+    """Container for module tests."""
 
     def setUp(self):
         """
@@ -97,6 +98,7 @@ class TestPerfectNS(unittest.TestCase):
 
     def test_standard_ns_cauchy_likelihood_gaussian_prior(self):
         """Check the Cauchy likelihood."""
+        self.settings.n_dim = 10
         self.settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
         self.settings.prior = priors.gaussian(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
@@ -107,6 +109,15 @@ class TestPerfectNS(unittest.TestCase):
         """Check the uniform prior."""
         self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
         self.settings.prior = priors.uniform(prior_scale=10)
+        ns_run = ns.generate_ns_run(self.settings)
+        values = ar.run_estimators(ns_run, self.estimator_list)
+        self.assertTrue(np.all(~np.isnan(values)))
+
+    def test_standard_ns_gaussian_likelihood_cached_gaussian_prior(self):
+        """Check the cached_gaussian prior."""
+        self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
+        self.settings.prior = priors.gaussian_cached(prior_scale=10,
+                                                     save_dict=False)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertTrue(np.all(~np.isnan(values)))
