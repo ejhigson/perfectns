@@ -38,12 +38,17 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         multiple nodes, this may default to the number of processors on a
         single node and therefore there will be no speedup from multiple
         nodes (must specify manually in this case).
+    results_as_list: bool
+        Should results for each run be returned as a list (rather than as an
+        array with each result as a column). This must be True if the function
+        does not return 1d numpy arrays.
     Returns
     -------
     all_values: numpy array
     """
     max_workers = kwargs.get('max_workers', None)
     parallelise = kwargs.get('parallelise', True)
+    results_as_list = kwargs.pop('results_as_list', False)
     results_list = []
     print('func_on_runs: calculating ' + single_run_func.__name__ + ' for ' +
           str(len(run_list)) + ' runs')
@@ -62,10 +67,13 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         print('Warning: func_on_runs not parallelised!')
         for run in tqdm.tqdm(run_list, leave=False):
             results_list.append(single_run_func(run, estimator_list, **kwargs))
-    all_values = np.zeros((len(estimator_list), len(run_list)))
-    for i, result in enumerate(results_list):
-        all_values[:, i] = result
-    return all_values
+    if results_as_list:
+        return results_list
+    else:
+        all_values = np.zeros((len(estimator_list), len(run_list)))
+        for i, result in enumerate(results_list):
+            all_values[:, i] = result
+        return all_values
 
 
 @slu.timing_decorator
