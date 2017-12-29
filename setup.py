@@ -11,7 +11,7 @@ def read_file(fname):
 
 
 setuptools.setup(name='PerfectNS',
-                 version='1.0.0',
+                 version='1.0.1',
                  author='Edward Higson',
                  author_email='ejhigson@gmail.com',
                  description=('Performs dynamic and standard nested sampling '
