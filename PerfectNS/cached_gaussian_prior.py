@@ -21,6 +21,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     interpolation, as well as a record of the settings used.
     """
     logx_min = kwargs.get('logx_min', -4500)
+    save_dict = kwargs.get('save_dict', True)
     if n_dim > 1000 and logx_min >= -4500:
         print('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
               'for very high dimensions, depending on the likelihood, you may '
@@ -62,5 +63,6 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
                        'prior_scale': prior_scale,
                        'r_array': r_array,
                        'logx_array': logx_array}
-        slu.pickle_save(interp_dict, save_name)
+        if save_dict:
+            slu.pickle_save(interp_dict, save_name)
         return interp_dict
