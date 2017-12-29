@@ -5,7 +5,7 @@ estimate sampling errors.
 """
 
 import numpy as np
-import scipy.misc
+import scipy.special
 import PerfectNS.maths_functions as mf
 
 
@@ -369,11 +369,11 @@ def get_logw(ns_run, simulate=False):
     # Assign all prior volume closest to first point X_first to that point:
     # that is from logx=0 to logx=log((X_first + X_second) / 2)
     logw[0] = mf.log_subtract(0,
-                              scipy.misc.logsumexp([logx[0], logx[1]]) -
+                              scipy.special.logsumexp([logx[0], logx[1]]) -
                               np.log(2))
     # Assign all prior volume closest to final point X_last to that point:
     # that is from logx=log((X_penultimate + X_last) / 2) to logx=-inf
-    logw[-1] = scipy.misc.logsumexp([logx[-2], logx[-1]]) - np.log(2)
+    logw[-1] = scipy.special.logsumexp([logx[-2], logx[-1]]) - np.log(2)
     # multiply by likelihood (add in log space)
     logw += ns_run['logl']
     return logw

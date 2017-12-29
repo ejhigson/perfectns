@@ -28,7 +28,6 @@ Estimators should also contain class variables:
 import numpy as np
 import pandas as pd
 import scipy
-import scipy.misc
 import PerfectNS.maths_functions as mf
 
 
@@ -45,7 +44,7 @@ class logzEstimator(object):
 
     def estimator(self, logw, ns_run):
         """Returns estimator value for run."""
-        return scipy.misc.logsumexp(logw)
+        return scipy.special.logsumexp(logw)
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
@@ -61,7 +60,7 @@ class zEstimator(object):
 
     def estimator(self, logw, ns_run):
         """Returns estimator value for run."""
-        return np.exp(scipy.misc.logsumexp(logw))
+        return np.exp(scipy.special.logsumexp(logw))
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
