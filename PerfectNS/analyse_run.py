@@ -231,7 +231,7 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
     n_simulate = kwargs['n_simulate']  # No default, must specify
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
-    for i in range(0, n_simulate):
+    for i in range(n_simulate):
         ns_run_temp = bootstrap_resample_run(ns_run, threads=threads,
                                              ninit_sep=ninit_sep)
         bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
@@ -323,7 +323,7 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
     """
     n_simulate = kwargs['n_simulate']  # No default, must specify
     all_values = np.zeros((len(estimator_list), n_simulate))
-    for i in range(0, n_simulate):
+    for i in range(n_simulate):
         all_values[:, i] = run_estimators(ns_run, estimator_list,
                                           simulate=True)
     stds = np.zeros(all_values.shape[0])
