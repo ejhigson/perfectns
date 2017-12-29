@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Contains mathematical functions used in the PerfectNS package.
+Generic mathematical functions.
 """
 
 

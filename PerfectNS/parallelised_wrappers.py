@@ -6,7 +6,7 @@ on them in parallel, using the concurrent.futures module.
 
 import concurrent.futures
 import numpy as np
-from tqdm import tqdm
+import tqdm
 import PerfectNS.nested_sampling as ns
 import PerfectNS.save_load_utils as slu
 
@@ -53,16 +53,15 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         for run in run_list:
             futures.append(pool.submit(single_run_func, run,
                                        estimator_list, **kwargs))
-        for _, fut in tqdm(enumerate(concurrent.futures.as_completed(futures)),
-                           leave=False, total=len(futures)):
+        for fut in tqdm.tqdm(concurrent.futures.as_completed(futures),
+                             leave=False, total=len(futures)):
             results_list.append(fut.result())
         del futures
         del pool
     else:
         print('Warning: func_on_runs not parallelised!')
-        for i in tqdm(range(len(run_list)), leave=False):
-            results_list.append(single_run_func(run_list[i],
-                                                estimator_list, **kwargs))
+        for run in tqdm.tqdm(run_list, leave=False):
+            results_list.append(single_run_func(run, estimator_list, **kwargs))
     all_values = np.zeros((len(estimator_list), len(run_list)))
     for i, result in enumerate(results_list):
         all_values[:, i] = result
@@ -98,15 +97,15 @@ def generate_runs(settings, n_repeat, max_workers=None, parallelise=True):
     run_list = []
     if parallelise is False:
         print('Warning: generate_runs not parallelised!')
-        for _ in tqdm(range(n_repeat), leave=False):
+        for _ in tqdm.tqdm(range(n_repeat), leave=False):
             run_list.append(ns.generate_ns_run(settings))
     else:
         pool = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
         futures = []
         for _ in range(n_repeat):
             futures.append(pool.submit(ns.generate_ns_run, settings))
-        for _, fut in tqdm(enumerate(concurrent.futures.as_completed(futures)),
-                           leave=False, total=len(futures)):
+        for fut in tqdm.tqdm(concurrent.futures.as_completed(futures),
+                             leave=False, total=len(futures)):
             run_list.append(fut.result())
         del futures
         del pool
