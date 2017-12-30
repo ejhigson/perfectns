@@ -106,7 +106,7 @@ class rMeanEstimator:
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
-        return 0
+        return check_by_integrating(self.ftilde, settings)
 
     def min(self, settings):
         return 0
