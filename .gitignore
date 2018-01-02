@@ -14,3 +14,6 @@ __pycache__/
 
 # jupyter checkpoints
 .ipynb_checkpoints
+
+# Coverage test output
+.coverage
