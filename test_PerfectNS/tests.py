@@ -3,6 +3,7 @@
 Test the PerfectNS module installation.
 """
 
+import os
 import unittest
 import numpy as np
 import PerfectNS.settings
@@ -12,9 +13,11 @@ import PerfectNS.nested_sampling as ns
 import PerfectNS.results_tables as rt
 import PerfectNS.priors as priors
 import PerfectNS.analyse_run as ar
+import PerfectNS.save_load_utils as slu
 
 
 class TestPerfectNS(unittest.TestCase):
+
     """Container for module tests."""
 
     def setUp(self):
@@ -121,6 +124,15 @@ class TestPerfectNS(unittest.TestCase):
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertTrue(np.all(~np.isnan(values)))
+
+    def test_save_load_utils(self):
+        """Check the input output functions."""
+        filename = slu.data_save_name(self.settings, 1)
+        testdata = np.random.random(5)
+        slu.pickle_save(testdata, filename, extension='.pkl')
+        testdata_out = slu.pickle_load(filename, extension='.pkl')
+        os.remove(filename + '.pkl')
+        self.assertTrue(np.array_equal(testdata, testdata_out))
 
 
 if __name__ == '__main__':

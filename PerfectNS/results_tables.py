@@ -97,7 +97,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         extra_root += '_' + str(dg)
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root,
                                    include_dg=False)
-    save_file = save_dir + '/' + save_root + '.dat'
+    save_file = save_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:
         try:
@@ -303,7 +303,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     extra_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
                   str(ninit_sep) + 'sep')
     save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
-    save_file = save_dir + '/' + save_root + '.dat'
+    save_file = save_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:
         try:

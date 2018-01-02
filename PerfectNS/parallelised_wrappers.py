@@ -163,7 +163,7 @@ def get_run_data(settings, n_repeat, **kwargs):
     save = kwargs.get('save', True)
     overwrite_existing = kwargs.get('overwrite_existing', False)
     check_loaded_settings = kwargs.get('check_loaded_settings', False)
-    save_name = slu.data_save_name(settings, n_repeat)
+    save_name = 'data/' + slu.data_save_name(settings, n_repeat)
     if load:
         print('get_run_data: ' + save_name)
         try:

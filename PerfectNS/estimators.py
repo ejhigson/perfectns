@@ -85,7 +85,7 @@ class rMeanEstimator:
 
     def __init__(self, from_theta=False):
         self.name = 'r'
-        self.latex_name = '$|\\theta|$'
+        self.latex_name = '$\\overline{|\\theta|}$'
         self.from_theta = from_theta
 
     def estimator(self, logw, ns_run):

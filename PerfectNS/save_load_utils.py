@@ -6,6 +6,7 @@ Contains helper functions for saving, loading and input/output.
 
 import time
 import pickle
+import errno
 from functools import wraps
 import os.path
 
@@ -32,7 +33,7 @@ def timing_decorator(func):
 
 def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
     """
-    Make a standard save name format for data with a given set of settings.
+    Make a standard save name format for a given settings configoration.
     """
     save_name = ''
     if extra_root is not None:
@@ -66,13 +67,20 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
 @timing_decorator
 def pickle_save(data, name, **kwargs):
     """Saves object with pickle,  appending name with the time file exists."""
-    path = kwargs.get('path', 'data/')
-    extension = kwargs.get('extension', '.dat')
+    extension = kwargs.get('extension', '.pkl')
     overwrite_existing = kwargs.get('overwrite_existing', False)
     print_filename = kwargs.get('print_filename', True)
-    filename = path + name + extension
+    filename = name + extension
+    # Check if the target directory exists and if not make it
+    dirname = os.path.dirname(filename)
+    if not os.path.exists(dirname) and dirname != '':
+        try:
+            os.makedirs(dirname)
+        except OSError as error:
+            if error.errno != errno.EEXIST:
+                raise
     if os.path.isfile(filename) and not overwrite_existing:
-        filename = path + name + '_' + time.asctime().replace(' ', '_')
+        filename = name + '_' + time.asctime().replace(' ', '_')
         filename += extension
         print('File already exists! Saving with time appended')
     if print_filename:
@@ -89,9 +97,8 @@ def pickle_save(data, name, **kwargs):
 @timing_decorator
 def pickle_load(name, **kwargs):
     """Load data with pickle."""
-    path = kwargs.get('path', 'data/')
-    extension = kwargs.get('extension', '.dat')
-    filename = path + name + extension
+    extension = kwargs.get('extension', '.pkl')
+    filename = name + extension
     infile = open(filename, 'rb')
     data = pickle.load(infile)
     infile.close()
