@@ -20,7 +20,7 @@ def timing_decorator(func):
         """
         Wrapper for printing execution time.
         """
-        print_time = kwargs.pop('print_time', True)
+        print_time = kwargs.pop('print_time', False)
         start_time = time.time()
         result = func(*args, **kwargs)
         if print_time:
