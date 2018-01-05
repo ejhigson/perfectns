@@ -29,7 +29,7 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     run_list: list of nested sampling run dictionaries
     estimator_list: list of estimator objects
     parallelise: bool, optional
-        Should the calculations on each run be done in parallel?
+        To turn off parallelisation if needed.
     max_workers: int or None, optional
         Number of processes.
         If max_workers is None then concurrent.futures.ProcessPoolExecutor
@@ -44,7 +44,9 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         does not return 1d numpy arrays.
     Returns
     -------
-    all_values: numpy array
+    results: numpy array or list
+        A list of results or a 2d numpy array where each result is a column
+        (behavior determined by results_as_list parameter).
     """
     max_workers = kwargs.get('max_workers', None)
     parallelise = kwargs.get('parallelise', True)
@@ -70,10 +72,9 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     if results_as_list:
         return results_list
     else:
-        all_values = np.zeros((len(estimator_list), len(run_list)))
-        for i, result in enumerate(results_list):
-            all_values[:, i] = result
-        return all_values
+        # Merge results_list (containing 1d arrays) into a 2d array where each
+        # element of results list is a column
+        return np.stack(results_list, axis=1)
 
 
 @slu.timing_decorator
