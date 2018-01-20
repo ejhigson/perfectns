@@ -26,14 +26,14 @@ class TestPerfectNS(unittest.TestCase):
         Use all the estimators in the module in each case, and choose settings
         so the tests run quickly.
         """
-        self.estimator_list = [e.logzEstimator(),
-                               e.zEstimator(),
-                               e.paramMeanEstimator(),
-                               e.paramSquaredMeanEstimator(),
-                               e.paramCredEstimator(0.5),
-                               e.paramCredEstimator(0.84),
-                               e.rMeanEstimator(),
-                               e.rCredEstimator(0.84)]
+        self.estimator_list = [e.LogZ(),
+                               e.Z(),
+                               e.ParamMean(),
+                               e.ParamSquaredMean(),
+                               e.ParamCred(0.5),
+                               e.ParamCred(0.84),
+                               e.RMean(),
+                               e.RCred(0.84)]
         self.settings = PerfectNS.settings.PerfectNSSettings()
         self.settings.n_dim = 2
         self.settings.nlive_const = 20
@@ -56,9 +56,9 @@ class TestPerfectNS(unittest.TestCase):
                                                parallelise=True)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior. These are not
-        # available for rCredEstimator.
+        # available for RCred.
         for est in self.estimator_list:
-            if est.name != e.rCredEstimator(0.84).name:
+            if est.name != e.RCred(0.84).name:
                 self.assertTrue(~np.isnan(dynamic_table.loc['true values',
                                                             est.name]))
         # None of the other values in the table should be NaN:

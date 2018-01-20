@@ -30,7 +30,7 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     logw = get_logw(ns_run, simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, est in enumerate(estimator_list):
-        output[i] = est.estimator(logw, ns_run)
+        output[i] = est(logw, ns_run)
     return output
 
 

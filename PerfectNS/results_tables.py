@@ -109,7 +109,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     # start function
     # --------------
     # get info on the number of samples taken in each run as well
-    estimator_list = [e.nSamplesEstimator()] + estimator_list_in
+    estimator_list = [e.CountSamples()] + estimator_list_in
     func_names = []
     for func in estimator_list:
         func_names.append(func.name)

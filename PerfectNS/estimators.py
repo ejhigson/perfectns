@@ -6,7 +6,7 @@ sampling run.
 Each estimator class should contain a mandatory member function returning the
 value of the estimator for a nested sampling run:
 
-    def estimator(self, logw, ns_run):
+    def __call__(self, logw, ns_run):
         ...
 
 They may also optionally contain a function giving its analytical value for
@@ -35,60 +35,65 @@ import PerfectNS.maths_functions as mf
 # ----------
 
 
-class logzEstimator(object):
+class LogZ(object):
 
     """Natural log of Bayesian evidence."""
 
     name = 'logz'
     latex_name = r'$\mathrm{log} \mathcal{Z}$'
 
-    def estimator(self, logw, ns_run):
+    @staticmethod
+    def __call__(logw, ns_run):
         """Returns estimator value for run."""
         return scipy.special.logsumexp(logw)
 
-    def analytical(self, settings):
+    @staticmethod
+    def analytical(settings):
         """Returns analytical value of estimator given settings."""
         return settings.logz_analytic()
 
 
-class zEstimator(object):
+class Z(object):
 
     """Bayesian evidence."""
 
     name = 'z'
-    latex_name = '$\mathcal{Z}$'
+    latex_name = r'$\mathcal{Z}$'
 
-    def estimator(self, logw, ns_run):
+    @staticmethod
+    def __call__(logw, ns_run):
         """Returns estimator value for run."""
         return np.exp(scipy.special.logsumexp(logw))
 
-    def analytical(self, settings):
+    @staticmethod
+    def analytical(settings):
         """Returns analytical value of estimator given settings."""
         return np.exp(settings.logz_analytic())
 
 
-class nSamplesEstimator(object):
+class CountSamples(object):
 
     """Number of samples in run."""
 
     name = 'n_samples'
-    latex_name = '\# samples'
+    latex_name = r'\# samples'
 
-    def estimator(self, logw, ns_run):
+    @staticmethod
+    def __call__(logw, ns_run):
         """Returns estimator value for run."""
         return logw.shape[0]
 
 
-class rMeanEstimator:
+class RMean:
 
     """Mean of |theta| (the radial distance from the centre)."""
 
     def __init__(self, from_theta=False):
         self.name = 'r'
-        self.latex_name = '$\\overline{|\\theta|}$'
+        self.latex_name = r'$\overline{|\theta|}$'
         self.from_theta = from_theta
 
-    def estimator(self, logw, ns_run):
+    def __call__(self, logw, ns_run):
         """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())
         if self.from_theta:
@@ -102,20 +107,22 @@ class rMeanEstimator:
             r = np.sqrt(np.sum(ns_run['theta'] ** 2, axis=1))
         else:
             r = ns_run['r']
-        return (np.sum(w_relative * r) / np.sum(w_relative))
+        return np.sum(w_relative * r) / np.sum(w_relative)
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
         return check_by_integrating(self.ftilde, settings)
 
-    def min(self, settings):
+    @staticmethod
+    def min(settings):
         return 0
 
-    def ftilde(self, logx, settings):
+    @staticmethod
+    def ftilde(logx, settings):
         return settings.r_given_logx(logx)
 
 
-class rCredEstimator(object):
+class RCred(object):
 
     """One-tailed credible interval on the value of |theta|."""
 
@@ -126,9 +133,9 @@ class rCredEstimator(object):
         self.probability = probability
         # format percent without trailing zeros
         percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
-        self.latex_name = '$\mathrm{C.I.}_{' + percent_str + '\%}(|\\theta|)$'
+        self.latex_name = r'$\mathrm{C.I.}_{' + percent_str + r'\%}(|\theta|)$'
 
-    def estimator(self, logw, ns_run):
+    def __call__(self, logw, ns_run):
         """Returns estimator value for run."""
         # get sorted array of r values with their posterior weight
         wr = np.zeros((logw.shape[0], 2))
@@ -149,7 +156,7 @@ class rCredEstimator(object):
         return np.interp(self.probability, cdf, wr[:, 1])
 
 
-class paramMeanEstimator(object):
+class ParamMean(object):
 
     """
     Mean of a single parameter (single component of theta).
@@ -159,24 +166,26 @@ class paramMeanEstimator(object):
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
         self.name = 'theta' + str(param_ind)
-        self.latex_name = ('$\\overline{\\theta_{\hat{' + str(param_ind) +
+        self.latex_name = (r'$\overline{\theta_{\hat{' + str(param_ind) +
                            '}}}$')
 
-    def estimator(self, logw, ns_run):
+    def __call__(self, logw, ns_run):
         """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())
         return ((np.sum(w_relative * ns_run['theta'][:, self.param_ind - 1])
-                / np.sum(w_relative)))
+                 / np.sum(w_relative)))
 
-    def analytical(self, settings):
+    @staticmethod
+    def analytical(settings):
         """Returns analytical value of estimator given settings."""
         return 0.
 
-    def ftilde(self, logx, settings):
+    @staticmethod
+    def ftilde(logx, settings):
         return np.zeros(logx.shape)
 
 
-class paramCredEstimator(object):
+class ParamCred(object):
 
     """
     One-tailed credible interval on the value of a single parameter (component
@@ -190,18 +199,18 @@ class paramCredEstimator(object):
         self.param_ind = param_ind
         self.name = 'theta' + str(param_ind) + 'c_' + str(probability)
         self.probability = probability
-        param_str = '\\theta_{\hat{' + str(param_ind) + '}}'
+        param_str = r'\theta_{\hat{' + str(param_ind) + '}}'
         if probability == 0.5:
             self.name = 'Median(theta' + str(param_ind) + ')'
-            self.latex_name = '$\mathrm{median}(' + param_str + ')$'
+            self.latex_name = r'$\mathrm{median}(' + param_str + ')$'
         else:
             self.name = 'theta' + str(param_ind) + 'c_' + str(probability)
             # format percent without trailing zeros
             percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
-            self.latex_name = ('$\mathrm{C.I.}_{' + percent_str +
-                               '\%}(' + param_str + ')$')
+            self.latex_name = (r'$\mathrm{C.I.}_{' + percent_str +
+                               r'\%}(' + param_str + ')$')
 
-    def estimator(self, logw, ns_run):
+    def __call__(self, logw, ns_run):
         """Returns estimator value for run."""
         # get sorted array of parameter values with their posterior weight
         wp = np.zeros((logw.shape[0], 2))
@@ -238,11 +247,12 @@ class paramCredEstimator(object):
             # find number of sigma from the mean by inverting the CDF of the
             # normal distribution.
             # CDF(x) = (1/2) + (1/2) * error_function(x / sqrt(2))
-            z = scipy.special.erfinv((self.probability * 2) - 1) * np.sqrt(2)
-            return z * sigma
+            zscore = (scipy.special.erfinv((self.probability * 2) - 1)
+                      * np.sqrt(2))
+            return zscore * sigma
 
 
-class paramSquaredMeanEstimator:
+class ParamSquaredMean:
 
     """
     Mean of the square of single parameter (second moment of its posterior
@@ -253,17 +263,18 @@ class paramSquaredMeanEstimator:
     def __init__(self, param_ind=1):
         self.param_ind = param_ind
         self.name = 'theta' + str(param_ind) + 'squ'
-        self.latex_name = ('$\\overline{\\theta^2_{\hat{' + str(param_ind) +
+        self.latex_name = (r'$\overline{\theta^2_{\hat{' + str(param_ind) +
                            '}}}$')
 
-    def estimator(self, logw, ns_run):
+    def __call__(self, logw, ns_run):
         """Returns estimator value for run."""
         w_relative = np.exp(logw - logw.max())  # protect against overflow
         w_relative /= np.sum(w_relative)
         return np.sum(w_relative *
                       (ns_run['theta'][:, self.param_ind - 1] ** 2))
 
-    def ftilde(self, logx, settings):
+    @staticmethod
+    def ftilde(logx, settings):
         """
         ftilde(X) is mean of f(theta) on the iso-likelihood contour
         L(theta) = L(X).
