@@ -3,6 +3,7 @@
 Test the PerfectNS module installation.
 """
 
+import os
 import unittest
 import numpy as np
 import PerfectNS.settings
@@ -12,9 +13,11 @@ import PerfectNS.nested_sampling as ns
 import PerfectNS.results_tables as rt
 import PerfectNS.priors as priors
 import PerfectNS.analyse_run as ar
+import PerfectNS.save_load_utils as slu
 
 
 class TestPerfectNS(unittest.TestCase):
+
     """Container for module tests."""
 
     def setUp(self):
@@ -23,14 +26,14 @@ class TestPerfectNS(unittest.TestCase):
         Use all the estimators in the module in each case, and choose settings
         so the tests run quickly.
         """
-        self.estimator_list = [e.logzEstimator(),
-                               e.zEstimator(),
-                               e.paramMeanEstimator(),
-                               e.paramSquaredMeanEstimator(),
-                               e.paramCredEstimator(0.5),
-                               e.paramCredEstimator(0.84),
-                               e.rMeanEstimator(),
-                               e.rCredEstimator(0.84)]
+        self.estimator_list = [e.LogZ(),
+                               e.Z(),
+                               e.ParamMean(),
+                               e.ParamSquaredMean(),
+                               e.ParamCred(0.5),
+                               e.ParamCred(0.84),
+                               e.RMean(),
+                               e.RCred(0.84)]
         self.settings = PerfectNS.settings.PerfectNSSettings()
         self.settings.n_dim = 2
         self.settings.nlive_const = 20
@@ -47,15 +50,23 @@ class TestPerfectNS(unittest.TestCase):
         """
         self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
         self.settings.prior = priors.gaussian(prior_scale=10)
+        # Need parallelise=False for coverage module to give correct answers
+        dynamic_table = rt.get_dynamic_results(5, [0, 0.5, 1],
+                                               self.estimator_list,
+                                               self.settings,
+                                               load=False,
+                                               parallelise=False)
+        # Try it again with parallelise=True to cover parallel parts
         dynamic_table = rt.get_dynamic_results(5, [0, 1],
                                                self.estimator_list,
                                                self.settings,
+                                               load=False,
                                                parallelise=True)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior. These are not
-        # available for rCredEstimator.
+        # available for RCred.
         for est in self.estimator_list:
-            if est.name != e.rCredEstimator(0.84).name:
+            if est.name != e.RCred(0.84).name:
                 self.assertTrue(~np.isnan(dynamic_table.loc['true values',
                                                             est.name]))
         # None of the other values in the table should be NaN:
@@ -72,6 +83,7 @@ class TestPerfectNS(unittest.TestCase):
         """
         self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
         self.settings.prior = priors.gaussian(prior_scale=10)
+        # Need parallelise=False for coverage module to give correct answers
         bootstrap_table = rt.get_bootstrap_results(3, 10,
                                                    self.estimator_list,
                                                    self.settings,
@@ -79,8 +91,9 @@ class TestPerfectNS(unittest.TestCase):
                                                    n_simulate_ci=100,
                                                    add_sim_method=True,
                                                    cred_int=0.95,
+                                                   load=False,
                                                    ninit_sep=False,
-                                                   parallelise=True)
+                                                   parallelise=False)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
@@ -88,7 +101,8 @@ class TestPerfectNS(unittest.TestCase):
         self.assertTrue(np.all(~np.isnan(bootstrap_table.values[1:, :])))
 
     def test_standard_ns_exp_power_likelihood_gaussian_prior(self):
-        """Check the exp_power likelihood."""
+        """Check the exp_power likelihood, as well as some functions in
+        analyse_run."""
         self.settings.exp_power = likelihoods.exp_power(likelihood_scale=1,
                                                         power=2)
         self.settings.prior = priors.gaussian(prior_scale=10)
@@ -121,6 +135,15 @@ class TestPerfectNS(unittest.TestCase):
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertTrue(np.all(~np.isnan(values)))
+
+    def test_save_load_utils(self):
+        """Check the input output functions."""
+        filename = slu.data_save_name(self.settings, 1)
+        testdata = np.random.random(5)
+        slu.pickle_save(testdata, filename, extension='.pkl')
+        testdata_out = slu.pickle_load(filename, extension='.pkl')
+        os.remove(filename + '.pkl')
+        self.assertTrue(np.array_equal(testdata, testdata_out))
 
 
 if __name__ == '__main__':

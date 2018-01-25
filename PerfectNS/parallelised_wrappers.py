@@ -29,7 +29,7 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     run_list: list of nested sampling run dictionaries
     estimator_list: list of estimator objects
     parallelise: bool, optional
-        Should the calculations on each run be done in parallel?
+        To turn off parallelisation if needed.
     max_workers: int or None, optional
         Number of processes.
         If max_workers is None then concurrent.futures.ProcessPoolExecutor
@@ -38,12 +38,19 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         multiple nodes, this may default to the number of processors on a
         single node and therefore there will be no speedup from multiple
         nodes (must specify manually in this case).
+    results_as_list: bool
+        Should results for each run be returned as a list (rather than as an
+        array with each result as a column). This must be True if the function
+        does not return 1d numpy arrays.
     Returns
     -------
-    all_values: numpy array
+    results: numpy array or list
+        A list of results or a 2d numpy array where each result is a column
+        (behavior determined by results_as_list parameter).
     """
     max_workers = kwargs.get('max_workers', None)
     parallelise = kwargs.get('parallelise', True)
+    results_as_list = kwargs.pop('results_as_list', False)
     results_list = []
     print('func_on_runs: calculating ' + single_run_func.__name__ + ' for ' +
           str(len(run_list)) + ' runs')
@@ -62,10 +69,12 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         print('Warning: func_on_runs not parallelised!')
         for run in tqdm.tqdm(run_list, leave=False):
             results_list.append(single_run_func(run, estimator_list, **kwargs))
-    all_values = np.zeros((len(estimator_list), len(run_list)))
-    for i, result in enumerate(results_list):
-        all_values[:, i] = result
-    return all_values
+    if results_as_list:
+        return results_list
+    else:
+        # Merge results_list (containing 1d arrays) into a 2d array where each
+        # element of results list is a column
+        return np.stack(results_list, axis=1)
 
 
 @slu.timing_decorator
@@ -155,7 +164,7 @@ def get_run_data(settings, n_repeat, **kwargs):
     save = kwargs.get('save', True)
     overwrite_existing = kwargs.get('overwrite_existing', False)
     check_loaded_settings = kwargs.get('check_loaded_settings', False)
-    save_name = slu.data_save_name(settings, n_repeat)
+    save_name = 'data/' + slu.data_save_name(settings, n_repeat)
     if load:
         print('get_run_data: ' + save_name)
         try:

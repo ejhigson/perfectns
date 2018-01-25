@@ -30,7 +30,7 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     logw = get_logw(ns_run, simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, est in enumerate(estimator_list):
-        output[i] = est.estimator(logw, ns_run)
+        output[i] = est(logw, ns_run)
     return output
 
 
@@ -227,7 +227,47 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
         Sampling error on calculation result for each estimator in
         estimator_list.
     """
-    ninit_sep = kwargs.get('ninit_sep', True)
+    bs_values = run_bootstrap_values(ns_run, estimator_list, **kwargs)
+    stds = np.zeros(bs_values.shape[0])
+    for j, _ in enumerate(stds):
+        stds[j] = np.std(bs_values[j, :], ddof=1)
+    return stds
+
+
+def run_bootstrap_values(ns_run, estimator_list, **kwargs):
+    """
+    Uses bootstrap resampling to calculate an estimate of the
+    standard deviation of the distribution of sampling errors (the
+    uncertainty on the calculation) for a single nested sampling run.
+
+    For more details about bootstrap resampling for estimating sampling
+    errors see 'Sampling errors in nested sampling parameter estimation'
+    (Higson et al. 2017).
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+    estimator_list: list of estimator classes, each containing class method
+        estimator(self, logw, ns_run)
+    n_simulate: int
+    ninit_sep: bool, optional
+    flip_skew: bool, optional
+        Determine if distribution of bootstrap values should be flipped about
+        its mean to better represent our probability distribution on the true
+        value - see "Bayesian astrostatistics: a backward look to the future"
+        (Loredo, 2012) Figure 2 for an explanation.
+        If true, the samples {X} are mapped to (2 mu - {X}), where mu is X's
+        mean. This leaves the mean and standard deviation unchanged.
+
+    Returns
+    -------
+    output: 1d numpy array
+        Sampling error on calculation result for each estimator in
+        estimator_list.
+    """
+    ninit_sep = kwargs.get('ninit_sep', False)
+    flip_skew = kwargs.get('flip_skew', True)
     n_simulate = kwargs['n_simulate']  # No default, must specify
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
@@ -236,10 +276,11 @@ def run_std_bootstrap(ns_run, estimator_list, **kwargs):
                                              ninit_sep=ninit_sep)
         bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
         del ns_run_temp
-    stds = np.zeros(bs_values.shape[0])
-    for j, _ in enumerate(stds):
-        stds[j] = np.std(bs_values[j, :], ddof=1)
-    return stds
+    if flip_skew:
+        estimator_means = np.mean(bs_values, axis=1)
+        for i, mu in enumerate(estimator_means):
+            bs_values[i, :] = (2 * mu) - bs_values[i, :]
+    return bs_values
 
 
 def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
@@ -268,19 +309,8 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
         Credible interval on sampling error on calculation result for each
         estimator in estimator_list.
     """
-    ninit_sep = kwargs.get('ninit_sep', True)
-    n_simulate = kwargs['n_simulate']  # No default, must specify
     cred_int = kwargs['cred_int']   # No default, must specify
-    assert min(cred_int, 1. - cred_int) * n_simulate > 1, \
-        'n_simulate = ' + str(n_simulate) + ' is not big enough to ' \
-        'calculate the bootstrap ' + str(cred_int) + ' CI'
-    threads = get_run_threads(ns_run)
-    bs_values = np.zeros((len(estimator_list), n_simulate))
-    for i in range(0, n_simulate):
-        ns_run_temp = bootstrap_resample_run(ns_run, threads,
-                                             ninit_sep=ninit_sep)
-        bs_values[:, i] = run_estimators(ns_run_temp, estimator_list)
-        del ns_run_temp
+    bs_values = run_bootstrap_values(ns_run, estimator_list, **kwargs)
     # estimate specific confidence intervals
     # formulae for alpha CI on estimator T = 2 T(x) - G^{-1}(T(x*))
     # where G is the CDF of the bootstrap resamples
@@ -351,7 +381,7 @@ def get_logw(ns_run, simulate=False):
             Ordered loglikelihood values of points.
         nlive_array: 1d numpy array
             Ordered local number of live points present at each point's
-            isolikelihood contour.
+            iso-likelihood contour.
     simulate: bool, optional
         Should log prior volumes logx be simulated from their distribution (if
         false their expected values are used)

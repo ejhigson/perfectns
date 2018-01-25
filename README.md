@@ -1,7 +1,10 @@
 PerfectNS
 =========
 
+[![Build Status](https://travis-ci.org/ejhigson/PerfectNS.svg?branch=release)](https://travis-ci.org/ejhigson/PerfectNS)
+[![Coverage Status](https://coveralls.io/repos/github/ejhigson/PerfectNS/badge.svg?branch=release)](https://coveralls.io/github/ejhigson/PerfectNS?branch=release)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/PerfectNS/LICENSE)
+
 
 ### Description
 
