@@ -10,7 +10,7 @@ __pycache__/
 
 # Distribution / packaging
 *.egg-info/
-.egg
+.eggs
 
 # jupyter checkpoints
 .ipynb_checkpoints

@@ -44,7 +44,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     try:
         interp_dict = slu.pickle_load(save_name)
         return interp_dict
-    except OSError:  # FileNotFoundError is a subclass of OSError
+    except (OSError, IOError):  # Python 2 and 3 compatable
         print(save_name)
         print('Interp file not found - try generating new data')
         r_max = mf.gaussian_r_given_logx(logx_max, prior_scale, n_dim)
