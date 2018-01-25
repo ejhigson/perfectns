@@ -50,9 +50,17 @@ class TestPerfectNS(unittest.TestCase):
         """
         self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
         self.settings.prior = priors.gaussian(prior_scale=10)
+        # Need parallelise=False for coverage module to give correct answers
+        dynamic_table = rt.get_dynamic_results(5, [0, 0.5, 1],
+                                               self.estimator_list,
+                                               self.settings,
+                                               load=False,
+                                               parallelise=False)
+        # Try it again with parallelise=True to cover parallel parts
         dynamic_table = rt.get_dynamic_results(5, [0, 1],
                                                self.estimator_list,
                                                self.settings,
+                                               load=False,
                                                parallelise=True)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior. These are not
@@ -75,6 +83,7 @@ class TestPerfectNS(unittest.TestCase):
         """
         self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
         self.settings.prior = priors.gaussian(prior_scale=10)
+        # Need parallelise=False for coverage module to give correct answers
         bootstrap_table = rt.get_bootstrap_results(3, 10,
                                                    self.estimator_list,
                                                    self.settings,
@@ -82,8 +91,9 @@ class TestPerfectNS(unittest.TestCase):
                                                    n_simulate_ci=100,
                                                    add_sim_method=True,
                                                    cred_int=0.95,
+                                                   load=False,
                                                    ninit_sep=False,
-                                                   parallelise=True)
+                                                   parallelise=False)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
@@ -91,7 +101,8 @@ class TestPerfectNS(unittest.TestCase):
         self.assertTrue(np.all(~np.isnan(bootstrap_table.values[1:, :])))
 
     def test_standard_ns_exp_power_likelihood_gaussian_prior(self):
-        """Check the exp_power likelihood."""
+        """Check the exp_power likelihood, as well as some functions in
+        analyse_run."""
         self.settings.exp_power = likelihoods.exp_power(likelihood_scale=1,
                                                         power=2)
         self.settings.prior = priors.gaussian(prior_scale=10)

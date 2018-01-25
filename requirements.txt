@@ -1,10 +1,8 @@
-# PerfectNestedSampling requirements
-# ----------------------------------
-# pip install all requirements with
-# $ pip install -r requirements.txt
+# PerfectN requirements
+# ---------------------
 numpy >= 1.13
 scipy >= 0.18.1
-pandas
-mpmath
-tqdm
+pandas >= 0.22.0
+mpmath >= 0.19
+tqdm >= 4.11.2
 futures  # part of core for Python >= 3.2
