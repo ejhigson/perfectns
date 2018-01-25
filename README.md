@@ -1,7 +1,9 @@
 PerfectNS
 =========
 
+[![Build Status](https://travis-ci.org/ejhigson/PerfectNS.svg?branch=dev)](https://travis-ci.org/ejhigson/PerfectNS)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/PerfectNS/LICENSE)
+
 
 ### Description
 
