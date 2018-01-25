@@ -25,5 +25,5 @@ setuptools.setup(name='PerfectNS',
                                    'mpmath',
                                    'tqdm'],
                  test_suite='nose.collector',
-                 tests_require=['nose'],
+                 tests_require=['nose', 'coverage'],
                  packages=['PerfectNS'])
