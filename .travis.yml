@@ -1,11 +1,11 @@
 language: python
 python:
- - "3.5"
+ - '3.5'
 install:
  - pip install .
  - pip install coveralls
 # - pip install -r requirements.txt
-# command to run tests
 script:
  - nosetests --with-coverage --cover-package=PerfectNS test_PerfectNS/tests.py
-   #  - python setup.py test # or py.test for Python versions 3.5 and below
+after_success:
+ - coveralls
