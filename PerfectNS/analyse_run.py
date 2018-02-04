@@ -66,7 +66,7 @@ def samples_array_given_run(ns_run):
     return samples
 
 
-def dict_given_samples_array(samples, thread_min_max):
+def dict_given_samples_array(samples, thread_min_max=None):
     """
     Converts an array of information about samples back into a dictionary.
 
@@ -76,10 +76,10 @@ def dict_given_samples_array(samples, thread_min_max):
         Numpy array containing columns
         [logl, r, logx, thread label, change in nlive at sample, (thetas)]
         with each row representing a single sample.
-    nlive_0: int
-        The number of threads which begin by sampling from the whole prior.
-        I.e. the number of live points at the first sample. Needed to
-        calculate nlive_array from the differences in nlive at each step.
+    thread_min_max': numpy array, optional
+        2d array with a row for each thread containing the likelihoods at which
+        it begins and ends.
+        Needed to calculate nlive_array (otherwise this is set to None).
 
     Returns
     -------
@@ -89,13 +89,16 @@ def dict_given_samples_array(samples, thread_min_max):
         'theta'
         N.B. this does not contain a record of the run's settings.
     """
-    nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
-    nlive_array = np.zeros(samples.shape[0]) + nlive_0
-    nlive_array[1:] += np.cumsum(samples[:-1, 4])
-    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!\n' \
-        'nlive_array = ' + str(nlive_array)
-    assert nlive_array[-1] == 1, 'final point in nlive_array should be 1!\n' \
-        'nlive_array = ' + str(nlive_array)
+    if thread_min_max is not None:
+        nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
+        nlive_array = np.zeros(samples.shape[0]) + nlive_0
+        nlive_array[1:] += np.cumsum(samples[:-1, 4])
+        assert nlive_array.min() > 0, 'nlive contains 0s or negative values!' \
+            '\nnlive_array = ' + str(nlive_array)
+        assert nlive_array[-1] == 1, 'final point in nlive_array != 1!' \
+            '\nnlive_array = ' + str(nlive_array)
+    else:
+        nlive_array = None
     ns_run = {'logl': samples[:, 0],
               'r': samples[:, 1],
               'logx': samples[:, 2],
