@@ -173,10 +173,13 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
         inds = np.random.randint(0, n_threads, n_threads)
     threads_temp = [threads[i] for i in inds]
     thread_min_max_temp = ns_run['thread_min_max'][inds]
+    return combine_threads(threads_temp, thread_min_max_temp,
+                           settings=ns_run['settings'])
+
+
+def combine_threads(threads_temp, thread_min_max_temp, settings=None):
     # construct samples array from the threads, including an updated nlive
-    samples_temp = threads_temp[0]
-    for thread in threads_temp[1:]:
-        samples_temp = np.vstack((samples_temp, thread))
+    samples_temp = np.vstack(threads_temp)
     samples_temp = samples_temp[np.argsort(samples_temp[:, 0])]
     # update the changes in live points column for threads which start part way
     # through the run. These are only present in dynamic nested sampling.
@@ -201,7 +204,7 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
             samples_temp[np.random.choice(ind), 4] += 1
     # make run
     ns_run_temp = dict_given_samples_array(samples_temp, thread_min_max_temp)
-    ns_run_temp['settings'] = ns_run['settings']
+    ns_run_temp['settings'] = settings
     return ns_run_temp
 
 

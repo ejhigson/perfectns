@@ -70,7 +70,7 @@ class TestPerfectNS(unittest.TestCase):
                 self.assertTrue(~np.isnan(dynamic_table.loc['true values',
                                                             est.name]))
         # None of the other values in the table should be NaN:
-        self.assertTrue(np.all(~np.isnan(dynamic_table.values[1:, :])))
+        self.assertFalse(np.any(np.isnan(dynamic_table.values[1:, :])))
 
     def test_bootstrap_results_table(self):
         """
@@ -98,17 +98,19 @@ class TestPerfectNS(unittest.TestCase):
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
         # None of the other values in the table should be NaN:
-        self.assertTrue(np.all(~np.isnan(bootstrap_table.values[1:, :])))
+        self.assertFalse(np.any(np.isnan(bootstrap_table.values[1:, :])))
 
     def test_standard_ns_exp_power_likelihood_gaussian_prior(self):
         """Check the exp_power likelihood, as well as some functions in
         analyse_run."""
+        np.random.seed(0)
         self.settings.exp_power = likelihoods.exp_power(likelihood_scale=1,
                                                         power=2)
         self.settings.prior = priors.gaussian(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
-        self.assertTrue(np.all(~np.isnan(values)))
+        print(values)
+        self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_cauchy_likelihood_gaussian_prior(self):
         """Check the Cauchy likelihood."""
@@ -117,7 +119,7 @@ class TestPerfectNS(unittest.TestCase):
         self.settings.prior = priors.gaussian(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
-        self.assertTrue(np.all(~np.isnan(values)))
+        self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_gaussian_likelihood_uniform_prior(self):
         """Check the uniform prior."""
@@ -125,7 +127,7 @@ class TestPerfectNS(unittest.TestCase):
         self.settings.prior = priors.uniform(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
-        self.assertTrue(np.all(~np.isnan(values)))
+        self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_gaussian_likelihood_cached_gaussian_prior(self):
         """Check the cached_gaussian prior."""
@@ -134,7 +136,7 @@ class TestPerfectNS(unittest.TestCase):
                                                      save_dict=False)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
-        self.assertTrue(np.all(~np.isnan(values)))
+        self.assertFalse(np.any(np.isnan(values)))
 
     def test_save_load_utils(self):
         """Check the input output functions."""
