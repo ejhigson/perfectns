@@ -67,9 +67,11 @@ def data_save_name(settings, n_repeats, extra_root=None, include_dg=True):
 @timing_decorator
 def pickle_save(data, name, **kwargs):
     """Saves object with pickle,  appending name with the time file exists."""
-    extension = kwargs.get('extension', '.pkl')
-    overwrite_existing = kwargs.get('overwrite_existing', False)
-    print_filename = kwargs.get('print_filename', True)
+    extension = kwargs.pop('extension', '.pkl')
+    overwrite_existing = kwargs.pop('overwrite_existing', False)
+    print_filename = kwargs.pop('print_filename', True)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     filename = name + extension
     # Check if the target directory exists and if not make it
     dirname = os.path.dirname(filename)
@@ -95,9 +97,8 @@ def pickle_save(data, name, **kwargs):
 
 
 @timing_decorator
-def pickle_load(name, **kwargs):
+def pickle_load(name, extension='.pkl'):
     """Load data with pickle."""
-    extension = kwargs.get('extension', '.pkl')
     filename = name + extension
     infile = open(filename, 'rb')
     data = pickle.load(infile)

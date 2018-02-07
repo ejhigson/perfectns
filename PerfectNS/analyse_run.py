@@ -9,7 +9,7 @@ import scipy.special
 import PerfectNS.maths_functions as mf
 
 
-def run_estimators(ns_run, estimator_list, **kwargs):
+def run_estimators(ns_run, estimator_list, simulate=False):
     """
     Calculates values of list of estimators for a single nested sampling run.
 
@@ -26,7 +26,6 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     output: 1d numpy array
         Calculation result for each estimator in estimator_list.
     """
-    simulate = kwargs.get('simulate', False)
     logw = get_logw(ns_run, simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, est in enumerate(estimator_list):
@@ -272,9 +271,11 @@ def run_bootstrap_values(ns_run, estimator_list, **kwargs):
         Sampling error on calculation result for each estimator in
         estimator_list.
     """
-    ninit_sep = kwargs.get('ninit_sep', False)
-    flip_skew = kwargs.get('flip_skew', True)
-    n_simulate = kwargs['n_simulate']  # No default, must specify
+    ninit_sep = kwargs.pop('ninit_sep', False)
+    flip_skew = kwargs.pop('flip_skew', True)
+    n_simulate = kwargs.pop('n_simulate')  # No default, must specify
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(n_simulate):
@@ -315,7 +316,7 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
         Credible interval on sampling error on calculation result for each
         estimator in estimator_list.
     """
-    cred_int = kwargs['cred_int']   # No default, must specify
+    cred_int = kwargs.pop('cred_int')   # No default, must specify
     bs_values = run_bootstrap_values(ns_run, estimator_list, **kwargs)
     # estimate specific confidence intervals
     # formulae for alpha CI on estimator T = 2 T(x) - G^{-1}(T(x*))
@@ -330,7 +331,7 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
     return ci_output
 
 
-def run_std_simulate(ns_run, estimator_list, **kwargs):
+def run_std_simulate(ns_run, estimator_list, n_simulate=None):
     """
     Uses the 'simulated weights' method to calculate an estimate of the
     standard deviation of the distribution of sampling errors (the
@@ -357,7 +358,7 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
         Sampling error on calculation result for each estimator in
         estimator_list.
     """
-    n_simulate = kwargs['n_simulate']  # No default, must specify
+    assert n_simulate is not None, 'run_std_simulate: must specify n_simulate'
     all_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(n_simulate):
         all_values[:, i] = run_estimators(ns_run, estimator_list,

@@ -48,8 +48,8 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         A list of results or a 2d numpy array where each result is a column
         (behavior determined by results_as_list parameter).
     """
-    max_workers = kwargs.get('max_workers', None)
-    parallelise = kwargs.get('parallelise', True)
+    max_workers = kwargs.pop('max_workers', None)
+    parallelise = kwargs.pop('parallelise', True)
     results_as_list = kwargs.pop('results_as_list', False)
     results_list = []
     print('func_on_runs: calculating ' + single_run_func.__name__ + ' for ' +
@@ -158,12 +158,14 @@ def get_run_data(settings, n_repeat, **kwargs):
     run_list
         list of n_repeat nested sampling runs.
     """
-    parallelise = kwargs.get('parallelise', True)
-    max_workers = kwargs.get('max_workers', None)
-    load = kwargs.get('load', True)
-    save = kwargs.get('save', True)
-    overwrite_existing = kwargs.get('overwrite_existing', False)
-    check_loaded_settings = kwargs.get('check_loaded_settings', False)
+    parallelise = kwargs.pop('parallelise', True)
+    max_workers = kwargs.pop('max_workers', None)
+    load = kwargs.pop('load', True)
+    save = kwargs.pop('save', True)
+    overwrite_existing = kwargs.pop('overwrite_existing', False)
+    check_loaded_settings = kwargs.pop('check_loaded_settings', False)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     save_name = 'data/' + slu.data_save_name(settings, n_repeat)
     if load:
         print('get_run_data: ' + save_name)

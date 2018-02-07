@@ -20,8 +20,9 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     Generate a dictionary containing arrays of logx and r values for use in
     interpolation, as well as a record of the settings used.
     """
-    logx_min = kwargs.get('logx_min', -4500)
-    save_dict = kwargs.get('save_dict', True)
+    logx_min = kwargs.pop('logx_min', -4500)
+    save_dict = kwargs.pop('save_dict', True)
+    interp_density = kwargs.pop('interp_density', 10)
     if n_dim > 1000 and logx_min >= -4500:
         print('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
               'for very high dimensions, depending on the likelihood, you may '
@@ -34,10 +35,11 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         # scipy method (scipy.special.gammainc) fails is lower in lower.
         # dimensions. logx_max=-10 will mean the gaussian_cached prior works
         # for all n_dim>2.
-        logx_max = kwargs.get('logx_max', -10)
+        logx_max = kwargs.pop('logx_max', -10)
     else:
-        logx_max = kwargs.get('logx_max', -200)
-    interp_density = kwargs.get('interp_density', 10)
+        logx_max = kwargs.pop('logx_max', -200)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     save_name = 'data/interp_gauss_prior_' + str(n_dim) + 'd_' + \
                 str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' + \
                 str(logx_max) + 'xmax_' + str(interp_density) + 'id'

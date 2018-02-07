@@ -86,9 +86,10 @@ class PerfectNSSettings(object):
         }
 
         for (setting_name, default_value) in default_settings.items():
-            setattr(self,
-                    setting_name,
-                    kwargs.get(setting_name, default_value))
+            setattr(self, setting_name,
+                    kwargs.pop(setting_name, default_value))
+        if kwargs:
+            raise TypeError('Unexpected **kwargs: %r' % kwargs)
 
     # functions of the spherically symmetric prior
 
