@@ -78,13 +78,15 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
                 (variance of dynamic results); see the dynamic nested
                 sampling paper for more details.
     """
-    load = kwargs.get('load', False)
-    save = kwargs.get('save', False)
-    save_dir = kwargs.get('save_dir', 'data')
-    max_workers = kwargs.get('max_workers', None)
-    parallelise = kwargs.get('parallelise', True)
-    tuned_dynamic_ps = kwargs.get('tuned_dynamic_ps', None)
-    overwrite_existing = kwargs.get('overwrite_existing', True)
+    load = kwargs.pop('load', False)
+    save = kwargs.pop('save', False)
+    save_dir = kwargs.pop('save_dir', 'data')
+    max_workers = kwargs.pop('max_workers', None)
+    parallelise = kwargs.pop('parallelise', True)
+    tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps', None)
+    overwrite_existing = kwargs.pop('overwrite_existing', True)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # Store the input settings.n_samples_max as we are going to edit it
     n_samples_max_in = settings.n_samples_max
     # First we run a standard nested sampling run for comparison:
@@ -289,16 +291,18 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
             bs [cred_int] CI % coverage: % of calculation results which are
                 less than the mean bootstrap credible interval estimate.
     """
-    load = kwargs.get('load', False)
-    save = kwargs.get('save', False)
-    max_workers = kwargs.get('max_workers', None)
-    save_dir = kwargs.get('save_dir', 'data')
-    ninit_sep = kwargs.get('ninit_sep', False)
-    parallelise = kwargs.get('parallelise', True)
-    add_sim_method = kwargs.get('add_sim_method', False)
-    n_simulate_ci = kwargs.get('n_simulate_ci', n_simulate)
-    n_run_ci = kwargs.get('n_run_ci', n_run)
-    cred_int = kwargs.get('cred_int', 0.95)
+    load = kwargs.pop('load', False)
+    save = kwargs.pop('save', False)
+    max_workers = kwargs.pop('max_workers', None)
+    save_dir = kwargs.pop('save_dir', 'data')
+    ninit_sep = kwargs.pop('ninit_sep', False)
+    parallelise = kwargs.pop('parallelise', True)
+    add_sim_method = kwargs.pop('add_sim_method', False)
+    n_simulate_ci = kwargs.pop('n_simulate_ci', n_simulate)
+    n_run_ci = kwargs.pop('n_run_ci', n_run)
+    cred_int = kwargs.pop('cred_int', 0.95)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # make save_name
     extra_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
                   str(ninit_sep) + 'sep')

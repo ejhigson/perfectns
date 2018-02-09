@@ -100,13 +100,13 @@ class gaussian_cached(object):
     interpolating.
     """
 
-    def __init__(self, prior_scale, **kwargs):
+    def __init__(self, prior_scale, save_dict=True, n_dim=None):
         self.prior_scale = prior_scale
-        self.save_dict = kwargs.get('save_dict', True)
+        self.save_dict = save_dict
         # if n_dim is specified we can cache the interpolation now.
         # Otherwise wait until r_given_logx is called.
-        if 'n_dim' in kwargs:
-            self.interp_d = cgp.interp_r_logx_dict(kwargs['n_dim'],
+        if n_dim is not None:
+            self.interp_d = cgp.interp_r_logx_dict(n_dim,
                                                    self.prior_scale,
                                                    save_dict=self.save_dict)
             self.interp_f = scipy.interpolate.interp1d(self.

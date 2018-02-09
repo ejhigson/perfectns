@@ -9,7 +9,7 @@ import scipy.special
 import PerfectNS.maths_functions as mf
 
 
-def run_estimators(ns_run, estimator_list, **kwargs):
+def run_estimators(ns_run, estimator_list, simulate=False):
     """
     Calculates values of list of estimators for a single nested sampling run.
 
@@ -26,7 +26,6 @@ def run_estimators(ns_run, estimator_list, **kwargs):
     output: 1d numpy array
         Calculation result for each estimator in estimator_list.
     """
-    simulate = kwargs.get('simulate', False)
     logw = get_logw(ns_run, simulate=simulate)
     output = np.zeros(len(estimator_list))
     for i, est in enumerate(estimator_list):
@@ -66,7 +65,7 @@ def samples_array_given_run(ns_run):
     return samples
 
 
-def dict_given_samples_array(samples, thread_min_max):
+def dict_given_samples_array(samples, thread_min_max=None):
     """
     Converts an array of information about samples back into a dictionary.
 
@@ -76,10 +75,10 @@ def dict_given_samples_array(samples, thread_min_max):
         Numpy array containing columns
         [logl, r, logx, thread label, change in nlive at sample, (thetas)]
         with each row representing a single sample.
-    nlive_0: int
-        The number of threads which begin by sampling from the whole prior.
-        I.e. the number of live points at the first sample. Needed to
-        calculate nlive_array from the differences in nlive at each step.
+    thread_min_max': numpy array, optional
+        2d array with a row for each thread containing the likelihoods at which
+        it begins and ends.
+        Needed to calculate nlive_array (otherwise this is set to None).
 
     Returns
     -------
@@ -89,13 +88,16 @@ def dict_given_samples_array(samples, thread_min_max):
         'theta'
         N.B. this does not contain a record of the run's settings.
     """
-    nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
-    nlive_array = np.zeros(samples.shape[0]) + nlive_0
-    nlive_array[1:] += np.cumsum(samples[:-1, 4])
-    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!\n' \
-        'nlive_array = ' + str(nlive_array)
-    assert nlive_array[-1] == 1, 'final point in nlive_array should be 1!\n' \
-        'nlive_array = ' + str(nlive_array)
+    if thread_min_max is not None:
+        nlive_0 = sum(np.isnan(thread_min_max[:, 0]))
+        nlive_array = np.zeros(samples.shape[0]) + nlive_0
+        nlive_array[1:] += np.cumsum(samples[:-1, 4])
+        assert nlive_array.min() > 0, 'nlive contains 0s or negative values!' \
+            '\nnlive_array = ' + str(nlive_array)
+        assert nlive_array[-1] == 1, 'final point in nlive_array != 1!' \
+            '\nnlive_array = ' + str(nlive_array)
+    else:
+        nlive_array = None
     ns_run = {'logl': samples[:, 0],
               'r': samples[:, 1],
               'logx': samples[:, 2],
@@ -170,10 +172,13 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
         inds = np.random.randint(0, n_threads, n_threads)
     threads_temp = [threads[i] for i in inds]
     thread_min_max_temp = ns_run['thread_min_max'][inds]
+    return combine_threads(threads_temp, thread_min_max_temp,
+                           settings=ns_run['settings'])
+
+
+def combine_threads(threads_temp, thread_min_max_temp, settings=None):
     # construct samples array from the threads, including an updated nlive
-    samples_temp = threads_temp[0]
-    for thread in threads_temp[1:]:
-        samples_temp = np.vstack((samples_temp, thread))
+    samples_temp = np.vstack(threads_temp)
     samples_temp = samples_temp[np.argsort(samples_temp[:, 0])]
     # update the changes in live points column for threads which start part way
     # through the run. These are only present in dynamic nested sampling.
@@ -198,7 +203,7 @@ def bootstrap_resample_run(ns_run, threads=None, ninit_sep=False):
             samples_temp[np.random.choice(ind), 4] += 1
     # make run
     ns_run_temp = dict_given_samples_array(samples_temp, thread_min_max_temp)
-    ns_run_temp['settings'] = ns_run['settings']
+    ns_run_temp['settings'] = settings
     return ns_run_temp
 
 
@@ -266,9 +271,11 @@ def run_bootstrap_values(ns_run, estimator_list, **kwargs):
         Sampling error on calculation result for each estimator in
         estimator_list.
     """
-    ninit_sep = kwargs.get('ninit_sep', False)
-    flip_skew = kwargs.get('flip_skew', True)
-    n_simulate = kwargs['n_simulate']  # No default, must specify
+    ninit_sep = kwargs.pop('ninit_sep', False)
+    flip_skew = kwargs.pop('flip_skew', True)
+    n_simulate = kwargs.pop('n_simulate')  # No default, must specify
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     threads = get_run_threads(ns_run)
     bs_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(n_simulate):
@@ -309,7 +316,7 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
         Credible interval on sampling error on calculation result for each
         estimator in estimator_list.
     """
-    cred_int = kwargs['cred_int']   # No default, must specify
+    cred_int = kwargs.pop('cred_int')   # No default, must specify
     bs_values = run_bootstrap_values(ns_run, estimator_list, **kwargs)
     # estimate specific confidence intervals
     # formulae for alpha CI on estimator T = 2 T(x) - G^{-1}(T(x*))
@@ -324,7 +331,7 @@ def run_ci_bootstrap(ns_run, estimator_list, **kwargs):
     return ci_output
 
 
-def run_std_simulate(ns_run, estimator_list, **kwargs):
+def run_std_simulate(ns_run, estimator_list, n_simulate=None):
     """
     Uses the 'simulated weights' method to calculate an estimate of the
     standard deviation of the distribution of sampling errors (the
@@ -351,7 +358,7 @@ def run_std_simulate(ns_run, estimator_list, **kwargs):
         Sampling error on calculation result for each estimator in
         estimator_list.
     """
-    n_simulate = kwargs['n_simulate']  # No default, must specify
+    assert n_simulate is not None, 'run_std_simulate: must specify n_simulate'
     all_values = np.zeros((len(estimator_list), n_simulate))
     for i in range(n_simulate):
         all_values[:, i] = run_estimators(ns_run, estimator_list,
