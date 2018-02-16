@@ -7,8 +7,8 @@ points and whether or not dynamic nested sampling is to be used.
 """
 
 import copy
-import PerfectNS.priors as priors
-import PerfectNS.likelihoods as likelihoods
+import perfectns.priors as priors
+import perfectns.likelihoods as likelihoods
 
 
 class PerfectNSSettings(object):

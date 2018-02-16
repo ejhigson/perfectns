@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 """
-Test the PerfectNS module installation.
+Test the perfectns module installation.
 """
 
 import os
 import unittest
 import numpy as np
-import PerfectNS.settings
-import PerfectNS.estimators as e
-import PerfectNS.likelihoods as likelihoods
-import PerfectNS.nested_sampling as ns
-import PerfectNS.results_tables as rt
-import PerfectNS.priors as priors
+import perfectns.settings
+import perfectns.estimators as e
+import perfectns.likelihoods as likelihoods
+import perfectns.nested_sampling as ns
+import perfectns.results_tables as rt
+import perfectns.priors as priors
 import nestcheck.analyse_run as ar
 import nestcheck.io_utils as iou
 
@@ -34,7 +34,7 @@ class TestPerfectNS(unittest.TestCase):
                                e.ParamCred(0.84),
                                e.RMean(),
                                e.RCred(0.84)]
-        self.settings = PerfectNS.settings.PerfectNSSettings()
+        self.settings = perfectns.settings.PerfectNSSettings()
         self.settings.n_dim = 2
         self.settings.nlive_const = 20
         self.settings.dynamic_goal = None
@@ -42,7 +42,7 @@ class TestPerfectNS(unittest.TestCase):
     def test_dynamic_results_table(self):
         """
         Test generating a table comparing dynamic and standard nested sampling;
-        this covers a lot of the PerfectNS module's functionality.
+        this covers a lot of the perfectns module's functionality.
 
         As the numerical values produced are stochastic we just test that the
         function runs ok and does not produce NaN values - this should be

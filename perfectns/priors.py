@@ -23,8 +23,8 @@ Prior classes may also optionally contain the inverse function
 
 import numpy as np
 import scipy
-import PerfectNS.maths_functions as mf
-import PerfectNS.cached_gaussian_prior as cgp
+import perfectns.maths_functions as mf
+import perfectns.cached_gaussian_prior as cgp
 
 
 class uniform(object):

@@ -9,7 +9,7 @@ low values of X, which are reached in high dimensional problems.
 
 import numpy as np
 import nestcheck.io_utils as iou
-import PerfectNS.maths_functions as mf
+import perfectns.maths_functions as mf
 
 
 # Maths functions

@@ -28,7 +28,7 @@ Estimators should also contain class variables:
 import numpy as np
 import pandas as pd
 import scipy
-import PerfectNS.maths_functions as mf
+import perfectns.maths_functions as mf
 
 
 # Estimators

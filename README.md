@@ -1,14 +1,14 @@
-PerfectNS
+perfectns
 =========
 
-[![Build Status](https://travis-ci.org/ejhigson/PerfectNS.svg?branch=release)](https://travis-ci.org/ejhigson/PerfectNS)
-[![Coverage Status](https://coveralls.io/repos/github/ejhigson/PerfectNS/badge.svg?branch=release)](https://coveralls.io/github/ejhigson/PerfectNS?branch=release)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/PerfectNS/LICENSE)
+[![Build Status](https://travis-ci.org/ejhigson/perfectns.svg?branch=release)](https://travis-ci.org/ejhigson/perfectns)
+[![Coverage Status](https://coveralls.io/repos/github/ejhigson/perfectns/badge.svg?branch=release)](https://coveralls.io/github/ejhigson/perfectns?branch=release)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/perfectns/LICENSE)
 
 
 ### Description
 
-PerfectNS performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
+perfectns performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
 In these cases the algorithms can be followed "perfectly" (without implementation-specific errors from correlated sampling), making them ideal for studying nested sampling.
 This package contains the code used to generate results in the [dynamic nested sampling paper (Higson, 2017a)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
 
@@ -40,11 +40,11 @@ See the documentation in each file for more details.
 
 ### Getting Started
 
-PerfectNS works for Python 2 (>= 2.7.10) and Python 3, and requires the `nestcheck` module.
-To pip install PerfectNS and its requirements:
+perfectns works for Python 2 (>= 2.7.10) and Python 3, and requires the `nestcheck` module.
+To pip install perfectns and its requirements:
 
 ```
-pip install PerfectNS
+pip install perfectns
 ```
 
 You can check your installation is working using the test suite (this requires nose):
@@ -55,7 +55,7 @@ python setup.py test
 
 ##### Examples
 
-The `demo.ipynb` notebook contains a demonstration of PerfectNS's functionality.
+The `demo.ipynb` notebook contains a demonstration of perfectns' functionality.
 
 The results table generating functions used for the dynamic nested sampling paper [(Higson 2017a)](https://arxiv.org/abs/1704.03459) are shown in `demo.ipynb`.
 Any of the results can be replicated from these functions by choosing the settings to match those described. Note that the paper uses nbatch=1 and dynamic_fraction=0.9 throughout, and uses the 'cached_gaussian' prior in place of the 'gaussian' prior when the number of dimensions is 100 or more.

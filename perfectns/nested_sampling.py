@@ -7,7 +7,7 @@ samples for use in evidence calculations and parameter estimation.
 import copy
 import numpy as np
 import scipy.special
-import PerfectNS.maths_functions as mf
+import perfectns.maths_functions as mf
 import nestcheck.analyse_run as ar
 
 

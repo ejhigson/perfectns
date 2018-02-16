@@ -25,7 +25,7 @@ given prior and dimension, which is useful for checking results:
         ...
 """
 
-import PerfectNS.maths_functions as mf
+import perfectns.maths_functions as mf
 import numpy as np
 
 

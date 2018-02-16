@@ -7,7 +7,7 @@ on them in parallel, using the concurrent.futures module.
 import concurrent.futures
 import numpy as np
 import tqdm
-import PerfectNS.nested_sampling as ns
+import perfectns.nested_sampling as ns
 import nestcheck.io_utils as iou
 
 

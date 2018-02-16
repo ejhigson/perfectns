@@ -8,10 +8,10 @@ estimation and evidence calculation' (Higson et al. 2017).
 import pandas as pd
 import numpy as np
 import nestcheck.io_utils as iou
-import PerfectNS.parallelised_wrappers as pw
 import nestcheck.analyse_run as ar
-import PerfectNS.maths_functions as mf
-import PerfectNS.estimators as e
+import perfectns.parallelised_wrappers as pw
+import perfectns.maths_functions as mf
+import perfectns.estimators as e
 
 
 @iou.timing_decorator
