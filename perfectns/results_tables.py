@@ -295,7 +295,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     save = kwargs.pop('save', False)
     max_workers = kwargs.pop('max_workers', None)
     save_dir = kwargs.pop('save_dir', 'data')
-    ninit_sep = kwargs.pop('ninit_sep', False)
+    ninit_sep = kwargs.pop('ninit_sep', True)
     parallelise = kwargs.pop('parallelise', True)
     add_sim_method = kwargs.pop('add_sim_method', False)
     n_simulate_ci = kwargs.pop('n_simulate_ci', n_simulate)
