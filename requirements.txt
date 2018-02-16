@@ -5,4 +5,5 @@ scipy >= 1.0.0
 pandas >= 0.22.0
 mpmath >= 0.19
 tqdm >= 4.11.2
+nestcheck
 futures  # part of core for Python >= 3.2

@@ -8,7 +8,7 @@ import copy
 import numpy as np
 import scipy.special
 import PerfectNS.maths_functions as mf
-import PerfectNS.analyse_run as ar
+import nestcheck.analyse_run as ar
 
 
 def generate_ns_run(settings):

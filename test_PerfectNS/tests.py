@@ -12,8 +12,8 @@ import PerfectNS.likelihoods as likelihoods
 import PerfectNS.nested_sampling as ns
 import PerfectNS.results_tables as rt
 import PerfectNS.priors as priors
-import PerfectNS.analyse_run as ar
-import PerfectNS.save_load_utils as slu
+import nestcheck.analyse_run as ar
+import nestcheck.io_utils as iou
 
 
 class TestPerfectNS(unittest.TestCase):
@@ -140,10 +140,10 @@ class TestPerfectNS(unittest.TestCase):
 
     def test_save_load_utils(self):
         """Check the input output functions."""
-        filename = slu.data_save_name(self.settings, 1)
+        filename = iou.data_save_name(self.settings, 1)
         testdata = np.random.random(5)
-        slu.pickle_save(testdata, filename, extension='.pkl')
-        testdata_out = slu.pickle_load(filename, extension='.pkl')
+        iou.pickle_save(testdata, filename, extension='.pkl')
+        testdata_out = iou.pickle_load(filename, extension='.pkl')
         os.remove(filename + '.pkl')
         self.assertTrue(np.array_equal(testdata, testdata_out))
 

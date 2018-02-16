@@ -8,7 +8,7 @@ low values of X, which are reached in high dimensional problems.
 
 
 import numpy as np
-import PerfectNS.save_load_utils as slu
+import nestcheck.io_utils as iou
 import PerfectNS.maths_functions as mf
 
 
@@ -44,7 +44,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
                 str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' + \
                 str(logx_max) + 'xmax_' + str(interp_density) + 'id'
     try:
-        interp_dict = slu.pickle_load(save_name)
+        interp_dict = iou.pickle_load(save_name)
         return interp_dict
     except (OSError, IOError):  # Python 2 and 3 compatable
         print(save_name)
@@ -66,5 +66,5 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
                        'r_array': r_array,
                        'logx_array': logx_array}
         if save_dict:
-            slu.pickle_save(interp_dict, save_name)
+            iou.pickle_save(interp_dict, save_name)
         return interp_dict

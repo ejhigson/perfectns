@@ -290,17 +290,6 @@ def entropy_num_samples(w):
         return np.exp((-1.0) * np.sum(w * np.log(w)))
 
 
-def log_subtract(loga, logb):
-    """
-    Returns log(a-b) given loga and logb, where loga > logb.
-    See https://hips.seas.harvard.edu/blog/2013/01/09/computing-log-sum-exp/
-    for more details.
-    """
-    # assert loga >= logb, 'log_subtract: a-b is negative for loga=' + \
-    #                       str(loga) + ' and logb=' + str(logb)
-    return loga + np.log(1 - np.exp(logb - loga))
-
-
 # Stats functions:
 
 

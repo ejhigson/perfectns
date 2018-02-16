@@ -40,7 +40,7 @@ See the documentation in each file for more details.
 
 ### Getting Started
 
-PerfectNS works for Python 2 (>= 2.7.10) and Python 3.
+PerfectNS works for Python 2 (>= 2.7.10) and Python 3, and requires the `nestcheck` module.
 To pip install PerfectNS and its requirements:
 
 ```

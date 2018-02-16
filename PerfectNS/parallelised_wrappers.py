@@ -8,10 +8,10 @@ import concurrent.futures
 import numpy as np
 import tqdm
 import PerfectNS.nested_sampling as ns
-import PerfectNS.save_load_utils as slu
+import nestcheck.io_utils as iou
 
 
-@slu.timing_decorator
+@iou.timing_decorator
 def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
     """
     Performs input analysis function on a list of nested sampling runs.
@@ -77,7 +77,7 @@ def func_on_runs(single_run_func, run_list, estimator_list, **kwargs):
         return np.stack(results_list, axis=1)
 
 
-@slu.timing_decorator
+@iou.timing_decorator
 def generate_runs(settings, n_repeat, max_workers=None, parallelise=True):
     """
     Generate n_repeat nested sampling runs in parallel.
@@ -166,11 +166,11 @@ def get_run_data(settings, n_repeat, **kwargs):
     check_loaded_settings = kwargs.pop('check_loaded_settings', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    save_name = 'data/' + slu.data_save_name(settings, n_repeat)
+    save_name = 'data/' + iou.data_save_name(settings, n_repeat)
     if load:
         print('get_run_data: ' + save_name)
         try:
-            data = slu.pickle_load(save_name)
+            data = iou.pickle_load(save_name)
         except OSError:  # FileNotFoundError is a subclass of OSError
             print('File not found - try generating new data')
             load = False
@@ -196,6 +196,6 @@ def get_run_data(settings, n_repeat, **kwargs):
                              parallelise=parallelise)
         if save:
             print('Generated new runs: saving to ' + save_name)
-            slu.pickle_save(data, save_name,
+            iou.pickle_save(data, save_name,
                             overwrite_existing=overwrite_existing)
     return data

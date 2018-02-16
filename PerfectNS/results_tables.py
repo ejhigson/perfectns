@@ -7,14 +7,14 @@ estimation and evidence calculation' (Higson et al. 2017).
 
 import pandas as pd
 import numpy as np
-import PerfectNS.save_load_utils as slu
+import nestcheck.io_utils as iou
 import PerfectNS.parallelised_wrappers as pw
-import PerfectNS.analyse_run as ar
+import nestcheck.analyse_run as ar
 import PerfectNS.maths_functions as mf
 import PerfectNS.estimators as e
 
 
-@slu.timing_decorator
+@iou.timing_decorator
 def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
                         **kwargs):
     """
@@ -97,7 +97,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     extra_root = 'dynamic_test'
     for dg in dynamic_goals:
         extra_root += '_' + str(dg)
-    save_root = slu.data_save_name(settings, n_run, extra_root=extra_root,
+    save_root = iou.data_save_name(settings, n_run, extra_root=extra_root,
                                    include_dg=False)
     save_file = save_dir + '/' + save_root + '.pkl'
     # try loading results
@@ -215,7 +215,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     return results
 
 
-@slu.timing_decorator
+@iou.timing_decorator
 def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                           **kwargs):
     """
@@ -306,7 +306,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # make save_name
     extra_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
                   str(ninit_sep) + 'sep')
-    save_root = slu.data_save_name(settings, n_run, extra_root=extra_root)
+    save_root = iou.data_save_name(settings, n_run, extra_root=extra_root)
     save_file = save_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:
