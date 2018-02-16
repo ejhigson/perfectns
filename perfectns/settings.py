@@ -68,8 +68,8 @@ class PerfectNSSettings(object):
             # likelihood and prior settings
             # -----------------------------
             'n_dim': 10,
-            'prior': priors.gaussian(10),
-            'likelihood': likelihoods.gaussian(1),
+            'prior': priors.Gaussian(10),
+            'likelihood': likelihoods.Gaussian(1),
             # calculation settings
             # --------------------
             'nlive_const': 200,

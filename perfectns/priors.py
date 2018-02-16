@@ -27,7 +27,7 @@ import perfectns.maths_functions as mf
 import perfectns.cached_gaussian_prior as cgp
 
 
-class uniform(object):
+class Uniform(object):
 
     """Spherically symmetric uniform prior."""
 
@@ -59,7 +59,7 @@ class uniform(object):
         return mf.nsphere_logx_given_r(r, self.prior_scale, n_dim)
 
 
-class gaussian(object):
+class Gaussian(object):
 
     """Spherically symmetric uniform prior."""
 
@@ -91,7 +91,7 @@ class gaussian(object):
         return mf.gaussian_logx_given_r(r, self.prior_scale, n_dim)
 
 
-class gaussian_cached(object):
+class GaussianCached(object):
 
     """
     Spherically symmetric uniform prior.

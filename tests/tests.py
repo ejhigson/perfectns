@@ -48,8 +48,8 @@ class TestPerfectNS(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-        self.settings.prior = priors.gaussian(prior_scale=10)
+        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
+        self.settings.prior = priors.Gaussian(prior_scale=10)
         # Need parallelise=False for coverage module to give correct answers
         dynamic_table = rt.get_dynamic_results(5, [0, 0.5, 1],
                                                self.estimator_list,
@@ -81,8 +81,8 @@ class TestPerfectNS(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-        self.settings.prior = priors.gaussian(prior_scale=10)
+        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
+        self.settings.prior = priors.Gaussian(prior_scale=10)
         # Need parallelise=False for coverage module to give correct answers
         bootstrap_table = rt.get_bootstrap_results(3, 10,
                                                    self.estimator_list,
@@ -104,9 +104,9 @@ class TestPerfectNS(unittest.TestCase):
         """Check the exp_power likelihood, as well as some functions in
         analyse_run."""
         np.random.seed(0)
-        self.settings.exp_power = likelihoods.exp_power(likelihood_scale=1,
-                                                        power=2)
-        self.settings.prior = priors.gaussian(prior_scale=10)
+        self.settings.exp_power = likelihoods.ExpPower(likelihood_scale=1,
+                                                       power=2)
+        self.settings.prior = priors.Gaussian(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         print(values)
@@ -115,25 +115,25 @@ class TestPerfectNS(unittest.TestCase):
     def test_standard_ns_cauchy_likelihood_gaussian_prior(self):
         """Check the Cauchy likelihood."""
         self.settings.n_dim = 10
-        self.settings.likelihood = likelihoods.cauchy(likelihood_scale=1)
-        self.settings.prior = priors.gaussian(prior_scale=10)
+        self.settings.likelihood = likelihoods.Cauchy(likelihood_scale=1)
+        self.settings.prior = priors.Gaussian(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_gaussian_likelihood_uniform_prior(self):
         """Check the uniform prior."""
-        self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-        self.settings.prior = priors.uniform(prior_scale=10)
+        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
+        self.settings.prior = priors.Uniform(prior_scale=10)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_gaussian_likelihood_cached_gaussian_prior(self):
         """Check the cached_gaussian prior."""
-        self.settings.likelihood = likelihoods.gaussian(likelihood_scale=1)
-        self.settings.prior = priors.gaussian_cached(prior_scale=10,
-                                                     save_dict=False)
+        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
+        self.settings.prior = priors.GaussianCached(prior_scale=10,
+                                                    save_dict=False)
         ns_run = ns.generate_ns_run(self.settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))

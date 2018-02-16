@@ -29,7 +29,7 @@ import perfectns.maths_functions as mf
 import numpy as np
 
 
-class gaussian(object):
+class Gaussian(object):
 
     """Spherically symmetric Gaussian likelihood."""
 
@@ -70,10 +70,10 @@ class gaussian(object):
         caught in functions which check analytical values where they are
         available).
         """
-        assert type(prior).__name__ in ['uniform', 'gaussian'], \
+        assert type(prior).__name__ in ['Uniform', 'Gaussian'], \
             ('No logz_analytic set up for ' + type(self).__name__ +
              ' likelihoods and ' + type(prior).__name__ + ' priors.')
-        if type(prior).__name__ == 'uniform':
+        if type(prior).__name__ == 'Uniform':
             # logZ = -log volume of uniform prior + correction for truncation
             logvol = mf.nsphere_logvol(n_dim, radius=prior.prior_scale)
             # To find how much of the likelihood's mass lies within the uniform
@@ -82,7 +82,7 @@ class gaussian(object):
             return -logvol + mf.gaussian_logx_given_r(prior.prior_scale,
                                                       self.likelihood_scale,
                                                       n_dim)
-        elif type(prior).__name__ == 'gaussian':
+        elif type(prior).__name__ == 'Gaussian':
             # See 'Products and convolutions of Gaussian probability density
             # functions' (P Bromiley, 2003) page 3 for a derivation of this
             # result
@@ -91,7 +91,7 @@ class gaussian(object):
                                            prior.prior_scale ** 2))
 
 
-class exp_power(object):
+class ExpPower(object):
 
     """
     Spherically symmetric exponential power likelihood.
@@ -131,7 +131,7 @@ class exp_power(object):
                                         n_dim, b=self.power)
 
 
-class cauchy(object):
+class Cauchy(object):
 
     """Spherically symmetric Cauchy likelihood."""
 

@@ -236,15 +236,15 @@ class ParamCred(object):
             # symmetric likelihoods and priors co-centred on zero is zero
             return 0
         else:
-            assert type(settings.likelihood).__name__ == 'gaussian', \
+            assert type(settings.likelihood).__name__ == 'Gaussian', \
                 "so far only set up for Gaussian likelihoods"
-            assert type(settings.prior).__name__ in ['gaussian',
-                                                     'gaussian_cached'], \
+            assert type(settings.prior).__name__ in ['Gaussian',
+                                                     'GaussianCached'], \
                 "so far only set up for Gaussian priors"
             # the product of two Gaussians is another Gaussian with sigma:
             sigma = ((settings.likelihood.likelihood_scale ** -2) +
                      (settings.prior.prior_scale ** -2)) ** -0.5
-            # find number of sigma from the mean by inverting the CDF of the
+            # find numCer of sigma from the mean by inverting the CDF of the
             # normal distribution.
             # CDF(x) = (1/2) + (1/2) * error_function(x / sqrt(2))
             zscore = (scipy.special.erfinv((self.probability * 2) - 1)
