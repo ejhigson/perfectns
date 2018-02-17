@@ -140,7 +140,7 @@ class TestPerfectNS(unittest.TestCase):
 
     def test_save_load_utils(self):
         """Check the input output functions."""
-        filename = iou.data_save_name(self.settings, 1)
+        filename = self.settings.save_name() + '_test'
         testdata = np.random.random(5)
         iou.pickle_save(testdata, filename, extension='.pkl')
         testdata_out = iou.pickle_load(filename, extension='.pkl')

@@ -199,3 +199,34 @@ class PerfectNSSettings(object):
         else:
             settings_dict['prior_args'] = self.prior.__dict__
         return settings_dict
+
+    def save_name(self, include_dg=True):
+        """
+        Make a standard save name format for a given settings configoration.
+        """
+        save_name = ''
+        if include_dg:
+            save_name += 'dg' + str(self.dynamic_goal) + '_'
+        save_name += str(self.n_dim) + 'd'
+        # Likelihood information
+        save_name += '_' + type(self.likelihood).__name__
+        like_params = self.likelihood.__dict__
+        for param in sorted(like_params):
+            save_name += '_' + str(like_params[param])
+        # Prior information
+        save_name += '_' + type(self.prior).__name__
+        save_name += '_' + str(self.prior.prior_scale)
+        # Nested sampling settings
+        save_name += '_' + str(self.termination_fraction) + 'term'
+        save_name += '_' + str(self.nlive_const) + 'nlive'
+        if self.dynamic_goal is not None or include_dg is False:
+            save_name += '_' + str(self.ninit) + 'ninit'
+            if self.nbatch != 1:
+                save_name += '_' + str(self.nbatch) + 'nbatch'
+        if self.n_samples_max is not None and self.nlive_const is None:
+            save_name += '_' + str(self.n_samples_max) + 'sampmax'
+        if self.tuned_dynamic_p is True and self.dynamic_goal is not None:
+            save_name += '_tuned'
+        save_name = save_name.replace('.', '_')
+        save_name = save_name.replace('-', '_')
+        return save_name

@@ -94,11 +94,11 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     if tuned_dynamic_ps is not None:
         tuned_dynamic_ps = [False] + tuned_dynamic_ps
     # make save_name
-    extra_root = 'dynamic_test'
+    save_root = 'dynamic_test'
     for dg in dynamic_goals:
-        extra_root += '_' + str(dg)
-    save_root = iou.data_save_name(settings, n_run, extra_root=extra_root,
-                                   include_dg=False)
+        save_root += '_' + str(dg)
+    save_root += '_' + settings.save_name(include_dg=False)
+    save_root += '_' + str(n_run) + 'reps'
     save_file = save_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:
@@ -304,9 +304,10 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # make save_name
-    extra_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
-                  str(ninit_sep) + 'sep')
-    save_root = iou.data_save_name(settings, n_run, extra_root=extra_root)
+    save_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
+                 str(ninit_sep) + 'sep')
+    save_root += settings.save_name()
+    save_root += '_' + str(n_run) + 'reps'
     save_file = save_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:

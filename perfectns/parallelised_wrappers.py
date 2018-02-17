@@ -166,7 +166,8 @@ def get_run_data(settings, n_repeat, **kwargs):
     check_loaded_settings = kwargs.pop('check_loaded_settings', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    save_name = 'data/' + iou.data_save_name(settings, n_repeat)
+    save_name = 'data/' + settings.save_name()
+    save_name += '_' + str(n_repeat) + 'reps'
     if load:
         print('get_run_data: ' + save_name)
         try:
