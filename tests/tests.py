@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib
 import perfectns.settings
 import perfectns.estimators as e
+import perfectns.cached_gaussian_prior
 import perfectns.likelihoods as likelihoods
 import perfectns.nested_sampling as ns
 import perfectns.results_tables as rt
@@ -37,11 +38,13 @@ class TestPerfectNS(unittest.TestCase):
                                e.ParamCred(0.5),
                                e.ParamCred(0.84),
                                e.RMean(),
+                               # e.RMean(from_theta=True),
                                e.RCred(0.84)]
         self.settings = perfectns.settings.PerfectNSSettings()
         self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
         self.settings.prior = priors.Gaussian(prior_scale=10)
         self.settings.n_dim = 2
+        self.settings.dims_to_sample = 2
         self.settings.nlive_const = 20
         self.settings.dynamic_goal = None
 
@@ -107,8 +110,8 @@ class TestPerfectNS(unittest.TestCase):
         analyse_run."""
         # np.random.seed(0)
         settings = copy.deepcopy(self.settings)
-        settings.exp_power = likelihoods.ExpPower(likelihood_scale=1,
-                                                  power=2)
+        settings.likelihood = likelihoods.ExpPower(likelihood_scale=1,
+                                                   power=2)
         self.assertAlmostEqual(
             settings.logx_given_logl(settings.logl_given_logx(-1.0)),
             -1.0, places=12)
@@ -143,16 +146,18 @@ class TestPerfectNS(unittest.TestCase):
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
 
-    def test_standard_ns_gaussian_likelihood_cached_gaussian_prior(self):
+    def test_cached_gaussian_prior(self):
         """Check the cached_gaussian prior."""
         settings = copy.deepcopy(self.settings)
         # test initialisation with and without specifying n_dim
         settings.prior = priors.GaussianCached(prior_scale=10,
                                                save_dict=False)
-        settings.prior = priors.GaussianCached(prior_scale=10,
-                                               save_dict=False, n_dim=2)
-        # Check giving a logx value outside the interpolation range
-        # self.assertTrue(np.isnan(settings.prior.r_given_logx(-10000, 2)))
+        settings.prior = priors.GaussianCached(
+            prior_scale=10, save_dict=False, n_dim=settings.n_dim)
+        # check the argument options and messages for interp_r_logx_dict
+        self.assertRaises(
+            TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
+            2000, 10, unexpected=0)
         self.assertAlmostEqual(
             settings.logx_given_logl(settings.logl_given_logx(-1.0)),
             -1.0, places=12)
@@ -163,22 +168,43 @@ class TestPerfectNS(unittest.TestCase):
 
     def test_plot_rel_posterior_mass(self):
         fig = perfectns.plots.plot_rel_posterior_mass(
-            [self.settings.likelihood],
-            self.settings.prior, [2],
-            np.linspace(-10, 0, 100))
+            [perfectns.likelihoods.Gaussian(1),
+             perfectns.likelihoods.ExpPower(1, 2)],
+            perfectns.priors.Gaussian(1),
+            [2], np.linspace(-10, 0, 100))
         self.assertIsInstance(fig, matplotlib.figure.Figure)
+        self.assertRaises(
+            TypeError, perfectns.plots.plot_rel_posterior_mass,
+            [perfectns.likelihoods.Gaussian(1),
+             perfectns.likelihoods.ExpPower(1, 2)],
+            perfectns.priors.Gaussian(1),
+            [2], np.linspace(-10, 0, 100), unexpected=0)
 
     def test_plot_dynamic_nlive(self):
         fig = perfectns.plots.plot_dynamic_nlive(
             [None, 0, 1, 1], self.settings, n_run=2,
             tuned_dynamic_ps=[False, False, False, True])
         self.assertIsInstance(fig, matplotlib.figure.Figure)
+        # Test ymax and the fallback for normalising analytic lines when the
+        # dynamic goal which is meant to mirror them is not present
+        fig = perfectns.plots.plot_dynamic_nlive(
+            [None], self.settings, n_run=2,
+            tuned_dynamic_ps=[True], ymax=1000)
+        # Test unexpected kwargs check
+        self.assertRaises(
+            TypeError, perfectns.plots.plot_dynamic_nlive,
+            [None, 0, 1, 1], self.settings, n_run=2,
+            tuned_dynamic_ps=[False, False, False, True], unexpected=0)
 
     def test_plot_parameter_logx_diagram(self):
         for ftheta in [e.ParamMean(), e.ParamSquaredMean(), e.RMean()]:
             fig = perfectns.plots.plot_parameter_logx_diagram(
                 self.settings, ftheta, x_points=50, y_points=50)
             self.assertIsInstance(fig, matplotlib.figure.Figure)
+        # Test unexpected kwargs check
+        self.assertRaises(
+            TypeError, perfectns.plots.plot_parameter_logx_diagram,
+            self.settings, ftheta, x_points=50, y_points=50, unexpected=0)
 
     def test_settings(self):
         self.assertRaises(

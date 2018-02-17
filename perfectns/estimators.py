@@ -88,6 +88,8 @@ class RMean:
 
     """Mean of |theta| (the radial distance from the centre)."""
 
+    min_value = 0
+
     def __init__(self, from_theta=False):
         self.name = 'r'
         self.latex_name = r'$\overline{|\theta|}$'
@@ -112,10 +114,6 @@ class RMean:
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
         return check_by_integrating(self.ftilde, settings)
-
-    @staticmethod
-    def min(settings):
-        return 0
 
     @staticmethod
     def ftilde(logx, settings):
@@ -259,6 +257,8 @@ class ParamSquaredMean:
     distribution).
     By symmetry all parameters have the same distribution.
     """
+
+    min_value = 0
 
     def __init__(self, param_ind=1):
         self.param_ind = param_ind

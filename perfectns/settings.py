@@ -62,8 +62,9 @@ class PerfectNSSettings(object):
         estimation problem.
     """
 
-    def __init__(self, **kwargs):
+    __isfrozen = False
 
+    def __init__(self, **kwargs):
         default_settings = {
             # likelihood and prior settings
             # -----------------------------
@@ -84,12 +85,23 @@ class PerfectNSSettings(object):
             'dynamic_fraction': 0.9,
             'tuned_dynamic_p': False
         }
-
         for (setting_name, default_value) in default_settings.items():
             setattr(self, setting_name,
                     kwargs.pop(setting_name, default_value))
         if kwargs:
             raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        # prevent more settings from being added later
+        self.__isfrozen = True
+
+    def __setattr__(self, key, value):
+        """
+        Freeze the class to prevent unexpected settings from being accidentally
+        added.
+        """
+        if self.__isfrozen and not hasattr(self, key):
+            raise TypeError('Frozen PerfectNSSettings instance given ' +
+                            'unexpected attribute: %r' % key)
+        object.__setattr__(self, key, value)
 
     # functions of the spherically symmetric prior
 

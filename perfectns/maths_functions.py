@@ -167,7 +167,7 @@ def nsphere_logx_given_r(r, r_max, n_dim):
 
 def nsphere_vol(dim, radius=1.0):
     """
-    Returns hypervolume of a unit nsphere of specified dimension. Formulae
+    Returns hypervolume of a unit nsphere of specified dimension. Formula
     given at
     https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
     """
@@ -272,22 +272,6 @@ def r_given_log_cauchy(logl, sigma, n_dim):
     exponent = np.exp(exponent) - 1.0
     r_squared = exponent * (sigma ** 2)
     return np.sqrt(r_squared)
-
-
-def entropy_num_samples(w):
-    """
-    Return the entropy of a set of weighted samples from their weights.
-    This takes the absolute value of weights first.
-    If np.sum(w) is not 1 the function re-normalises it to 1 for the
-    calculation.
-    """
-    if w.shape[0] == 0:
-        return 0
-    else:
-        w = np.absolute(w)
-        w = w / np.sum(w)
-        w = w[np.where(w > 0)]
-        return np.exp((-1.0) * np.sum(w * np.log(w)))
 
 
 # Stats functions:

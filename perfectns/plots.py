@@ -150,7 +150,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     for i, dg in enumerate(dynamic_goals):
         print('dynamic_goal=' + str(dg))
         settings.dynamic_goal = dg
-        settings.tuned_dynamic_ps = tuned_dynamic_ps[i]
+        settings.tuned_dynamic_p = tuned_dynamic_ps[i]
         temp_runs = pw.get_run_data(settings, n_run, parallelise=True,
                                     load=load, save=save)
         n_samples = np.asarray([run['logl'].shape[0] for run in temp_runs])
@@ -294,9 +294,8 @@ def plot_parameter_logx_diagram(settings, ftheta, **kwargs):
     ylabel = kwargs.pop('ylabel', ylab_def)
     # estimator specific defaults:
     ymax = kwargs.pop('ymax', 10)
-    if ftheta.__class__.__name__ in ['RMean',
-                                     'ParamSquaredMean']:
-        ymin = kwargs.pop('ymin', 0)
+    if hasattr(ftheta, 'min_value'):
+        ymin = kwargs.pop('ymin', ftheta.min_value)
     else:
         ymin = kwargs.pop('ymin', -ymax)
     if kwargs:
@@ -466,7 +465,7 @@ def cdf_given_logx(estimator, value, logx, settings):
     elif estimator.__class__.__name__ == 'RMean':
         cdf = np.zeros(logx.shape)
     else:
-        print('WARNING: cdf not available Ror ' + estimator.__class__.__name__)
+        print('WARNING: cdf not available for ' + estimator.__class__.__name__)
         cdf = np.zeros(logx.shape)
     assert cdf.min() >= 0, "cdf.min() = " + str(cdf.min()) + " < 0"
     assert cdf.max() <= 1, "cdf.max() = " + str(cdf.max()) + " > 1"
