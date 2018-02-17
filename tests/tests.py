@@ -6,6 +6,8 @@ Test the perfectns module installation.
 import os
 import unittest
 import numpy as np
+import matplotlib
+from matplotlib.testing.decorators import cleanup
 import perfectns.settings
 import perfectns.estimators as e
 import perfectns.likelihoods as likelihoods
@@ -146,6 +148,14 @@ class TestPerfectNS(unittest.TestCase):
         testdata_out = iou.pickle_load(filename, extension='.pkl')
         os.remove(filename + '.pkl')
         self.assertTrue(np.array_equal(testdata, testdata_out))
+
+    @cleanup
+    def test_plot_rel_posterior_mass(self):
+        fig = perfectns.plots.plot_rel_posterior_mass(
+            [self.settings.likelihood],
+            self.settings.prior, [2],
+            np.linspace(-10, 0, 100))
+        self.assertIsInstance(fig, matplotlib.figure.Figure)
 
 
 if __name__ == '__main__':
