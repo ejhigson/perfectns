@@ -193,7 +193,7 @@ class PerfectNSSettings(object):
         settings_dict['likelihood'] = type(self.likelihood).__name__
         settings_dict['likelihood_args'] = self.likelihood.__dict__
         settings_dict['prior'] = type(self.prior).__name__
-        if type(self.prior).__name__ == 'gaussian_cached':
+        if type(self.prior).__name__ == 'GaussianCached':
             settings_dict['prior_args'] = {'prior_scale':
                                            self.prior.prior_scale}
         else:

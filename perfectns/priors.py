@@ -106,13 +106,10 @@ class GaussianCached(object):
         # if n_dim is specified we can cache the interpolation now.
         # Otherwise wait until r_given_logx is called.
         if n_dim is not None:
-            self.interp_d = cgp.interp_r_logx_dict(n_dim,
-                                                   self.prior_scale,
-                                                   save_dict=self.save_dict)
-            self.interp_f = scipy.interpolate.interp1d(self.
-                                                       interp_d['logx_array'],
-                                                       self.
-                                                       interp_d['r_array'])
+            self.interp_d = cgp.interp_r_logx_dict(
+                n_dim, self.prior_scale, save_dict=self.save_dict)
+            self.interp_f = scipy.interpolate.interp1d(
+                self.interp_d['logx_array'], self.interp_d['r_array'])
         else:
             self.interp_d = {'n_dim': None, 'prior_scale': None}
 
@@ -127,27 +124,22 @@ class GaussianCached(object):
         r: same type and size as logx
         """
         self.check_cache(n_dim)
-        try:
-            if isinstance(logx, np.ndarray):
-                r = np.zeros(logx.shape)
-                ind = np.where(logx <= self.interp_d['logx_array'].max())[0]
-                r[ind] = self.interp_f(logx[ind])
-                ind = np.where(logx > self.interp_d['logx_array'].max())[0]
-                r[ind] = mf.gaussian_r_given_logx(logx[ind], self.prior_scale,
-                                                  n_dim)
-                assert np.count_nonzero(r) == r.shape[0], \
-                    'r contains zeros! r = ' + str(r)
-                return r
+        if isinstance(logx, np.ndarray):
+            r = np.zeros(logx.shape)
+            ind = np.where(logx <= self.interp_d['logx_array'].max())[0]
+            r[ind] = self.interp_f(logx[ind])
+            ind = np.where(logx > self.interp_d['logx_array'].max())[0]
+            r[ind] = mf.gaussian_r_given_logx(logx[ind], self.prior_scale,
+                                              n_dim)
+            assert np.count_nonzero(r) == r.shape[0], \
+                'r contains zeros! r = ' + str(r)
+            return r
+        else:
+            if logx <= self.interp_d['logx_array'].max():
+                return self.interp_f(logx)
             else:
-                if logx <= self.interp_d['logx_array'].max():
-                    return self.interp_f(logx)
-                else:
-                    return mf.gaussian_r_given_logx(logx, self.prior_scale,
-                                                    n_dim)
-        except ValueError:
-            print('ValueError in r_given_logx for gaussian prior')
-            print('logx_interp is ', self.interp_d['logx_array'])
-            print('input logx is', logx)
+                return mf.gaussian_r_given_logx(logx, self.prior_scale,
+                                                n_dim)
 
     def logx_given_r(self, r, n_dim):
         """
@@ -172,9 +164,7 @@ class GaussianCached(object):
                   str(n_dim) + ', ' + str(self.prior_scale) + ') =! cached ' +
                   '(n_dim, prior_scale) = (' + str(self.interp_d['n_dim']) +
                   ', ' + str(self.prior_scale) + ')')
-            self.interp_d = cgp.interp_r_logx_dict(n_dim, self.prior_scale,
-                                                   save_dict=self.save_dict)
-            self.interp_f = scipy.interpolate.interp1d(self
-                                                       .interp_d['logx_array'],
-                                                       self
-                                                       .interp_d['r_array'])
+            self.interp_d = cgp.interp_r_logx_dict(
+                n_dim, self.prior_scale, save_dict=self.save_dict)
+            self.interp_f = scipy.interpolate.interp1d(
+                self.interp_d['logx_array'], self.interp_d['r_array'])

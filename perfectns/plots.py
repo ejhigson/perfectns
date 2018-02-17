@@ -107,8 +107,8 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     dynamic_goals: list of ints or None
         dynamic_goal setting values to plot.
     settings_in: PerfectNSSettings object
-    tuned_dynamic_p: list of bools, optional
-        tuned_dynamic_p settings corresponding to each dynamic goal settings.
+    tuned_dynamic_ps: list of bools, optional
+        tuned_dynamic_ps settings corresponding to each dynamic goal settings.
         Defaults to False for all dynamic goals.
     logx_min: float, optional
         Lower limit of logx axis. If not specified this is set to the lowest
@@ -131,8 +131,8 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     -------
     fig: matplotlib figure
     """
-    tuned_dynamic_p = kwargs.pop('tuned_dynamic_p',
-                                 [False] * len(dynamic_goals))
+    tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
+                                  [False] * len(dynamic_goals))
     logx_min = kwargs.pop('logx_min', None)
     save = kwargs.pop('save', True)
     load = kwargs.pop('load', True)
@@ -150,7 +150,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     for i, dg in enumerate(dynamic_goals):
         print('dynamic_goal=' + str(dg))
         settings.dynamic_goal = dg
-        settings.tuned_dynamic_p = tuned_dynamic_p[i]
+        settings.tuned_dynamic_ps = tuned_dynamic_ps[i]
         temp_runs = pw.get_run_data(settings, n_run, parallelise=True,
                                     load=load, save=save)
         n_samples = np.asarray([run['logl'].shape[0] for run in temp_runs])
@@ -160,7 +160,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
             settings.n_samples_max = int(n_sample_stats[0, 0] *
                                          (settings.nlive_const - 1) /
                                          settings.nlive_const)
-        run_dict[(dg, tuned_dynamic_p[i])] = temp_runs
+        run_dict[(dg, tuned_dynamic_ps[i])] = temp_runs
         print('mean samples per run:', n_sample_stats[i, 0],
               'std:', n_sample_stats[i, 1])
     # Plotting
@@ -179,9 +179,9 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
             label = 'standard'
         else:
             label = 'dynamic $G=' + str(dg) + '$'
-            if tuned_dynamic_p[i] is True:
+            if tuned_dynamic_ps[i] is True:
                 label = 'tuned ' + label
-        for nr, run in enumerate(run_dict[(dg, tuned_dynamic_p[i])]):
+        for nr, run in enumerate(run_dict[(dg, tuned_dynamic_ps[i])]):
             logx = run['logx']
             logx[0] = 0  # to make lines extend all the way to the end
             if nr == 0:
@@ -194,12 +194,12 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
                         color=line.get_color())
             # for normalising analytic weight lines
             integrals[nr] = -np.trapz(run['nlive_array'], x=logx)
-        integrals_dict[(dg, tuned_dynamic_p[i])] = integrals
+        integrals_dict[(dg, tuned_dynamic_ps[i])] = integrals
     # find analytic w
     if logx_min is None:
         logx_min_list = []
-        for dg in dynamic_goals:
-            for run in run_dict[dg]:
+        for i, dg in enumerate(dynamic_goals):
+            for run in run_dict[(dg, tuned_dynamic_ps[i])]:
                 logx_min_list.append(run['logx'][-1])
         logx_min = np.asarray(logx_min_list).min()
     logx = np.linspace(logx_min, 0, npoints)
@@ -230,7 +230,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         w_an_c *= np.mean(np.concatenate(list(integrals_dict.values())))
     ax.plot(logx, w_an_c, linewidth=2, linestyle='--', dashes=(2, 3),
             label='posterior mass remaining', color='darkblue')
-    if any(tuned_dynamic_p):
+    if any(tuned_dynamic_ps):
         # Get expected magnitude of parameter
         # This is not defined for logx=0 so exclude final value of logx
         param_exp = settings.r_given_logx(logx[:-1]) / np.sqrt(settings.n_dim)

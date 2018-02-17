@@ -3,19 +3,21 @@
 Test the perfectns module installation.
 """
 
-import os
 import unittest
+import copy
 import numpy as np
 import matplotlib
-from matplotlib.testing.decorators import cleanup
 import perfectns.settings
 import perfectns.estimators as e
 import perfectns.likelihoods as likelihoods
 import perfectns.nested_sampling as ns
 import perfectns.results_tables as rt
 import perfectns.priors as priors
+import perfectns.plots
 import nestcheck.analyse_run as ar
-import nestcheck.io_utils as iou
+# from matplotlib.testing.decorators import cleanup
+# import os
+# import nestcheck.io_utils as iou
 
 
 class TestPerfectNS(unittest.TestCase):
@@ -37,6 +39,8 @@ class TestPerfectNS(unittest.TestCase):
                                e.RMean(),
                                e.RCred(0.84)]
         self.settings = perfectns.settings.PerfectNSSettings()
+        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
+        self.settings.prior = priors.Gaussian(prior_scale=10)
         self.settings.n_dim = 2
         self.settings.nlive_const = 20
         self.settings.dynamic_goal = None
@@ -50,8 +54,6 @@ class TestPerfectNS(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
-        self.settings.prior = priors.Gaussian(prior_scale=10)
         # Need parallelise=False for coverage module to give correct answers
         dynamic_table = rt.get_dynamic_results(5, [0, 0.5, 1],
                                                self.estimator_list,
@@ -83,8 +85,6 @@ class TestPerfectNS(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
-        self.settings.prior = priors.Gaussian(prior_scale=10)
         # Need parallelise=False for coverage module to give correct answers
         bootstrap_table = rt.get_bootstrap_results(3, 10,
                                                    self.estimator_list,
@@ -105,57 +105,91 @@ class TestPerfectNS(unittest.TestCase):
     def test_standard_ns_exp_power_likelihood_gaussian_prior(self):
         """Check the exp_power likelihood, as well as some functions in
         analyse_run."""
-        np.random.seed(0)
-        self.settings.exp_power = likelihoods.ExpPower(likelihood_scale=1,
-                                                       power=2)
-        self.settings.prior = priors.Gaussian(prior_scale=10)
-        ns_run = ns.generate_ns_run(self.settings)
+        # np.random.seed(0)
+        settings = copy.deepcopy(self.settings)
+        settings.exp_power = likelihoods.ExpPower(likelihood_scale=1,
+                                                  power=2)
+        self.assertAlmostEqual(
+            settings.logx_given_logl(settings.logl_given_logx(-1.0)),
+            -1.0, places=12)
+        settings.logz_analytic()
+        ns_run = ns.generate_ns_run(settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
-        print(values)
+        # print(values)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_cauchy_likelihood_gaussian_prior(self):
         """Check the Cauchy likelihood."""
-        self.settings.n_dim = 10
-        self.settings.likelihood = likelihoods.Cauchy(likelihood_scale=1)
-        self.settings.prior = priors.Gaussian(prior_scale=10)
-        ns_run = ns.generate_ns_run(self.settings)
+        settings = copy.deepcopy(self.settings)
+        # settings.n_dim = 10
+        settings.likelihood = likelihoods.Cauchy(likelihood_scale=1)
+        self.assertAlmostEqual(
+            settings.logx_given_logl(settings.logl_given_logx(-1.0)),
+            -1.0, places=12)
+        settings.logz_analytic()
+        ns_run = ns.generate_ns_run(settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_gaussian_likelihood_uniform_prior(self):
         """Check the uniform prior."""
-        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
-        self.settings.prior = priors.Uniform(prior_scale=10)
-        ns_run = ns.generate_ns_run(self.settings)
+        settings = copy.deepcopy(self.settings)
+        settings.prior = priors.Uniform(prior_scale=10)
+        self.assertAlmostEqual(
+            settings.logx_given_logl(settings.logl_given_logx(-1.0)),
+            -1.0, places=12)
+        settings.logz_analytic()
+        ns_run = ns.generate_ns_run(settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_gaussian_likelihood_cached_gaussian_prior(self):
         """Check the cached_gaussian prior."""
-        self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
-        self.settings.prior = priors.GaussianCached(prior_scale=10,
-                                                    save_dict=False)
-        ns_run = ns.generate_ns_run(self.settings)
+        settings = copy.deepcopy(self.settings)
+        # test initialisation with and without specifying n_dim
+        settings.prior = priors.GaussianCached(prior_scale=10,
+                                               save_dict=False)
+        settings.prior = priors.GaussianCached(prior_scale=10,
+                                               save_dict=False, n_dim=2)
+        # Check giving a logx value outside the interpolation range
+        # self.assertTrue(np.isnan(settings.prior.r_given_logx(-10000, 2)))
+        self.assertAlmostEqual(
+            settings.logx_given_logl(settings.logl_given_logx(-1.0)),
+            -1.0, places=12)
+        settings.get_settings_dict()
+        ns_run = ns.generate_ns_run(settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
 
-    def test_save_load_utils(self):
-        """Check the input output functions."""
-        filename = self.settings.save_name() + '_test'
-        testdata = np.random.random(5)
-        iou.pickle_save(testdata, filename, extension='.pkl')
-        testdata_out = iou.pickle_load(filename, extension='.pkl')
-        os.remove(filename + '.pkl')
-        self.assertTrue(np.array_equal(testdata, testdata_out))
-
-    @cleanup
     def test_plot_rel_posterior_mass(self):
         fig = perfectns.plots.plot_rel_posterior_mass(
             [self.settings.likelihood],
             self.settings.prior, [2],
             np.linspace(-10, 0, 100))
         self.assertIsInstance(fig, matplotlib.figure.Figure)
+
+    def test_plot_dynamic_nlive(self):
+        fig = perfectns.plots.plot_dynamic_nlive(
+            [None, 0, 1, 1], self.settings, n_run=2,
+            tuned_dynamic_ps=[False, False, False, True])
+        self.assertIsInstance(fig, matplotlib.figure.Figure)
+
+    def test_plot_parameter_logx_diagram(self):
+        for ftheta in [e.ParamMean(), e.ParamSquaredMean(), e.RMean()]:
+            fig = perfectns.plots.plot_parameter_logx_diagram(
+                self.settings, ftheta, x_points=50, y_points=50)
+            self.assertIsInstance(fig, matplotlib.figure.Figure)
+
+    def test_settings(self):
+        self.assertRaises(
+            TypeError, perfectns.settings.PerfectNSSettings, unexpected=0)
+        settings = copy.deepcopy(self.settings)
+        settings.dynamic_goal = 1
+        settings.nbatch += 1
+        settings.nlive_const = None
+        settings.tuned_dynamic_p = True
+        settings.n_samples_max = 100
+        settings.save_name()
 
 
 if __name__ == '__main__':
