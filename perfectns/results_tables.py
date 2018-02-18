@@ -108,16 +108,14 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     # make save_name
     save_root = 'dynamic_test'
     for dg in dynamic_goals_in:
-        save_root += '_' + str(dg)
+        save_root += '_' + str(dg).replace('.', '_')
     save_root += '_' + settings.save_name(include_dg=False)
     save_root += '_' + str(n_run) + 'reps'
     save_file = cache_dir + save_root + '.pkl'
     # try loading results
     if load:
         try:
-            results = pd.read_pickle(save_file)
-            print('get_dynamic_results: loading results from\n' + save_file)
-            return results
+            return pd.read_pickle(save_file)
         except OSError:
             pass
     # start function
@@ -294,15 +292,13 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # make save_name
     save_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
                  str(ninit_sep) + 'sep')
-    save_root += settings.save_name()
+    save_root += '_' + settings.save_name()
     save_root += '_' + str(n_run) + 'reps'
     save_file = cache_dir + save_root + '.pkl'
     # try loading results
     if load:
         try:
-            results = pd.read_pickle(save_file)
-            print('get_bootstrap_results: loading results from\n' + save_file)
-            return results
+            return pd.read_pickle(save_file)
         except OSError:
             pass
     # start function

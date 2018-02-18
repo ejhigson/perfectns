@@ -106,8 +106,8 @@ def get_run_data(settings, n_repeat, **kwargs):
     load = kwargs.pop('load', True)
     save = kwargs.pop('save', True)
     cache_dir = kwargs.pop('cache_dir', 'cache/')
-    overwrite_existing = kwargs.pop('overwrite_existing', False)
-    check_loaded_settings = kwargs.pop('check_loaded_settings', False)
+    overwrite_existing = kwargs.pop('overwrite_existing', True)
+    check_loaded_settings = kwargs.pop('check_loaded_settings', True)
     random_seeds = kwargs.pop('random_seeds', [None] * n_repeat)
     assert len(random_seeds) == n_repeat
     if kwargs:
@@ -118,26 +118,23 @@ def get_run_data(settings, n_repeat, **kwargs):
         print('get_run_data: ' + save_name)
         try:
             data = iou.pickle_load(save_name)
-        except OSError:  # FileNotFoundError is a subclass of OSError
-            print('File not found - try generating new data')
-            load = False
-        except EOFError:
-            print('EOFError loading file - try generating new data and '
-                  'overwriting current file')
+            if check_loaded_settings:
+                # Assume all runs in the loaded list have the same settings, in
+                # which case we only need check the first one.
+                if settings.get_settings_dict() == data[0]['settings']:
+                    print('Loaded settings = current settings')
+                else:
+                    print('Loaded settings =')
+                    print(data[0]['settings'])
+                    print('are not equal to current settings =')
+                    print(settings.get_settings_dict())
+                    del data
+                    load = False
+        except (OSError, EOFError) as exception:
+            print('Loading failed (' + type(exception).__name__ + '): ' +
+                  'try generating new data')
             load = False
             overwrite_existing = True
-        if check_loaded_settings:
-            # Assume all runs in the loaded list have the same settings, in
-            # which case we only need check the first one.
-            if settings.get_settings_dict() == data[0]['settings']:
-                print('Loaded settings = current settings')
-            else:
-                print('Loaded settings =')
-                print(data[0]['settings'])
-                print('are not equal to current settings =')
-                print(settings.get_settings_dict())
-                del data
-                load = False
     if not load:
         # Must check cache is up to date before parallel_apply or each process
         # will have to update the cache seperately
@@ -386,7 +383,6 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
         return p_importance(run_dict['theta'], w_relative,
                             tuned_dynamic_p=settings.tuned_dynamic_p)
     else:
-        print(settings.dynamic_goal)
         imp_z = z_importance(w_relative, run_dict['nlive_array'])
         imp_p = p_importance(run_dict['theta'], w_relative,
                              tuned_dynamic_p=settings.tuned_dynamic_p)

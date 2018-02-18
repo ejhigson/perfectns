@@ -18,6 +18,7 @@ import perfectns.maths_functions
 import perfectns.priors as priors
 import perfectns.plots
 import nestcheck.analyse_run as ar
+import shutil
 # from matplotlib.testing.decorators import cleanup
 # import os
 # import nestcheck.io_utils as iou
@@ -33,8 +34,8 @@ class TestPerfectNS(unittest.TestCase):
         Use all the estimators in the module in each case, and choose settings
         so the tests run quickly.
         """
-        # os.remove('./.coverage')
-        self.cache_dir = 'tests_cache/'
+        self.cache_dir = 'cache_tests/'
+        assert not os.path.exists(self.cache_dir[:-1])
         self.estimator_list = [e.LogZ(),
                                e.Z(),
                                e.ParamMean(),
@@ -50,6 +51,12 @@ class TestPerfectNS(unittest.TestCase):
         self.settings.n_dim = 2
         self.settings.nlive_const = 20
         self.settings.dynamic_goal = None
+
+    def tearDown(self):
+        try:
+            shutil.rmtree(self.cache_dir[:-1])
+        except FileNotFoundError:
+            pass
 
     def test_estimators(self):
         # Check analytic values
@@ -102,7 +109,7 @@ class TestPerfectNS(unittest.TestCase):
         dynamic_table = rt.get_dynamic_results(
             5, [0, 0.25, 1, 1], self.estimator_list, self.settings, load=True,
             save=True, cache_dir=self.cache_dir,
-            parallelise=True, tuned_dynamic_ps=[False, False, False, True])
+            parallelise=False, tuned_dynamic_ps=[False, False, False, True])
         print(dynamic_table)
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(dynamic_table.values)))
@@ -130,8 +137,8 @@ class TestPerfectNS(unittest.TestCase):
                                                    cred_int=0.95,
                                                    load=True, save=True,
                                                    cache_dir=self.cache_dir,
-                                                   ninit_sep=False,
-                                                   parallelise=True)
+                                                   ninit_sep=True,
+                                                   parallelise=False)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
@@ -187,10 +194,19 @@ class TestPerfectNS(unittest.TestCase):
         settings = copy.deepcopy(self.settings)
         settings.prior = priors.GaussianCached(
             prior_scale=10, save_dict=True, n_dim=settings.n_dim,
-            interp_density=1, logx_min=-50)
+            cache_dir=self.cache_dir,
+            interp_density=10, logx_min=-30)
+        # Test inside and outside cached regime (logx<-10).
+        # Need fairly low number of places
+        for logx in [-1, -11]:
+            self.assertAlmostEqual(
+                settings.logx_given_logl(settings.logl_given_logx(logx)),
+                logx, places=3)
+        # Test array version of the function too
+        logx = np.asarray([-2])
         self.assertAlmostEqual(
-            settings.logx_given_logl(settings.logl_given_logx(-1.0)),
-            -1.0, places=12)
+            settings.logx_given_logl(settings.logl_given_logx(logx)[0]),
+            logx[0], places=12)
         settings.get_settings_dict()
         # Generate NS run using get_run_data to check it checks the cache
         # before submitting process to parallel apply
@@ -201,8 +217,6 @@ class TestPerfectNS(unittest.TestCase):
         self.assertRaises(
             TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
             2000, 10, logx_min=-100, interp_density=1, unexpected=0)
-        # remove the cache
-        os.remove('cache/interp_gauss_prior_2d_10rmax_-50xmin_-10xmax_1id.pkl')
 
     def test_plot_rel_posterior_mass(self):
         fig = perfectns.plots.plot_rel_posterior_mass(
@@ -221,12 +235,14 @@ class TestPerfectNS(unittest.TestCase):
     def test_plot_dynamic_nlive(self):
         fig = perfectns.plots.plot_dynamic_nlive(
             [None, 0, 1, 1], self.settings, n_run=2,
-            tuned_dynamic_ps=[False, False, False, True])
+            tuned_dynamic_ps=[False, False, False, True],
+            save=False, load=False)
         self.assertIsInstance(fig, matplotlib.figure.Figure)
         # Test ymax and the fallback for normalising analytic lines when the
         # dynamic goal which is meant to mirror them is not present
         fig = perfectns.plots.plot_dynamic_nlive(
             [None], self.settings, n_run=2,
+            save=False, load=False,
             tuned_dynamic_ps=[True], ymax=1000)
         # Test unexpected kwargs check
         self.assertRaises(
@@ -270,6 +286,22 @@ class TestPerfectNS(unittest.TestCase):
             np.asarray([1]), 2, n_sample=None)
 
     def test_nested_sampling(self):
+        settings = copy.deepcopy(self.settings)
+        settings.dynamic_goal = 0
+        settings.n_samples_max = None
+        ns.generate_dynamic_run(settings)
+        # test saving
+        ns.get_run_data(settings, 1, save=True, load=True,
+                        check_loaded_settings=True, cache_dir=self.cache_dir)
+        # test loading and checking settings
+        ns.get_run_data(settings, 1, save=True, load=True,
+                        check_loaded_settings=True, cache_dir=self.cache_dir)
+        # test loading and checking settings when settings are not the same
+        # this only works for changing a setting which dosnt affect the save
+        # name
+        settings.dims_to_sample += 1
+        ns.get_run_data(settings, 1, save=True, load=True,
+                        check_loaded_settings=True, cache_dir=self.cache_dir)
         # test unexpected kwargs check
         self.assertRaises(TypeError, ns.get_run_data, self.settings, 1,
                           unexpected=1)
@@ -278,7 +310,11 @@ class TestPerfectNS(unittest.TestCase):
         ns.generate_single_thread(self.settings, -10 ** -100,
                                   0, keep_final_point=False)
         # for checking with exact=True
-        ns.z_importance(np.random.random(10), np.full((10), 5), exact=False)
+        ns.z_importance(np.random.random(10), np.full((10), 5), exact=True)
+        # for checking importance condition when the final point is one of the
+        # ones with high importance
+        ns.min_max_importance(np.full(2, 1), np.random.random((2, 3)),
+                              settings)
 
 
 if __name__ == '__main__':

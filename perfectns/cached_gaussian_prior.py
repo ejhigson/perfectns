@@ -41,9 +41,9 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         logx_max = kwargs.pop('logx_max', -200)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    save_name = cache_dir + 'interp_gauss_prior_' + str(n_dim) + 'd_' + \
-                str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' + \
-                str(logx_max) + 'xmax_' + str(interp_density) + 'id'
+    save_name = (cache_dir + 'interp_gauss_prior_' + str(n_dim) + 'd_' +
+                 str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' +
+                 str(logx_max) + 'xmax_' + str(interp_density) + 'id')
     try:
         interp_dict = iou.pickle_load(save_name)
     except (OSError, IOError):  # Python 2 and 3 compatable
