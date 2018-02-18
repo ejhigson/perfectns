@@ -10,7 +10,7 @@ import matplotlib
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import perfectns.parallelised_wrappers as pw
+import perfectns.nested_sampling as ns
 import perfectns.estimators as e
 
 
@@ -151,7 +151,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         print('dynamic_goal=' + str(dg))
         settings.dynamic_goal = dg
         settings.tuned_dynamic_p = tuned_dynamic_ps[i]
-        temp_runs = pw.get_run_data(settings, n_run, parallelise=True,
+        temp_runs = ns.get_run_data(settings, n_run, parallelise=True,
                                     load=load, save=save)
         n_samples = np.asarray([run['logl'].shape[0] for run in temp_runs])
         n_sample_stats[i, 0] = np.mean(n_samples)

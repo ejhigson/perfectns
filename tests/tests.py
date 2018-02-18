@@ -13,6 +13,7 @@ import perfectns.cached_gaussian_prior
 import perfectns.likelihoods as likelihoods
 import perfectns.nested_sampling as ns
 import perfectns.results_tables as rt
+import perfectns.maths_functions
 import perfectns.priors as priors
 import perfectns.plots
 import nestcheck.analyse_run as ar
@@ -216,6 +217,26 @@ class TestPerfectNS(unittest.TestCase):
         settings.tuned_dynamic_p = True
         settings.n_samples_max = 100
         settings.save_name()
+
+    def test_maths_functions(self):
+        # By default only used in high dim so manually test with dim=100
+        perfectns.maths_functions.sample_nsphere_shells(
+            np.asarray([1]), 100, n_sample=1)
+        # Check handling of n_sample=None
+        perfectns.maths_functions.sample_nsphere_shells_normal(
+            np.asarray([1]), 2, n_sample=None)
+        perfectns.maths_functions.sample_nsphere_shells_beta(
+            np.asarray([1]), 2, n_sample=None)
+
+    def test_nested_sampling(self):
+        settings = copy.deepcopy(self.settings)
+        settings.tuned_dynamic_p = True
+        settings.dynamic_goal = 0.5
+        ns.generate_ns_run(settings)
+        # for checking keep_final_point=False
+        ns.generate_thread_logx(-1, 0, keep_final_point=False)
+        # for checking with exact=True
+        ns.z_importance(np.random.random(10), np.full((10), 5), exact=False)
 
 
 if __name__ == '__main__':

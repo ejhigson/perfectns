@@ -93,6 +93,7 @@ def sample_nsphere_shells_beta(r, n_dim, n_sample=None):
     This function is much quicker than sample_nsphere_shells_normal when n_dim
     is high and n_sample is low.
     """
+    assert isinstance(r, np.ndarray), 'input r must be a numpy array'
     if n_sample is None:
         n_sample = n_dim
     thetas = np.sqrt(np.random.beta(0.5, (n_dim - 1) * 0.5,
@@ -163,16 +164,6 @@ def nsphere_logx_given_r(r, r_max, n_dim):
     """
     logx = (np.log(r) - np.log(r_max)) * n_dim
     return logx
-
-
-def nsphere_vol(dim, radius=1.0):
-    """
-    Returns hypervolume of a unit nsphere of specified dimension. Formula
-    given at
-    https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
-    """
-    const = ((np.pi ** (dim / 2.0)) / scipy.special.gamma((dim / 2.0) + 1.0))
-    return const * (radius ** dim)
 
 
 def nsphere_logvol(dim, radius=1.0):

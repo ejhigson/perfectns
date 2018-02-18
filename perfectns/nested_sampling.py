@@ -9,6 +9,8 @@ import numpy as np
 import scipy.special
 import perfectns.maths_functions as mf
 import nestcheck.analyse_run as ar
+import nestcheck.parallel_utils as pu
+import nestcheck.io_utils as iou
 
 
 def generate_ns_run(settings):
@@ -51,6 +53,88 @@ def generate_ns_run(settings):
         return generate_standard_run(settings)
     else:
         return generate_dynamic_run(settings)
+
+
+def get_run_data(settings, n_repeat, **kwargs):
+    """
+    Tests if runs with the specified settings are already cached. If not
+    the runs are generated and saved.
+
+    Parameters
+    ----------
+    settings: PerfectNSSettings object
+    n_repeat: int
+        Number of nested sampling runs to generate.
+    parallelise: bool, optional
+        Should runs be generated in parallel?
+    max_workers: int or None, optional
+        Number of processes.
+        If max_workers is None then concurrent.futures.ProcessPoolExecutor
+        defaults to using the number of processors of the machine.
+        N.B. If max_workers=None and running on supercomputer clusters with
+        multiple nodes, this may default to the number of processors on a
+        single node and therefore there will be no speedup from multiple
+        nodes (must specify manually in this case).
+    load: bool
+        Should previously saved runs be loaded? If False, new runs are
+        generated.
+    save: bool
+        Should any new runs generated be saved?
+    overwrite_existing: bool, optional
+        if a file exists already but we generate new run data, should we
+        overwrite the existing file when saved?
+    check_loaded_settings: bool, optional
+        if we load a cached file, should we check if the loaded file's settings
+        match the current settings (and generate fresh runs if they do not)?
+
+    Returns
+    -------
+    run_list
+        list of n_repeat nested sampling runs.
+    """
+    parallelise = kwargs.pop('parallelise', True)
+    max_workers = kwargs.pop('max_workers', None)
+    load = kwargs.pop('load', True)
+    save = kwargs.pop('save', True)
+    overwrite_existing = kwargs.pop('overwrite_existing', False)
+    check_loaded_settings = kwargs.pop('check_loaded_settings', False)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+    save_name = 'data/' + settings.save_name()
+    save_name += '_' + str(n_repeat) + 'reps'
+    if load:
+        print('get_run_data: ' + save_name)
+        try:
+            data = iou.pickle_load(save_name)
+        except OSError:  # FileNotFoundError is a subclass of OSError
+            print('File not found - try generating new data')
+            load = False
+        except EOFError:
+            print('EOFError loading file - try generating new data and '
+                  'overwriting current file')
+            load = False
+            overwrite_existing = True
+        if check_loaded_settings:
+            # Assume all runs in the loaded list have the same settings, in
+            # which case we only need check the first one.
+            if settings.get_settings_dict() == data[0]['settings']:
+                print('Loaded settings = current settings')
+            else:
+                print('Loaded settings =')
+                print(data[0]['settings'])
+                print('are not equal to current settings =')
+                print(settings.get_settings_dict())
+                del data
+                load = False
+    if not load:
+        data = pu.parallel_apply(generate_ns_run, [settings] * n_repeat,
+                                 max_workers=max_workers,
+                                 parallelise=parallelise)
+        if save:
+            print('Generated new runs: saving to ' + save_name)
+            iou.pickle_save(data, save_name,
+                            overwrite_existing=overwrite_existing)
+    return data
 
 
 def generate_standard_run(settings, is_dynamic_initial_run=False):
@@ -98,8 +182,8 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     logz_live = (scipy.special.logsumexp(live_points[:, 0]) + logx_i -
                  np.log(nlive_const))
     # Calculate factor for trapezium rule of geometric series
-    t = np.exp(-1.0 / nlive_const)
-    logtrapz = np.log(0.5 * ((t ** -1) - t))
+    shrinkage = np.exp(-1.0 / nlive_const)
+    logtrapz = np.log(0.5 * ((shrinkage ** -1) - shrinkage))
     # start the array of dead points
     dead_points_list = []
     while logz_live - np.log(settings.termination_fraction) > logz_dead:
@@ -250,8 +334,6 @@ def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
     logx_start and logx_end.
     Settings argument specifies how the calculation is done.
     """
-    if logx_end is None:
-        logx_end = settings.logx_terminate
     assert logx_start > logx_end, 'generate_single_thread: logx_start=' + \
         str(logx_start) + ' <= logx_end=' + str(logx_end)
     logx_list = generate_thread_logx(logx_end, logx_start=logx_start,
@@ -332,10 +414,11 @@ def p_importance(theta, w_relative, tuned_dynamic_p=False,
     else:
         assert tuning_type == 'theta1', 'so far only set up for theta1'
         if tuning_type == 'theta1':
-            f = theta[:, 0]
+            ftheta = theta[:, 0]
         # calculate importance in proportion to difference between f values and
         # the calculation mean.
-        fabs = np.absolute(f - (np.sum(f * w_relative) / np.sum(w_relative)))
+        fabs = np.absolute(ftheta - (np.sum(ftheta * w_relative) /
+                                     np.sum(w_relative)))
         importance = fabs * w_relative
         return importance / importance.max()
 

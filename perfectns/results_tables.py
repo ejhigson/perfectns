@@ -9,7 +9,8 @@ import pandas as pd
 import numpy as np
 import nestcheck.io_utils as iou
 import nestcheck.analyse_run as ar
-import perfectns.parallelised_wrappers as pw
+import nestcheck.parallel_utils as pu
+import perfectns.nested_sampling as ns
 import perfectns.maths_functions as mf
 import perfectns.estimators as e
 
@@ -148,13 +149,17 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
             if settings.tuned_dynamic_p is True:
                 method_names[-1] += ' tuned'
         # generate runs and get results
-        run_list = pw.get_run_data(settings, n_run, parallelise=parallelise,
+        run_list = ns.get_run_data(settings, n_run, parallelise=parallelise,
                                    load=load, save=save,
                                    max_workers=max_workers,
                                    overwrite_existing=overwrite_existing)
-        values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
-                                 max_workers=max_workers,
-                                 parallelise=parallelise)
+        values = pu.parallel_apply(ar.run_estimators, run_list,
+                                   func_args=(estimator_list,),
+                                   max_workers=max_workers,
+                                   parallelise=parallelise)
+        # convert list into numpy array
+        values = np.stack(values, axis=1)
+        assert values.shape == (len(estimator_list), len(run_list))
         df = mf.get_df_row_summary(values, func_names)
         df_dict[method_names[-1]] = df
         values_list.append(values)
@@ -322,7 +327,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     for est in estimator_list:
         e_names.append(est.name)
     # generate runs
-    run_list = pw.get_run_data(settings, n_run, save=save, load=load,
+    run_list = ns.get_run_data(settings, n_run, save=save, load=load,
                                max_workers=max_workers,
                                parallelise=parallelise)
     # Add true values to test that nested sampling is working correctly - these
@@ -330,17 +335,24 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results = e.get_true_estimator_values(estimator_list, settings)
     results.loc['true values_unc'] = 0
     # get mean and std of repeated calculations
-    rep_values = pw.func_on_runs(ar.run_estimators, run_list, estimator_list,
-                                 max_workers=max_workers,
-                                 parallelise=parallelise)
+    rep_values = pu.parallel_apply(ar.run_estimators, run_list,
+                                   func_args=(estimator_list,),
+                                   max_workers=max_workers,
+                                   parallelise=parallelise)
+    # convert list into numpy array
+    rep_values = np.stack(rep_values, axis=1)
+    assert rep_values.shape == (len(estimator_list), len(run_list))
     rep_df = mf.get_df_row_summary(rep_values, e_names)
     results = results.append(rep_df.set_index('repeats ' +
                                               rep_df.index.astype(str)))
     # get bootstrap std estimate
-    bs_values = pw.func_on_runs(ar.run_std_bootstrap, run_list,
-                                estimator_list, n_simulate=n_simulate,
-                                max_workers=max_workers,
-                                parallelise=parallelise)
+    bs_values = pu.parallel_apply(ar.run_std_bootstrap, run_list,
+                                  func_args=(estimator_list,),
+                                  func_kwargs={'n_simulate': n_simulate},
+                                  max_workers=max_workers,
+                                  parallelise=parallelise)
+    bs_values = np.stack(bs_values, axis=1)
+    assert bs_values.shape == (len(estimator_list), len(run_list))
     bs_df = mf.get_df_row_summary(bs_values, e_names)
     # Get the mean bootstrap std estimate as a fraction of the std measured
     # from repeated calculations.
@@ -358,10 +370,13 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                                         bs_df.loc['mean'])
     if add_sim_method:
         # get std from simulation estimate
-        sim_values = pw.func_on_runs(ar.run_std_simulate, run_list,
-                                     estimator_list, n_simulate=n_simulate,
-                                     max_workers=max_workers,
-                                     parallelise=parallelise)
+        sim_values = pu.parallel_apply(ar.run_std_simulate, run_list,
+                                       func_args=(estimator_list,),
+                                       func_kwargs={'n_simulate': n_simulate},
+                                       max_workers=max_workers,
+                                       parallelise=parallelise)
+        sim_values = np.stack(sim_values, axis=1)
+        assert sim_values.shape == (len(estimator_list), len(run_list))
         sim_df = mf.get_df_row_summary(sim_values, e_names)
         # get mean simulation std estimate a ratio to the std from repeats
         results.loc['sim std / repeats std'] = (sim_df.loc['mean'] /
@@ -378,10 +393,14 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                                        sim_df.loc['std_unc'] /
                                                        sim_df.loc['mean'])
     # get bootstrap CI estimates
-    bs_cis = pw.func_on_runs(ar.run_ci_bootstrap, run_list[:n_run_ci],
-                             estimator_list, n_simulate=n_simulate_ci,
-                             max_workers=max_workers,
-                             cred_int=cred_int, parallelise=parallelise)
+    bs_cis = pu.parallel_apply(ar.run_ci_bootstrap, run_list[:n_run_ci],
+                               func_args=(estimator_list,),
+                               func_kwargs={'n_simulate': n_simulate_ci,
+                                            'cred_int': cred_int},
+                               max_workers=max_workers,
+                               parallelise=parallelise)
+    bs_cis = np.stack(bs_cis, axis=1)
+    assert bs_cis.shape == (len(estimator_list), n_run_ci)
     bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
     results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
     results.loc['bs ' + str(cred_int) + ' CI_unc'] = bs_ci_df.loc['mean_unc']
