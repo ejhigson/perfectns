@@ -5,6 +5,7 @@ Functions used to generate the results in:
 estimation and evidence calculation' (Higson et al. 2017).
 """
 
+import copy
 import pandas as pd
 import numpy as np
 import nestcheck.io_utils as iou
@@ -16,8 +17,8 @@ import perfectns.estimators as e
 
 
 @iou.timing_decorator
-def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
-                        **kwargs):
+def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
+                        settings_in, **kwargs):
     """
     Generate data frame showing the standard deviations of the results of
     repeated calculations and efficiency gains (ratios of variances of results
@@ -38,7 +39,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     dynamic_goals_in: list of floats
         which dynamic goals to test
     estimator_list_in: list of estimator objects
-    settings: PerfectNSSettings object
+    settings_in: PerfectNSSettings object
     load: bool, optional
         should run data and results be loaded if available?
     save: bool, optional
@@ -46,6 +47,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     overwrite_existing: bool, optional
         if a file exists already but we generate new run data, should we
         overwrite the existing file when saved?
+    run_random_seeds: list, optional
+        list of random seeds to use for generating runs.
     parallelise: bool, optional
     tuned_dynamic_ps: list of bools, same length as dynamic_goals_in, optional
     max_workers: int or None, optional
@@ -86,10 +89,11 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
     parallelise = kwargs.pop('parallelise', True)
     tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps', None)
     overwrite_existing = kwargs.pop('overwrite_existing', True)
+    run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    # Store the input settings.n_samples_max as we are going to edit it
-    n_samples_max_in = settings.n_samples_max
+    # Make a copy of the input settings to stop us editing them
+    settings = copy.deepcopy(settings_in)
     # First we run a standard nested sampling run for comparison:
     dynamic_goals = [None] + dynamic_goals_in
     if tuned_dynamic_ps is not None:
@@ -150,6 +154,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
                 method_names[-1] += ' tuned'
         # generate runs and get results
         run_list = ns.get_run_data(settings, n_run, parallelise=parallelise,
+                                   random_seeds=run_random_seeds,
                                    load=load, save=save,
                                    max_workers=max_workers,
                                    overwrite_existing=overwrite_existing)
@@ -164,9 +169,6 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in, settings,
         df_dict[method_names[-1]] = df
         values_list.append(values)
         del run_list
-    # Restore settings.n_samples_max to its original value to ensure the
-    # function does not edit the settings object
-    settings.n_samples_max = n_samples_max_in
     # analyse data
     # ------------
     # find performance gain (proportional to ratio of errors squared)

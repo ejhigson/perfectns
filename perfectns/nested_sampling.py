@@ -13,7 +13,7 @@ import nestcheck.parallel_utils as pu
 import nestcheck.io_utils as iou
 
 
-def generate_ns_run(settings):
+def generate_ns_run(settings, random_seed=None):
     """
     Performs perfect nested sampling calculation and returns a nested sampling
     run in the form of a dictionary.
@@ -26,6 +26,11 @@ def generate_ns_run(settings):
     Parameters
     ----------
     settings: PerfectNSSettings object
+    random_seed: None, bool or int, optional
+        Set numpy random seed. Default is to use None (so a random seed is
+        chosen from the computer's internal state) to ensure reliable results
+        when multiprocessing. Can set to an integer or to False to not edit the
+        seed.
 
     Returns
     -------
@@ -49,6 +54,8 @@ def generate_ns_run(settings):
             'thread_labels': 1d array listing the threads each sample belongs
                               to.
     """
+    if random_seed is not False:
+        np.random.seed(random_seed)
     if settings.dynamic_goal is None:
         return generate_standard_run(settings)
     else:
@@ -98,6 +105,8 @@ def get_run_data(settings, n_repeat, **kwargs):
     save = kwargs.pop('save', True)
     overwrite_existing = kwargs.pop('overwrite_existing', False)
     check_loaded_settings = kwargs.pop('check_loaded_settings', False)
+    random_seeds = kwargs.pop('random_seeds', [None] * n_repeat)
+    assert len(random_seeds) == n_repeat
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     save_name = 'data/' + settings.save_name()
@@ -127,7 +136,8 @@ def get_run_data(settings, n_repeat, **kwargs):
                 del data
                 load = False
     if not load:
-        data = pu.parallel_apply(generate_ns_run, [settings] * n_repeat,
+        data = pu.parallel_apply(generate_ns_run, random_seeds,
+                                 func_pre_args=(settings,),
                                  max_workers=max_workers,
                                  parallelise=parallelise)
         if save:
@@ -162,8 +172,6 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
         posterior samples and a record of the settings used. See docstring for
         generate_ns_run for more details.
     """
-    # Reset the random seed to avoid repeated results when multiprocessing.
-    np.random.seed()
     if is_dynamic_initial_run:
         nlive_const = settings.ninit
     else:
@@ -260,7 +268,6 @@ def generate_dynamic_run(settings):
     """
     assert 1 >= settings.dynamic_goal >= 0, 'dynamic_goal = ' + \
         str(settings.dynamic_goal) + ' should be between 0 and 1'
-    np.random.seed()  # needed to avoid repeated results when multiprocessing
     # Step 1: initial exploratory standard ns run with ninit live points
     # ------------------------------------------------------------------
     standard_run = generate_standard_run(settings, is_dynamic_initial_run=True)
