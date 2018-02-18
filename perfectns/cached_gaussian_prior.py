@@ -20,9 +20,10 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     Generate a dictionary containing arrays of logx and r values for use in
     interpolation, as well as a record of the settings used.
     """
-    logx_min = kwargs.pop('logx_min', -4500)
+    logx_min = kwargs.pop('logx_min')  # no default, must specify
     save_dict = kwargs.pop('save_dict', True)
-    interp_density = kwargs.pop('interp_density', 10)
+    cache_dir = kwargs.pop('cache_dir', 'cache/')
+    interp_density = kwargs.pop('interp_density')  # no default, must specify
     if n_dim > 1000 and logx_min >= -4500:
         print('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
               'for very high dimensions, depending on the likelihood, you may '
@@ -40,12 +41,11 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         logx_max = kwargs.pop('logx_max', -200)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    save_name = 'data/interp_gauss_prior_' + str(n_dim) + 'd_' + \
+    save_name = cache_dir + 'interp_gauss_prior_' + str(n_dim) + 'd_' + \
                 str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' + \
                 str(logx_max) + 'xmax_' + str(interp_density) + 'id'
     try:
         interp_dict = iou.pickle_load(save_name)
-        return interp_dict
     except (OSError, IOError):  # Python 2 and 3 compatable
         print(save_name)
         print('Interp file not found - try generating new data')
@@ -67,4 +67,4 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
                        'logx_array': logx_array}
         if save_dict:
             iou.pickle_save(interp_dict, save_name)
-        return interp_dict
+    return interp_dict

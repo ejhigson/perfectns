@@ -3,6 +3,7 @@
 Test the perfectns module installation.
 """
 
+import os
 import unittest
 import copy
 import numpy as np
@@ -32,6 +33,8 @@ class TestPerfectNS(unittest.TestCase):
         Use all the estimators in the module in each case, and choose settings
         so the tests run quickly.
         """
+        # os.remove('./.coverage')
+        self.cache_dir = 'tests_cache/'
         self.estimator_list = [e.LogZ(),
                                e.Z(),
                                e.ParamMean(),
@@ -45,9 +48,40 @@ class TestPerfectNS(unittest.TestCase):
         self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
         self.settings.prior = priors.Gaussian(prior_scale=10)
         self.settings.n_dim = 2
-        self.settings.dims_to_sample = 2
         self.settings.nlive_const = 20
         self.settings.dynamic_goal = None
+
+    def test_estimators(self):
+        # Check analytic values
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.LogZ(), self.settings),
+            -6.4529975832506050, places=10)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.Z(), self.settings),
+            1.5757915157613399e-03, places=10)
+        self.assertEqual(
+            e.get_true_estimator_values(e.ParamMean(), self.settings), 0)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.ParamSquaredMean(), self.settings),
+            9.9009851517647807e-01, places=10)
+        self.assertEqual(
+            e.get_true_estimator_values(e.ParamCred(0.5), self.settings), 0)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.ParamCred(0.84), self.settings),
+            9.8952257789120635e-01, places=10)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.RMean(), self.settings),
+            1.2470645289408879e+00, places=10)
+        self.assertTrue(np.isnan(
+            e.get_true_estimator_values(e.RCred(0.84), self.settings)))
+        self.assertTrue(np.isnan(
+            e.get_true_estimator_values([e.RCred(0.84)], self.settings)[0]))
+        # Check calculating the radius from theta: when points in theta have
+        # coordinates (1, 1) the radius should be sqrt(2)
+        self.assertEqual(e.RMean(from_theta=True)(
+            np.zeros(2), {'theta': np.full((2, 2), 1)}), np.sqrt(2))
+        # Check CountSamples estimator is working ok
+        self.assertEqual(e.CountSamples()(np.zeros(10), {}), 10)
 
     def test_dynamic_results_table(self):
         """
@@ -58,20 +92,24 @@ class TestPerfectNS(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
+        # # Try it again with parallelise=True to cover parallel parts
+        # dynamic_table = rt.get_dynamic_results(3, [0, 0.25, 1],
+        #                                        self.estimator_list,
+        #                                        self.settings,
+        #                                        load=False,
+        #                                        parallelise=True)
         # Need parallelise=False for coverage module to give correct answers
-        dynamic_table = rt.get_dynamic_results(5, [0, 0.5, 1],
-                                               self.estimator_list,
-                                               self.settings,
-                                               load=False,
-                                               parallelise=False)
-        # Try it again with parallelise=True to cover parallel parts
-        dynamic_table = rt.get_dynamic_results(5, [0, 1],
-                                               self.estimator_list,
-                                               self.settings,
-                                               load=False,
-                                               parallelise=True)
+        dynamic_table = rt.get_dynamic_results(
+            5, [0, 0.25, 1, 1], self.estimator_list, self.settings, load=True,
+            save=True, cache_dir=self.cache_dir,
+            parallelise=True, tuned_dynamic_ps=[False, False, False, True])
+        print(dynamic_table)
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(dynamic_table.values)))
+        # print(dynamic_table[e.ParamMean().latex_name])
+        # Check the kwargs checking
+        self.assertRaises(TypeError, rt.get_dynamic_results, 5, [0],
+                          self.estimator_list, self.settings, unexpected=1)
 
     def test_bootstrap_results_table(self):
         """
@@ -83,21 +121,25 @@ class TestPerfectNS(unittest.TestCase):
         sufficient.
         """
         # Need parallelise=False for coverage module to give correct answers
-        bootstrap_table = rt.get_bootstrap_results(3, 10,
+        bootstrap_table = rt.get_bootstrap_results(5, 10,
                                                    self.estimator_list,
                                                    self.settings,
                                                    n_run_ci=2,
                                                    n_simulate_ci=100,
                                                    add_sim_method=True,
                                                    cred_int=0.95,
-                                                   load=False,
+                                                   load=True, save=True,
+                                                   cache_dir=self.cache_dir,
                                                    ninit_sep=False,
-                                                   parallelise=False)
+                                                   parallelise=True)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(bootstrap_table.values[1:, :])))
+        # Check the kwargs checking
+        self.assertRaises(TypeError, rt.get_bootstrap_results, 3, 10,
+                          self.estimator_list, self.settings, unexpected=1)
 
     def test_standard_ns_exp_power_likelihood_gaussian_prior(self):
         """Check the exp_power likelihood, as well as some functions in
@@ -143,22 +185,24 @@ class TestPerfectNS(unittest.TestCase):
     def test_cached_gaussian_prior(self):
         """Check the cached_gaussian prior."""
         settings = copy.deepcopy(self.settings)
-        # test initialisation with and without specifying n_dim
-        settings.prior = priors.GaussianCached(prior_scale=10,
-                                               save_dict=False)
         settings.prior = priors.GaussianCached(
-            prior_scale=10, save_dict=False, n_dim=settings.n_dim)
-        # check the argument options and messages for interp_r_logx_dict
-        self.assertRaises(
-            TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
-            2000, 10, unexpected=0)
+            prior_scale=10, save_dict=True, n_dim=settings.n_dim,
+            interp_density=1, logx_min=-50)
         self.assertAlmostEqual(
             settings.logx_given_logl(settings.logl_given_logx(-1.0)),
             -1.0, places=12)
         settings.get_settings_dict()
-        ns_run = ns.generate_ns_run(settings)
+        # Generate NS run using get_run_data to check it checks the cache
+        # before submitting process to parallel apply
+        ns_run = ns.get_run_data(settings, 1, load=False, save=False)[0]
         values = ar.run_estimators(ns_run, self.estimator_list)
         self.assertFalse(np.any(np.isnan(values)))
+        # check the argument options and messages for interp_r_logx_dict
+        self.assertRaises(
+            TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
+            2000, 10, logx_min=-100, interp_density=1, unexpected=0)
+        # remove the cache
+        os.remove('cache/interp_gauss_prior_2d_10rmax_-50xmin_-10xmax_1id.pkl')
 
     def test_plot_rel_posterior_mass(self):
         fig = perfectns.plots.plot_rel_posterior_mass(
@@ -195,6 +239,9 @@ class TestPerfectNS(unittest.TestCase):
             fig = perfectns.plots.plot_parameter_logx_diagram(
                 self.settings, ftheta, x_points=50, y_points=50)
             self.assertIsInstance(fig, matplotlib.figure.Figure)
+        # Test warning for estimators without CDF
+        perfectns.plots.cdf_given_logx(e.LogZ(), np.zeros(1), np.zeros(1),
+                                       self.settings)
         # Test unexpected kwargs check
         self.assertRaises(
             TypeError, perfectns.plots.plot_parameter_logx_diagram,
@@ -210,6 +257,7 @@ class TestPerfectNS(unittest.TestCase):
         settings.tuned_dynamic_p = True
         settings.n_samples_max = 100
         settings.save_name()
+        self.assertRaises(TypeError, settings.__setattr__, 'unexpected', 1)
 
     def test_maths_functions(self):
         # By default only used in high dim so manually test with dim=100
@@ -222,12 +270,13 @@ class TestPerfectNS(unittest.TestCase):
             np.asarray([1]), 2, n_sample=None)
 
     def test_nested_sampling(self):
-        settings = copy.deepcopy(self.settings)
-        settings.tuned_dynamic_p = True
-        settings.dynamic_goal = 0.5
-        ns.generate_ns_run(settings)
-        # for checking keep_final_point=False
-        ns.generate_thread_logx(-1, 0, keep_final_point=False)
+        # test unexpected kwargs check
+        self.assertRaises(TypeError, ns.get_run_data, self.settings, 1,
+                          unexpected=1)
+        # check returning None when keep_final_point is False and thread is
+        # empty
+        ns.generate_single_thread(self.settings, -10 ** -100,
+                                  0, keep_final_point=False)
         # for checking with exact=True
         ns.z_importance(np.random.random(10), np.full((10), 5), exact=False)
 

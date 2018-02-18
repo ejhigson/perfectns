@@ -99,19 +99,23 @@ class GaussianCached(object):
     r_given_logx by using the mpmath logx_given_r and linearly
     interpolating.
     """
+    interp_d = {'n_dim': None, 'prior_scale': None}
 
-    def __init__(self, prior_scale, save_dict=True, n_dim=None):
+    def __init__(self, prior_scale, save_dict=True, n_dim=None,
+                 interp_density=10, logx_min=-4500):
         self.prior_scale = prior_scale
         self.save_dict = save_dict
+        self.interp_density = interp_density
+        self.logx_min = logx_min
         # if n_dim is specified we can cache the interpolation now.
         # Otherwise wait until r_given_logx is called.
         if n_dim is not None:
-            self.interp_d = cgp.interp_r_logx_dict(
-                n_dim, self.prior_scale, save_dict=self.save_dict)
-            self.interp_f = scipy.interpolate.interp1d(
-                self.interp_d['logx_array'], self.interp_d['r_array'])
-        else:
-            self.interp_d = {'n_dim': None, 'prior_scale': None}
+            self.check_cache(n_dim)
+        #     self.interp_d = cgp.interp_r_logx_dict(
+        #         n_dim, self.prior_scale, save_dict=self.save_dict)
+        #     self.interp_f = scipy.interpolate.interp1d(
+        #         self.interp_d['logx_array'], self.interp_d['r_array'])
+        # else:
 
     def r_given_logx(self, logx, n_dim):
         """
@@ -165,6 +169,7 @@ class GaussianCached(object):
                   '(n_dim, prior_scale) = (' + str(self.interp_d['n_dim']) +
                   ', ' + str(self.prior_scale) + ')')
             self.interp_d = cgp.interp_r_logx_dict(
-                n_dim, self.prior_scale, save_dict=self.save_dict)
+                n_dim, self.prior_scale, save_dict=self.save_dict,
+                logx_min=self.logx_min, interp_density=self.interp_density)
             self.interp_f = scipy.interpolate.interp1d(
                 self.interp_d['logx_array'], self.interp_d['r_array'])

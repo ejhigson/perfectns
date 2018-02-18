@@ -82,11 +82,13 @@ def get_run_data(settings, n_repeat, **kwargs):
         multiple nodes, this may default to the number of processors on a
         single node and therefore there will be no speedup from multiple
         nodes (must specify manually in this case).
-    load: bool
+    load: bool, optional
         Should previously saved runs be loaded? If False, new runs are
         generated.
-    save: bool
+    save: bool, optional
         Should any new runs generated be saved?
+    cache_dir: str, optional
+        Directory for caching
     overwrite_existing: bool, optional
         if a file exists already but we generate new run data, should we
         overwrite the existing file when saved?
@@ -103,13 +105,14 @@ def get_run_data(settings, n_repeat, **kwargs):
     max_workers = kwargs.pop('max_workers', None)
     load = kwargs.pop('load', True)
     save = kwargs.pop('save', True)
+    cache_dir = kwargs.pop('cache_dir', 'cache/')
     overwrite_existing = kwargs.pop('overwrite_existing', False)
     check_loaded_settings = kwargs.pop('check_loaded_settings', False)
     random_seeds = kwargs.pop('random_seeds', [None] * n_repeat)
     assert len(random_seeds) == n_repeat
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    save_name = 'data/' + settings.save_name()
+    save_name = cache_dir + settings.save_name()
     save_name += '_' + str(n_repeat) + 'reps'
     if load:
         print('get_run_data: ' + save_name)
@@ -136,6 +139,10 @@ def get_run_data(settings, n_repeat, **kwargs):
                 del data
                 load = False
     if not load:
+        # Must check cache is up to date before parallel_apply or each process
+        # will have to update the cache seperately
+        if type(settings.prior).__name__ == 'GaussianCached':
+            settings.prior.check_cache(settings.n_dim)
         data = pu.parallel_apply(generate_ns_run, random_seeds,
                                  func_pre_args=(settings,),
                                  max_workers=max_workers,
@@ -276,11 +283,10 @@ def generate_dynamic_run(settings):
     samples = ar.samples_array_given_run(standard_run)
     thread_min_max = standard_run['thread_min_max']
     n_samples = samples.shape[0]
-    if settings.n_samples_max is None:
+    n_samples_max = copy.deepcopy(settings.n_samples_max)
+    if n_samples_max is None:
         # estimate number of likelihood calls available
         n_samples_max = n_samples * (settings.nlive_const / settings.ninit)
-    else:
-        n_samples_max = settings.n_samples_max
     # Step 2: add samples wherever they are most useful
     # -------------------------------------------------
     while n_samples < n_samples_max:
@@ -380,6 +386,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
         return p_importance(run_dict['theta'], w_relative,
                             tuned_dynamic_p=settings.tuned_dynamic_p)
     else:
+        print(settings.dynamic_goal)
         imp_z = z_importance(w_relative, run_dict['nlive_array'])
         imp_p = p_importance(run_dict['theta'], w_relative,
                              tuned_dynamic_p=settings.tuned_dynamic_p)

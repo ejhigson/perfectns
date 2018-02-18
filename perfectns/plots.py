@@ -330,11 +330,7 @@ def plot_parameter_logx_diagram(settings, ftheta, **kwargs):
     weight.set_xlim([logx_min, 0])
     w_patch = matplotlib.patches.Patch(color=darkred,
                                        label='relative posterior mass')
-    if settings.n_dim <= 4:
-        w_loc = 2
-    else:
-        w_loc = 1
-    weight.legend(handles=[w_patch], loc=w_loc)
+    weight.legend(handles=[w_patch], loc=2 if settings.n_dim <= 4 else 1)
     # plot contours
     # -------------
     y_setup = np.linspace(ymin, ymax, num=y_points)
@@ -449,6 +445,7 @@ def cdf_given_logx(estimator, value, logx, settings):
     -------
     cdf: numpy array of same size and shape as value and logx
     """
+    assert value.shape == logx.shape
     if estimator.__class__.__name__ == 'ParamMean':
         # From the sampling errors paper (Higson 2017) Section 4 the cdf of
         # p1^2 is a beta distribution

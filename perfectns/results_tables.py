@@ -51,6 +51,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     run_random_seeds: list, optional
         list of random seeds to use for generating runs.
     parallelise: bool, optional
+    cache_dir: str, optional
+        Directory to use for caching.
     tuned_dynamic_ps: list of bools, same length as dynamic_goals_in, optional
     max_workers: int or None, optional
         Number of processes.
@@ -85,18 +87,20 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     """
     load = kwargs.pop('load', False)
     save = kwargs.pop('save', False)
-    save_dir = kwargs.pop('save_dir', 'data')
     max_workers = kwargs.pop('max_workers', None)
     parallelise = kwargs.pop('parallelise', True)
-    # Add a standard nested sampling run for comparison:
-    dynamic_goals = [None] + dynamic_goals_in
+    cache_dir = kwargs.pop('cache_dir', 'cache/')
+    overwrite_existing = kwargs.pop('overwrite_existing', True)
+    run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
+    tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
+                                  [False] * len(dynamic_goals_in))
+    assert len(tuned_dynamic_ps) == len(dynamic_goals_in)
     for goal in dynamic_goals_in:
         assert goal is not None, \
             'Goals should be dynamic - standard NS already included'
-    tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
-                                  [False] * len(dynamic_goals))
-    overwrite_existing = kwargs.pop('overwrite_existing', True)
-    run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
+    # Add a standard nested sampling run for comparison:
+    dynamic_goals = [None] + dynamic_goals_in
+    tuned_dynamic_ps = [False] + tuned_dynamic_ps
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # Make a copy of the input settings to stop us editing them
@@ -107,7 +111,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         save_root += '_' + str(dg)
     save_root += '_' + settings.save_name(include_dg=False)
     save_root += '_' + str(n_run) + 'reps'
-    save_file = save_dir + '/' + save_root + '.pkl'
+    save_file = cache_dir + save_root + '.pkl'
     # try loading results
     if load:
         try:
@@ -122,8 +126,6 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     estimator_list = [e.CountSamples()] + estimator_list_in
     est_names = [est.latex_name for est in estimator_list]
     df_dict = {}
-    if type(settings.prior).__name__ == 'gaussian_cached':
-        settings.prior.check_cache(settings.n_dim)
     method_names = []
     assert dynamic_goals[0] is None, \
         'Need to start with standard ns to calculate efficiency gains'
@@ -160,6 +162,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                    random_seeds=run_random_seeds,
                                    load=load, save=save,
                                    max_workers=max_workers,
+                                   cache_dir=cache_dir,
                                    overwrite_existing=overwrite_existing)
         values_list = pu.parallel_apply(ar.run_estimators, run_list,
                                         func_args=(estimator_list,),
@@ -224,6 +227,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     save: bool, optional
         should run data and results be saved?
     parallelise: bool, optional
+    cache_dir: str, optional
+        Directory to use for caching.
     add_sim_method: bool, optional
         should we also calculate standard deviations using the simulated
         weights method for comparison with bootstrap resampling? This method is
@@ -277,9 +282,9 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     load = kwargs.pop('load', False)
     save = kwargs.pop('save', False)
     max_workers = kwargs.pop('max_workers', None)
-    save_dir = kwargs.pop('save_dir', 'data')
     ninit_sep = kwargs.pop('ninit_sep', True)
     parallelise = kwargs.pop('parallelise', True)
+    cache_dir = kwargs.pop('cache_dir', 'cache/')
     add_sim_method = kwargs.pop('add_sim_method', False)
     n_simulate_ci = kwargs.pop('n_simulate_ci', n_simulate)
     n_run_ci = kwargs.pop('n_run_ci', n_run)
@@ -291,7 +296,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                  str(ninit_sep) + 'sep')
     save_root += settings.save_name()
     save_root += '_' + str(n_run) + 'reps'
-    save_file = save_dir + '/' + save_root + '.pkl'
+    save_file = cache_dir + save_root + '.pkl'
     # try loading results
     if load:
         try:
@@ -304,6 +309,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     est_names = [est.name for est in estimator_list]
     # generate runs
     run_list = ns.get_run_data(settings, n_run, save=save, load=load,
+                               cache_dir=cache_dir,
                                max_workers=max_workers,
                                parallelise=parallelise)
     # # Add true values to check numbers are correct - these
