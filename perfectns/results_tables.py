@@ -11,6 +11,7 @@ import numpy as np
 import nestcheck.io_utils as iou
 import nestcheck.analyse_run as ar
 import nestcheck.parallel_utils as pu
+import nestcheck.pandas_functions as pf
 import perfectns.nested_sampling as ns
 import perfectns.maths_functions as mf
 import perfectns.estimators as e
@@ -87,17 +88,16 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     save_dir = kwargs.pop('save_dir', 'data')
     max_workers = kwargs.pop('max_workers', None)
     parallelise = kwargs.pop('parallelise', True)
-    tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps', None)
+    # Add a standard nested sampling run for comparison:
+    dynamic_goals = [None] + dynamic_goals_in
+    tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
+                                  [False] * len(dynamic_goals))
     overwrite_existing = kwargs.pop('overwrite_existing', True)
     run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # Make a copy of the input settings to stop us editing them
     settings = copy.deepcopy(settings_in)
-    # First we run a standard nested sampling run for comparison:
-    dynamic_goals = [None] + dynamic_goals_in
-    if tuned_dynamic_ps is not None:
-        tuned_dynamic_ps = [False] + tuned_dynamic_ps
     # make save_name
     save_root = 'dynamic_test'
     for dg in dynamic_goals:
@@ -121,15 +121,13 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     for func in estimator_list:
         func_names.append(func.name)
     df_dict = {}
-    values_list = []
     if type(settings.prior).__name__ == 'gaussian_cached':
         settings.prior.check_cache(settings.n_dim)
     method_names = []
     for i, dynamic_goal in enumerate(dynamic_goals):
         # set up settings
         settings.dynamic_goal = dynamic_goal
-        if tuned_dynamic_ps is not None:
-            settings.tuned_dynamic_p = tuned_dynamic_ps[i]
+        settings.tuned_dynamic_p = tuned_dynamic_ps[i]
         print('dynamic_goal = ' + str(settings.dynamic_goal))
         # if we have already done the standard calculation, set n_samples_max
         # for dynamic calculations so it is slightly smaller than the number
@@ -138,7 +136,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         # more samples than standard nested sampling as it does not terminate
         # until after the number of samples is greater than n_samples_max.
         if settings.dynamic_goal is not None and 'standard' in df_dict:
-            n_samples_max = df_dict['standard'].loc['mean', 'n_samples']
+            n_samples_max = df_dict['standard'].loc[('mean', 'value'),
+                                                    'n_samples']
             # This factor is a function of the dynamic goal as typically
             # evidence calculations have longer additional threads than
             # parameter estimation calculations.
@@ -149,7 +148,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         if dynamic_goal is None:
             method_names.append('standard')
         else:
-            method_names.append('dynamic ' + str(settings.dynamic_goal))
+            method_names.append('dynamic $G=' +
+                                str(settings.dynamic_goal) + '$')
             if settings.tuned_dynamic_p is True:
                 method_names[-1] += ' tuned'
         # generate runs and get results
@@ -158,68 +158,74 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                    load=load, save=save,
                                    max_workers=max_workers,
                                    overwrite_existing=overwrite_existing)
-        values = pu.parallel_apply(ar.run_estimators, run_list,
-                                   func_args=(estimator_list,),
-                                   max_workers=max_workers,
-                                   parallelise=parallelise)
-        # convert list into numpy array
-        values = np.stack(values, axis=1)
-        assert values.shape == (len(estimator_list), len(run_list))
-        df = mf.get_df_row_summary(values, func_names)
-        df_dict[method_names[-1]] = df
-        values_list.append(values)
+        values_list = pu.parallel_apply(ar.run_estimators, run_list,
+                                        func_args=(estimator_list,),
+                                        max_workers=max_workers,
+                                        parallelise=parallelise)
+        df_dict[method_names[-1]] = pf.summary_df_from_list(
+            values_list, [est.name for est in estimator_list])
         del run_list
-    # analyse data
-    # ------------
-    # find performance gain (proportional to ratio of errors squared)
-    for key, df in df_dict.items():
-        std_ratio = df_dict['standard'].loc['std'] / df.loc['std']
-        std_ratio_unc = mf.array_ratio_std(df_dict['standard'].loc['std'],
-                                           df_dict['standard'].loc['std_unc'],
-                                           df.loc['std'],
-                                           df.loc['std_unc'])
-        df_dict[key].loc['efficiency gain'] = std_ratio ** 2
-        df_dict[key].loc['efficiency gain_unc'] = 2 * std_ratio * std_ratio_unc
-        # We want to see the number of samples (not its std or gain), so set
-        # every row of n_samples column equal to the mean number of samples
-        df_dict[key].loc['std', 'n_samples'] = df.loc['mean', 'n_samples']
-        df_dict[key].loc['efficiency gain', 'n_samples'] = df.loc['mean',
-                                                                  'n_samples']
-    for key, df in df_dict.items():
-        # make uncertainties appear in separate columns
-        df_dict[key] = mf.df_unc_rows_to_cols(df)
-        # Delete uncertainty on mean number of samples as not interested in it
-        del df_dict[key]['n_samples_unc']
-        # edit keys to show method names
-        df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
-    # Combine all results into one data frame
-    results = pd.concat(df_dict.values())
-    # Get true values to test that nested sampling is working correctly - the
-    # mean calculation values should be close to these
-    true_values = e.get_true_estimator_values(estimator_list, settings)
-    for est in estimator_list:
-        true_values[est.name + '_unc'] = 0
-    # Get the correct column order before concatenating true_values otherwise
-    # column order is messed up
-    col_order = list(results)
-    col_order.insert(0, col_order.pop(col_order.index('n_samples')))
-    # add true values and reorder
-    results = pd.concat((results, true_values))
-    results = results.loc[:, col_order]
-    # Sort the rows into the order we want for the paper
-    row_order = ['true values']
-    for pref in ['mean', 'std', 'efficiency gain']:
-        for name in method_names:
-            row_order.append(pref + ' ' + name)
-    results = results.reindex(row_order)
-    # get rid of the 'efficiency gain standard' row as it compares standard
-    # nested sampling to its self and so always has value 1.
-    results.drop('efficiency gain standard', inplace=True)
+    results = pd.concat(df_dict)
+    results.index.rename('dynamic settings', level=0, inplace=True)
+    # Add efficiency gains:
+    for dg in list(set(results.index.get_level_values(0))):
+        if dg != 'standard':
+            std_ratio = (results.loc[('standard', 'std', 'value')] /
+                         results.loc[(dg, 'std', 'value')])
+            std_ratio_unc = mf.array_ratio_std(
+                results.loc[('standard', 'std', 'value')],
+                results.loc[('standard', 'std', 'uncertainty')],
+                results.loc[(dg, 'std', 'value')],
+                results.loc[(dg, 'std', 'uncertainty')])
+            results.loc[(dg, 'efficiency gain', 'value'), :] = std_ratio ** 2
+            results.loc[(dg, 'efficiency gain', 'uncertainty'), :] = \
+                2 * std_ratio * std_ratio_unc
+    new_ind = []
+    new_ind.append(pd.CategoricalIndex(
+        results.index.get_level_values('calculation type'), ordered=True,
+        categories=['mean', 'std', 'efficiency gain']))
+    new_ind.append(pd.CategoricalIndex(
+        results.index.get_level_values('dynamic settings'),
+        ordered=True, categories=method_names))
+    new_ind.append(results.index.get_level_values('result type'))
+    results.set_index(new_ind, inplace=True)
+    results.sort_index(inplace=True)
     if save:
         # save the results data frame
         print('get_dynamic_results: saving results to\n' + save_file)
         results.to_pickle(save_file)
     return results
+    # # We want to see the number of samples (not its std or gain), so set
+    # # every row of n_samples column equal to the mean number of samples
+    # df_dict[key].loc['std', 'n_samples'] = df.loc['mean', 'n_samples']
+    # df_dict[key].loc['efficiency gain', 'n_samples'] = df.loc['mean',
+    #                                                           'n_samples']
+    # for key, df in df_dict.items():
+    #     # make uncertainties appear in separate columns
+    #     df_dict[key] = mf.df_unc_rows_to_cols(df)
+    #     # # Delete uncertainty on mean number of samples as not interesting
+    #     # del df_dict[key]['n_samples_unc']
+    #     # edit keys to show method names
+    #     df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
+    # Combine all results into one data frame
+    # Get true values to test that nested sampling is working correctly - the
+    # mean calculation values should be close to these
+    # true_values = e.get_true_estimator_values(estimator_list, settings)
+    # for est in estimator_list:
+    #     true_values[est.name + '_unc'] = 0
+    # # Get the correct column order before concatenating true_values otherwise
+    # # column order is messed up
+    # col_order = list(results)
+    # col_order.insert(0, col_order.pop(col_order.index('n_samples')))
+    # # add true values and reorder
+    # results = pd.concat((results, true_values))
+    # results = results.loc[:, col_order]
+    # Sort the rows into the order we want for the paper
+    # row_order = ['true values']
+    # for pref in ['mean', 'std', 'efficiency gain']:
+    #     for name in method_names:
+    #         row_order.append(pref + ' ' + name)
+    # results = results.reindex(row_order)
 
 
 @iou.timing_decorator
