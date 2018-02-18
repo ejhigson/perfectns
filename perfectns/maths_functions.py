@@ -265,9 +265,6 @@ def r_given_log_cauchy(logl, sigma, n_dim):
     return np.sqrt(r_squared)
 
 
-# Stats functions:
-
-
 def get_df_row_summary(results_array, row_names):
     """
     Make a panda data frame of the mean and std devs of a table of results.

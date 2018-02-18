@@ -70,15 +70,8 @@ class TestPerfectNS(unittest.TestCase):
                                                self.settings,
                                                load=False,
                                                parallelise=True)
-        # The first row of the table contains analytic calculations of the
-        # estimators' values given the likelihood and prior. These are not
-        # available for RCred.
-        for est in self.estimator_list:
-            if est.name != e.RCred(0.84).name:
-                self.assertTrue(~np.isnan(dynamic_table.loc['true values',
-                                                            est.name]))
         # None of the other values in the table should be NaN:
-        self.assertFalse(np.any(np.isnan(dynamic_table.values[1:, :])))
+        self.assertFalse(np.any(np.isnan(dynamic_table.values)))
 
     def test_bootstrap_results_table(self):
         """

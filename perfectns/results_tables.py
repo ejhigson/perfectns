@@ -117,9 +117,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     # --------------
     # get info on the number of samples taken in each run as well
     estimator_list = [e.CountSamples()] + estimator_list_in
-    func_names = []
-    for func in estimator_list:
-        func_names.append(func.name)
+    est_names = [est.latex_name for est in estimator_list]
     df_dict = {}
     if type(settings.prior).__name__ == 'gaussian_cached':
         settings.prior.check_cache(settings.n_dim)
@@ -137,7 +135,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         # until after the number of samples is greater than n_samples_max.
         if settings.dynamic_goal is not None and 'standard' in df_dict:
             n_samples_max = df_dict['standard'].loc[('mean', 'value'),
-                                                    'n_samples']
+                                                    est_names[0]]
             # This factor is a function of the dynamic goal as typically
             # evidence calculations have longer additional threads than
             # parameter estimation calculations.
@@ -162,8 +160,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                         func_args=(estimator_list,),
                                         max_workers=max_workers,
                                         parallelise=parallelise)
-        df_dict[method_names[-1]] = pf.summary_df_from_list(
-            values_list, [est.name for est in estimator_list])
+        df_dict[method_names[-1]] = pf.summary_df_from_list(values_list,
+                                                            est_names)
         del run_list
     results = pd.concat(df_dict)
     results.index.rename('dynamic settings', level=0, inplace=True)
@@ -195,37 +193,6 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         print('get_dynamic_results: saving results to\n' + save_file)
         results.to_pickle(save_file)
     return results
-    # # We want to see the number of samples (not its std or gain), so set
-    # # every row of n_samples column equal to the mean number of samples
-    # df_dict[key].loc['std', 'n_samples'] = df.loc['mean', 'n_samples']
-    # df_dict[key].loc['efficiency gain', 'n_samples'] = df.loc['mean',
-    #                                                           'n_samples']
-    # for key, df in df_dict.items():
-    #     # make uncertainties appear in separate columns
-    #     df_dict[key] = mf.df_unc_rows_to_cols(df)
-    #     # # Delete uncertainty on mean number of samples as not interesting
-    #     # del df_dict[key]['n_samples_unc']
-    #     # edit keys to show method names
-    #     df_dict[key] = df_dict[key].set_index(df_dict[key].index + ' ' + key)
-    # Combine all results into one data frame
-    # Get true values to test that nested sampling is working correctly - the
-    # mean calculation values should be close to these
-    # true_values = e.get_true_estimator_values(estimator_list, settings)
-    # for est in estimator_list:
-    #     true_values[est.name + '_unc'] = 0
-    # # Get the correct column order before concatenating true_values otherwise
-    # # column order is messed up
-    # col_order = list(results)
-    # col_order.insert(0, col_order.pop(col_order.index('n_samples')))
-    # # add true values and reorder
-    # results = pd.concat((results, true_values))
-    # results = results.loc[:, col_order]
-    # Sort the rows into the order we want for the paper
-    # row_order = ['true values']
-    # for pref in ['mean', 'std', 'efficiency gain']:
-    #     for name in method_names:
-    #         row_order.append(pref + ' ' + name)
-    # results = results.reindex(row_order)
 
 
 @iou.timing_decorator
@@ -331,51 +298,50 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         except OSError:
             pass
     # start function
-    e_names = []
-    for est in estimator_list:
-        e_names.append(est.name)
+    est_names = [est.name for est in estimator_list]
     # generate runs
     run_list = ns.get_run_data(settings, n_run, save=save, load=load,
                                max_workers=max_workers,
                                parallelise=parallelise)
-    # Add true values to test that nested sampling is working correctly - these
-    # should be close to the mean calculation values
-    results = e.get_true_estimator_values(estimator_list, settings)
-    results.loc['true values_unc'] = 0
+    # # Add true values to check numbers are correct - these
+    # # should be close to the mean calculation values
+    # results = e.get_true_estimator_values(estimator_list, settings)
+    # results.loc['true values_unc'] = 0
     # get mean and std of repeated calculations
     rep_values = pu.parallel_apply(ar.run_estimators, run_list,
                                    func_args=(estimator_list,),
                                    max_workers=max_workers,
                                    parallelise=parallelise)
-    # convert list into numpy array
-    rep_values = np.stack(rep_values, axis=1)
-    assert rep_values.shape == (len(estimator_list), len(run_list))
-    rep_df = mf.get_df_row_summary(rep_values, e_names)
-    results = results.append(rep_df.set_index('repeats ' +
-                                              rep_df.index.astype(str)))
+    results = pf.summary_df_from_list(rep_values, est_names)
+    new_index = ['repeats ' +
+                 results.index.get_level_values('calculation type'),
+                 results.index.get_level_values('result type')]
+    results.set_index(new_index, inplace=True)
+    results.index.rename('calculation type', level=0, inplace=True)
     # get bootstrap std estimate
     bs_values = pu.parallel_apply(ar.run_std_bootstrap, run_list,
                                   func_args=(estimator_list,),
                                   func_kwargs={'n_simulate': n_simulate},
                                   max_workers=max_workers,
                                   parallelise=parallelise)
-    bs_values = np.stack(bs_values, axis=1)
-    assert bs_values.shape == (len(estimator_list), len(run_list))
-    bs_df = mf.get_df_row_summary(bs_values, e_names)
+    bs_df = pf.summary_df_from_list(bs_values, est_names)
     # Get the mean bootstrap std estimate as a fraction of the std measured
     # from repeated calculations.
-    results.loc['bs std / repeats std'] = (bs_df.loc['mean'] /
-                                           results.loc['repeats std'])
-    bs_std_ratio_unc = mf.array_ratio_std(bs_df.loc['mean'],
-                                          bs_df.loc['mean_unc'],
-                                          results.loc['repeats std'],
-                                          results.loc['repeats std_unc'])
-    results.loc['bs std / repeats std_unc'] = bs_std_ratio_unc
+    results.loc[('bs std / repeats std', 'value'), :] = \
+        (bs_df.loc[('mean', 'value')] / results.loc[('repeats std', 'value')])
+    bs_std_ratio_unc = mf.array_ratio_std(
+        bs_df.loc[('mean', 'value')],
+        bs_df.loc[('mean', 'uncertainty')],
+        results.loc[('repeats std', 'value')],
+        results.loc[('repeats std', 'uncertainty')])
+    results.loc[('bs std / repeats std', 'uncertainty'), :] = \
+        bs_std_ratio_unc
+    # Get the fractional variation of std estimates
     # multiply by 100 to express as a percentage
-    results.loc['bs estimate % variation'] = 100 * (bs_df.loc['std'] /
-                                                    bs_df.loc['mean'])
-    results.loc['bs estimate % variation_unc'] = 100 * (bs_df.loc['std_unc'] /
-                                                        bs_df.loc['mean'])
+    results.loc[('bs estimate % variation', 'value'), :] = \
+        100 * bs_df.loc[('std', 'value')] / bs_df.loc[('mean', 'value')]
+    results.loc[('bs estimate % variation', 'uncertainty'), :] = \
+        100 * bs_df.loc[('std', 'uncertainty')] / bs_df.loc[('mean', 'value')]
     if add_sim_method:
         # get std from simulation estimate
         sim_values = pu.parallel_apply(ar.run_std_simulate, run_list,
@@ -383,23 +349,26 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                        func_kwargs={'n_simulate': n_simulate},
                                        max_workers=max_workers,
                                        parallelise=parallelise)
-        sim_values = np.stack(sim_values, axis=1)
-        assert sim_values.shape == (len(estimator_list), len(run_list))
-        sim_df = mf.get_df_row_summary(sim_values, e_names)
-        # get mean simulation std estimate a ratio to the std from repeats
-        results.loc['sim std / repeats std'] = (sim_df.loc['mean'] /
-                                                results.loc['repeats std'])
-        sim_std_ratio_unc = mf.array_ratio_std(sim_df.loc['mean'],
-                                               sim_df.loc['mean_unc'],
-                                               results.loc['repeats std'],
-                                               results.loc['repeats std_unc'])
-        results.loc['sim std / repeats std_unc'] = sim_std_ratio_unc
-        # multiply by 100 to express as a percentage
-        results.loc['sim estimate % variation'] = 100 * (sim_df.loc['std'] /
-                                                         sim_df.loc['mean'])
-        results.loc['sim estimate % variation_unc'] = (100 *
-                                                       sim_df.loc['std_unc'] /
-                                                       sim_df.loc['mean'])
+        sim_df = pf.summary_df_from_list(sim_values, est_names)
+        # Get the mean simulation std estimate as a fraction of the std
+        # measured from repeated calculations.
+        results.loc[('sim std / repeats std', 'value'), :] = \
+            (sim_df.loc[('mean', 'value')] /
+             results.loc[('repeats std', 'value')])
+        sim_std_ratio_unc = mf.array_ratio_std(
+            sim_df.loc[('mean', 'value')],
+            sim_df.loc[('mean', 'uncertainty')],
+            results.loc[('repeats std', 'value')],
+            results.loc[('repeats std', 'uncertainty')])
+        results.loc[('sim std / repeats std', 'uncertainty'), :] = \
+            sim_std_ratio_unc
+        # Get the fractional variation of std estimates
+        # Multiply by 100 to express as a percentage
+        results.loc[('sim estimate % variation', 'value'), :] = \
+            100 * sim_df.loc[('std', 'value')] / sim_df.loc[('mean', 'value')]
+        results.loc[('sim estimate % variation', 'uncertainty'), :] = \
+            (100 * sim_df.loc[('std', 'uncertainty')] /
+             sim_df.loc[('mean', 'value')])
     # get bootstrap CI estimates
     bs_cis = pu.parallel_apply(ar.run_ci_bootstrap, run_list[:n_run_ci],
                                func_args=(estimator_list,),
@@ -407,34 +376,34 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                             'cred_int': cred_int},
                                max_workers=max_workers,
                                parallelise=parallelise)
-    bs_cis = np.stack(bs_cis, axis=1)
-    assert bs_cis.shape == (len(estimator_list), n_run_ci)
-    bs_ci_df = mf.get_df_row_summary(bs_cis, e_names)
-    results.loc['bs ' + str(cred_int) + ' CI'] = bs_ci_df.loc['mean']
-    results.loc['bs ' + str(cred_int) + ' CI_unc'] = bs_ci_df.loc['mean_unc']
+    bs_ci_df = pf.summary_df_from_list(bs_cis, est_names)
+    results.loc[('bs ' + str(cred_int) + ' CI', 'value'), :] = \
+        bs_ci_df.loc[('mean', 'value')]
+    results.loc[('bs ' + str(cred_int) + ' CI', 'uncertainty'), :] = \
+        bs_ci_df.loc[('mean', 'uncertainty')]
     # add coverage for +- 1 bootstrap std estimate
-    max_value = rep_df.loc['mean'].values + bs_df.loc['mean'].values
-    min_value = rep_df.loc['mean'].values - bs_df.loc['mean'].values
-    coverage = np.zeros(rep_values.shape[0])
+    max_value = (results.loc[('repeats mean', 'value')].values
+                 + bs_df.loc[('mean', 'value')].values)
+    min_value = (results.loc[('repeats mean', 'value')].values
+                 - bs_df.loc[('mean', 'value')].values)
+    rep_values_array = np.stack(rep_values, axis=1)
+    assert rep_values_array.shape == (len(estimator_list), n_run)
+    coverage = np.zeros(rep_values_array.shape[0])
     for i, _ in enumerate(coverage):
-        ind = np.where((rep_values[i, :] > min_value[i]) &
-                       (rep_values[i, :] < max_value[i]))
-        coverage[i] = ind[0].shape[0] / rep_values.shape[1]
+        ind = np.where((rep_values_array[i, :] > min_value[i]) &
+                       (rep_values_array[i, :] < max_value[i]))
+        coverage[i] = ind[0].shape[0] / rep_values_array.shape[1]
     # multiply by 100 to express as a percentage
-    results.loc['bs +-1std % coverage'] = coverage * 100
-    # set uncertainty on empirical measurement of coverage to zero
-    results.loc['bs +-1std % coverage_unc'] = 0
+    results.loc[('bs +-1std % coverage', 'value'), :] = coverage * 100
     # add credible interval coverage
-    max_value = results.loc['bs ' + str(cred_int) + ' CI'].values
-    ci_coverage = np.zeros(rep_values.shape[0])
+    max_value = results.loc[('bs ' + str(cred_int) + ' CI', 'value')].values
+    ci_coverage = np.zeros(len(estimator_list))
     for i, _ in enumerate(coverage):
-        ind = np.where(rep_values[i, :] < max_value[i])
-        ci_coverage[i] = ind[0].shape[0] / rep_values.shape[1]
+        ind = np.where(rep_values_array[i, :] < max_value[i])
+        ci_coverage[i] = ind[0].shape[0] / rep_values_array.shape[1]
     # multiply by 100 to express as a percentage
-    results.loc['bs ' + str(cred_int) + ' CI % coverage'] = ci_coverage * 100
-    # set uncertainty on empirical measurement of coverage to zero
-    results.loc['bs ' + str(cred_int) + ' CI % coverage_unc'] = 0
-    results = mf.df_unc_rows_to_cols(results)
+    results.loc[('bs ' + str(cred_int) + ' CI % coverage', 'value'), :] = \
+        (ci_coverage * 100)
     if save:
         # save the results data frame
         print('get_bootstrap_results: results saved to\n' + save_file)
