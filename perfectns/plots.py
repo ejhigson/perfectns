@@ -389,8 +389,7 @@ def plot_parameter_logx_diagram(settings, ftheta, **kwargs):
                             linewidths=contour_linewidths,
                             levels=contour_line_levels, vmin=0, vmax=max_sigma)
     # add the posterior expectation if it exists
-    true_values_df = e.get_true_estimator_values([ftheta], settings)
-    posterior_mean = true_values_df.loc['true values', ftheta.name]
+    posterior_mean = e.get_true_estimator_values(ftheta, settings)
     if not np.isnan(posterior_mean):
         fgivenx.plot([logx_min, 0], [posterior_mean, posterior_mean],
                      color='k', linestyle=':', dashes=(0.5, 1), linewidth=1,

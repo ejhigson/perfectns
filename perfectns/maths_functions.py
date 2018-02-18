@@ -5,7 +5,6 @@ Generic mathematical functions.
 
 
 import numpy as np
-import pandas as pd
 import scipy
 import scipy.stats
 import scipy.special
@@ -263,75 +262,6 @@ def r_given_log_cauchy(logl, sigma, n_dim):
     exponent = np.exp(exponent) - 1.0
     r_squared = exponent * (sigma ** 2)
     return np.sqrt(r_squared)
-
-
-def get_df_row_summary(results_array, row_names):
-    """
-    Make a panda data frame of the mean and std devs of a table of results.
-    """
-    assert results_array.shape[0] == len(row_names)
-    means = []
-    stds = []
-    for i in range(results_array.shape[0]):
-        means.append(np.mean(results_array[i, :]))
-        # use ddof=1 to specify that this is a sample standard deviation
-        stds.append(np.std(results_array[i, :], ddof=1))
-    # make the data frame
-    df = pd.DataFrame([means, stds], columns=row_names, index=['mean', 'std'])
-    # add uncertainties
-    num_cals = results_array.shape[1]
-    mean_unc = df.loc['std'] / np.sqrt(num_cals)
-    std_unc = df.loc['std'] * np.sqrt(1 / (2 * (num_cals - 1)))
-    df.loc['mean_unc'] = mean_unc
-    df.loc['std_unc'] = std_unc
-    return df
-
-
-def df_unc_rows_to_cols(df_in):
-    """
-    Transforms a pandas data frame with uncertainties stored in extra rows
-    (with row names suffixed with '_unc' to one with uncertainties sorted in
-    columns (suffixed with '_unc').
-
-    I.e. data frame of the form
-
-            cI   cII  cIII
-    rA
-    rA_unc
-    rB
-    rB_unc
-
-    is transformed to the form
-
-            cI   cI_unc   cII   cII_unc   cIII   cIII_unc
-    rA
-    rB
-    """
-    row_names = []
-    unc_names = []
-    for name in list(df_in.index.values):
-        if name[-4:] != '_unc':
-            row_names.append(name)
-        else:
-            unc_names.append(name)
-    df_values = df_in.loc[row_names]
-    df_uncs = df_in.loc[unc_names]
-    # strip '_unc' suffix from row indexes
-    df_uncs.rename(lambda s: s[:-4], inplace=True)
-    # add '_unc' suffix to columns containing uncertainties
-    df_uncs = df_uncs.add_suffix('_unc')
-    # Join values and uncertainties (if uncertainties not provided they are
-    # listed as NaN
-    df_out = pd.concat([df_values, df_uncs], axis=1)
-    # put columns of joined data frame in right order
-    col_in = list(df_in)
-    col_out = []
-    for c in col_in:
-        col_out.append(c)
-        col_out.append(c + '_unc')
-    df_out = df_out[col_out]
-    # return df_out with rows in same order as input
-    return df_out.loc[row_names]
 
 
 def array_ratio_std(values_n, sigmas_n, values_d, sigmas_d):

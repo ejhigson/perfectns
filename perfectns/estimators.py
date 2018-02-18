@@ -26,7 +26,6 @@ Estimators should also contain class variables:
 """
 
 import numpy as np
-import pandas as pd
 import scipy
 import perfectns.maths_functions as mf
 
@@ -292,25 +291,35 @@ class ParamSquaredMean:
 # ----------------------------------------
 
 
-def get_true_estimator_values(estimator_list, settings):
+def get_true_estimator_values(estimators, settings):
     """
-    Return a pandas data frame of the correct values for the estimators in
-    estimator_list given the likelihood and prior in settings. If there is no
-    method for calculating the values set up yet they are set to np.nan.
+    Calculates analytic values for estimators given the likelihood and
+    prior in settings. If there is no method for calculating the values
+    then np.nan is returned.
 
-    Preserves the order of the input estimators in the data frame columns.
+    Parameters
+    ----------
+    estimators: estimator object or list of estimator objects
+    settings: PerfectNSSettings object
+
+    Returns:
+    --------
+    output: np.array of size (len(estimators),) if estimators is a list, float
+        otherwise.
     """
-    output = {}
-    ordered_cols = []
-    for est in estimator_list:
-        ordered_cols.append(est.name)
+    if isinstance(estimators, list):
+        output = np.zeros(len(estimators))
+        for i, est in enumerate(estimators):
+            try:
+                output[i] = est.analytical(settings)
+            except (AttributeError, AssertionError):
+                output[i] = np.nan
+        return output
+    else:
         try:
-            output[est.name] = est.analytical(settings)
+            return estimators.analytical(settings)
         except (AttributeError, AssertionError):
-            output[est.name] = np.nan
-    df = pd.DataFrame(output, index=['true values'])
-    df = df[ordered_cols]  # needed to have columns correct order
-    return df
+            return np.nan
 
 
 def check_by_integrating(ftilde, settings):

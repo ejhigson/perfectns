@@ -90,6 +90,9 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     parallelise = kwargs.pop('parallelise', True)
     # Add a standard nested sampling run for comparison:
     dynamic_goals = [None] + dynamic_goals_in
+    for goal in dynamic_goals_in:
+        assert goal is not None, \
+            'Goals should be dynamic - standard NS already included'
     tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
                                   [False] * len(dynamic_goals))
     overwrite_existing = kwargs.pop('overwrite_existing', True)
@@ -100,7 +103,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     settings = copy.deepcopy(settings_in)
     # make save_name
     save_root = 'dynamic_test'
-    for dg in dynamic_goals:
+    for dg in dynamic_goals_in:
         save_root += '_' + str(dg)
     save_root += '_' + settings.save_name(include_dg=False)
     save_root += '_' + str(n_run) + 'reps'
@@ -122,6 +125,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     if type(settings.prior).__name__ == 'gaussian_cached':
         settings.prior.check_cache(settings.n_dim)
     method_names = []
+    assert dynamic_goals[0] is None, \
+        'Need to start with standard ns to calculate efficiency gains'
     for i, dynamic_goal in enumerate(dynamic_goals):
         # set up settings
         settings.dynamic_goal = dynamic_goal
@@ -160,24 +165,22 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                         func_args=(estimator_list,),
                                         max_workers=max_workers,
                                         parallelise=parallelise)
-        df_dict[method_names[-1]] = pf.summary_df_from_list(values_list,
-                                                            est_names)
-        del run_list
+        df = pf.summary_df_from_list(values_list, est_names)
+        if dynamic_goal is not None:
+            # Calculate efficiency gain vs standard ns
+            std_ratio = (df_dict['standard'].loc[('std', 'value')]
+                         / df.loc[('std', 'value')])
+            std_ratio_unc = mf.array_ratio_std(
+                df_dict['standard'].loc[('std', 'value')],
+                df_dict['standard'].loc[('std', 'uncertainty')],
+                df.loc[('std', 'value')],
+                df.loc[('std', 'uncertainty')])
+            df.loc[('efficiency gain', 'value'), :] = std_ratio ** 2
+            df.loc[('efficiency gain', 'uncertainty'), :] = \
+                2 * std_ratio * std_ratio_unc
+        df_dict[method_names[-1]] = df
     results = pd.concat(df_dict)
     results.index.rename('dynamic settings', level=0, inplace=True)
-    # Add efficiency gains:
-    for dg in list(set(results.index.get_level_values(0))):
-        if dg != 'standard':
-            std_ratio = (results.loc[('standard', 'std', 'value')] /
-                         results.loc[(dg, 'std', 'value')])
-            std_ratio_unc = mf.array_ratio_std(
-                results.loc[('standard', 'std', 'value')],
-                results.loc[('standard', 'std', 'uncertainty')],
-                results.loc[(dg, 'std', 'value')],
-                results.loc[(dg, 'std', 'uncertainty')])
-            results.loc[(dg, 'efficiency gain', 'value'), :] = std_ratio ** 2
-            results.loc[(dg, 'efficiency gain', 'uncertainty'), :] = \
-                2 * std_ratio * std_ratio_unc
     new_ind = []
     new_ind.append(pd.CategoricalIndex(
         results.index.get_level_values('calculation type'), ordered=True,
