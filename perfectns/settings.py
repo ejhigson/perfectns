@@ -212,7 +212,7 @@ class PerfectNSSettings(object):
             settings_dict['prior_args'] = self.prior.__dict__
         return settings_dict
 
-    def save_name(self, include_dg=True):
+    def save_name(self, include_dg=True, include_samples_max=False):
         """
         Make a standard save name format for a given settings configoration.
         """
@@ -229,16 +229,25 @@ class PerfectNSSettings(object):
         save_name += '_' + type(self.prior).__name__
         save_name += '_' + str(self.prior.prior_scale)
         # Nested sampling settings
-        save_name += '_' + str(self.termination_fraction) + 'term'
         save_name += '_' + str(self.nlive_const) + 'nlive'
+        save_name += '_' + str(self.termination_fraction) + 'term'
+        if self.dims_to_sample != 1:
+            save_name += '_' + str(self.dims_to_sample) + 'dimsamp'
         if self.dynamic_goal is not None or include_dg is False:
             save_name += '_' + str(self.ninit) + 'ninit'
             if self.nbatch != 1:
                 save_name += '_' + str(self.nbatch) + 'nbatch'
-        if self.n_samples_max is not None and self.nlive_const is None:
-            save_name += '_' + str(self.n_samples_max) + 'sampmax'
+        if self.n_samples_max is not None and self.dynamic_goal is not None:
+            save_name += '_'
+            if self.nlive_const is None or include_samples_max:
+                # only when needed as otherwise get an annoying
+                # long number in names
+                save_name += str(self.n_samples_max)
+            save_name += 'sampmax'
         if self.tuned_dynamic_p is True and self.dynamic_goal is not None:
             save_name += '_tuned'
+        if self.dynamic_fraction != 0.9:
+            save_name += '_' + str(self.dynamic_fraction) + 'df'
         save_name = save_name.replace('.', '_')
         save_name = save_name.replace('-', '_')
         return save_name

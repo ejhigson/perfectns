@@ -137,7 +137,7 @@ def sample_nsphere_shells(r, n_dim, n_sample):
     sample_nsphere_shells_beta depending on the dimension and
     number of samples required.
     """
-    if n_dim >= 100 and n_sample == 1:
+    if n_dim >= 100 and n_sample <= 2:
         return sample_nsphere_shells_beta(r, n_dim, n_sample)
     else:
         return sample_nsphere_shells_normal(r, n_dim, n_sample)

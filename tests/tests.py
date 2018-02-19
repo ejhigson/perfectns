@@ -4,6 +4,7 @@ Test the perfectns module installation.
 """
 
 import os
+import shutil
 import unittest
 import copy
 import numpy as np
@@ -18,10 +19,6 @@ import perfectns.maths_functions
 import perfectns.priors as priors
 import perfectns.plots
 import nestcheck.analyse_run as ar
-import shutil
-# from matplotlib.testing.decorators import cleanup
-# import os
-# import nestcheck.io_utils as iou
 
 
 class TestPerfectNS(unittest.TestCase):
@@ -35,7 +32,10 @@ class TestPerfectNS(unittest.TestCase):
         so the tests run quickly.
         """
         self.cache_dir = 'cache_tests/'
-        assert not os.path.exists(self.cache_dir[:-1])
+        assert not os.path.exists(self.cache_dir[:-1]), \
+            ('Directory ' + self.cache_dir[:-1] + ' exists! Tests use this ' +
+             'dir to check caching then delete it afterwards, so the path ' +
+             'should be left empty.')
         self.estimator_list = [e.LogZ(),
                                e.Z(),
                                e.ParamMean(),
@@ -43,7 +43,6 @@ class TestPerfectNS(unittest.TestCase):
                                e.ParamCred(0.5),
                                e.ParamCred(0.84),
                                e.RMean(),
-                               # e.RMean(from_theta=True),
                                e.RCred(0.84)]
         self.settings = perfectns.settings.PerfectNSSettings()
         self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
@@ -53,42 +52,11 @@ class TestPerfectNS(unittest.TestCase):
         self.settings.dynamic_goal = None
 
     def tearDown(self):
+        # Remove any caches saved by the tests
         try:
             shutil.rmtree(self.cache_dir[:-1])
         except FileNotFoundError:
             pass
-
-    def test_estimators(self):
-        # Check analytic values
-        self.assertAlmostEqual(
-            e.get_true_estimator_values(e.LogZ(), self.settings),
-            -6.4529975832506050, places=10)
-        self.assertAlmostEqual(
-            e.get_true_estimator_values(e.Z(), self.settings),
-            1.5757915157613399e-03, places=10)
-        self.assertEqual(
-            e.get_true_estimator_values(e.ParamMean(), self.settings), 0)
-        self.assertAlmostEqual(
-            e.get_true_estimator_values(e.ParamSquaredMean(), self.settings),
-            9.9009851517647807e-01, places=10)
-        self.assertEqual(
-            e.get_true_estimator_values(e.ParamCred(0.5), self.settings), 0)
-        self.assertAlmostEqual(
-            e.get_true_estimator_values(e.ParamCred(0.84), self.settings),
-            9.8952257789120635e-01, places=10)
-        self.assertAlmostEqual(
-            e.get_true_estimator_values(e.RMean(), self.settings),
-            1.2470645289408879e+00, places=10)
-        self.assertTrue(np.isnan(
-            e.get_true_estimator_values(e.RCred(0.84), self.settings)))
-        self.assertTrue(np.isnan(
-            e.get_true_estimator_values([e.RCred(0.84)], self.settings)[0]))
-        # Check calculating the radius from theta: when points in theta have
-        # coordinates (1, 1) the radius should be sqrt(2)
-        self.assertEqual(e.RMean(from_theta=True)(
-            np.zeros(2), {'theta': np.full((2, 2), 1)}), np.sqrt(2))
-        # Check CountSamples estimator is working ok
-        self.assertEqual(e.CountSamples()(np.zeros(10), {}), 10)
 
     def test_dynamic_results_table(self):
         """
@@ -266,14 +234,50 @@ class TestPerfectNS(unittest.TestCase):
     def test_settings(self):
         self.assertRaises(
             TypeError, perfectns.settings.PerfectNSSettings, unexpected=0)
+        # check all the if statements in settings.save_name() for unusual
+        # settings
         settings = copy.deepcopy(self.settings)
         settings.dynamic_goal = 1
         settings.nbatch += 1
         settings.nlive_const = None
         settings.tuned_dynamic_p = True
         settings.n_samples_max = 100
+        settings.dynamic_fraction = 0.8
+        settings.dims_to_sample = 2
         settings.save_name()
         self.assertRaises(TypeError, settings.__setattr__, 'unexpected', 1)
+
+    def test_estimators(self):
+        # Check analytic values
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.LogZ(), self.settings),
+            -6.4529975832506050, places=10)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.Z(), self.settings),
+            1.5757915157613399e-03, places=10)
+        self.assertEqual(
+            e.get_true_estimator_values(e.ParamMean(), self.settings), 0)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.ParamSquaredMean(), self.settings),
+            9.9009851517647807e-01, places=10)
+        self.assertEqual(
+            e.get_true_estimator_values(e.ParamCred(0.5), self.settings), 0)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.ParamCred(0.84), self.settings),
+            9.8952257789120635e-01, places=10)
+        self.assertAlmostEqual(
+            e.get_true_estimator_values(e.RMean(), self.settings),
+            1.2470645289408879e+00, places=10)
+        self.assertTrue(np.isnan(
+            e.get_true_estimator_values(e.RCred(0.84), self.settings)))
+        self.assertTrue(np.isnan(
+            e.get_true_estimator_values([e.RCred(0.84)], self.settings)[0]))
+        # Check calculating the radius from theta: when points in theta have
+        # coordinates (1, 1) the radius should be sqrt(2)
+        self.assertEqual(e.RMean(from_theta=True)(
+            np.zeros(2), {'theta': np.full((2, 2), 1)}), np.sqrt(2))
+        # Check CountSamples estimator is working ok
+        self.assertEqual(e.CountSamples()(np.zeros(10), {}), 10)
 
     def test_maths_functions(self):
         # By default only used in high dim so manually test with dim=100
@@ -289,8 +293,10 @@ class TestPerfectNS(unittest.TestCase):
         settings = copy.deepcopy(self.settings)
         settings.dynamic_goal = 0
         settings.n_samples_max = None
+        settings.nlive_const = 10
         ns.generate_dynamic_run(settings)
-        # test saving
+        # test saving and loading
+        settings.n_samples_max = 100
         ns.get_run_data(settings, 1, save=True, load=True,
                         check_loaded_settings=True, cache_dir=self.cache_dir)
         # test loading and checking settings
@@ -299,7 +305,7 @@ class TestPerfectNS(unittest.TestCase):
         # test loading and checking settings when settings are not the same
         # this only works for changing a setting which dosnt affect the save
         # name
-        settings.dims_to_sample += 1
+        settings.n_samples_max += 1
         ns.get_run_data(settings, 1, save=True, load=True,
                         check_loaded_settings=True, cache_dir=self.cache_dir)
         # test unexpected kwargs check
@@ -307,7 +313,7 @@ class TestPerfectNS(unittest.TestCase):
                           unexpected=1)
         # check returning None when keep_final_point is False and thread is
         # empty
-        ns.generate_single_thread(self.settings, -10 ** -100,
+        ns.generate_single_thread(self.settings, -10 ** -150,
                                   0, keep_final_point=False)
         # for checking with exact=True
         ns.z_importance(np.random.random(10), np.full((10), 5), exact=True)
