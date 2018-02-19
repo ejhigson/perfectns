@@ -76,7 +76,7 @@ class TestPerfectNS(unittest.TestCase):
             parallelise=False, tuned_dynamic_ps=[False, False, False, True])
         # dynamic_table.to_pickle('tests/test_dynamic_table_value.pkl')
         # Check the values of every row for the theta1 estimator
-        test_values = pd.read_pickle('tests/test_dynamic_table_value.pkl')
+        test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
         numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
                                       rtol=1e-13)
         # None of the other values in the table should be NaN:
