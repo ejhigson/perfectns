@@ -8,6 +8,8 @@ import shutil
 import unittest
 import copy
 import numpy as np
+import numpy.testing
+import pandas as pd
 import matplotlib
 import perfectns.settings
 import perfectns.estimators as e
@@ -67,35 +69,16 @@ class TestPerfectNS(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        # # Try it again with parallelise=True to cover parallel parts
-        # dynamic_table = rt.get_dynamic_results(3, [0, 0.25, 1],
-        #                                        self.estimator_list,
-        #                                        self.settings,
-        #                                        load=False,
-        #                                        parallelise=True)
         # Need parallelise=False for coverage module to give correct answers
         dynamic_table = rt.get_dynamic_results(
             5, [0, 0.25, 1, 1], self.estimator_list, self.settings, load=True,
             save=True, cache_dir=self.cache_dir,
             parallelise=False, tuned_dynamic_ps=[False, False, False, True])
-        print(dynamic_table.loc[('mean', 'standard', 'value')])
+        # dynamic_table.to_pickle('tests/test_dynamic_table_value.pkl')
         # Check the values of every row for the theta1 estimator
-        vals = [-0.03276229, 0.05189854, 0.07024217, 0.04730565, 0.00600488,
-                0.05591436, 0.03303161, 0.02324355, 0.03059874, 0.02895691,
-                0.11604866, 0.0410294, 0.10577865, 0.0373984, 0.12502832,
-                0.04420419, 0.05197415, 0.01837564, 0.06474962, 0.02289245,
-                1.20360556, 1.20360556, 0.86151625, 0.86151625, 4.98546241,
-                4.98546241, 3.21222349, 3.21222349]
-        series = dynamic_table[e.ParamMean().latex_name]
-        for i, (index, value) in enumerate(series.iteritems()):
-            self.assertAlmostEqual(value, vals[i], places=7, msg=str(index))
-        # Check the mean result values for dynamic G=1
-        vals = [2.37600000e+2, -6.46216428e+0, 1.89956745e-03, 3.30316072e-02,
-                1.00735644e+0, 1.18630936e-02, 1.01750690e+00, 1.25671291e+00,
-                1.92168532e+0]
-        series = dynamic_table.loc[('mean', 'dynamic $G=1$', 'value')]
-        for i, (index, value) in enumerate(series.iteritems()):
-            self.assertAlmostEqual(value, vals[i], places=7, msg=str(index))
+        test_values = pd.read_pickle('tests/test_dynamic_table_value.pkl')
+        numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
+                                      rtol=1e-13)
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(dynamic_table.values)))
         # Check the kwargs checking
@@ -244,7 +227,8 @@ class TestPerfectNS(unittest.TestCase):
         # Test unexpected kwargs check
         self.assertRaises(
             TypeError, perfectns.plots.plot_parameter_logx_diagram,
-            self.settings, ftheta, x_points=50, y_points=50, unexpected=0)
+            self.settings, e.ParamMean(), x_points=50, y_points=50,
+            unexpected=0)
 
     def test_settings(self):
         self.assertRaises(
@@ -299,10 +283,12 @@ class TestPerfectNS(unittest.TestCase):
         perfectns.maths_functions.sample_nsphere_shells(
             np.asarray([1]), 100, n_sample=1)
         # Check handling of n_sample=None
-        perfectns.maths_functions.sample_nsphere_shells_normal(
-            np.asarray([1]), 2, n_sample=None)
-        perfectns.maths_functions.sample_nsphere_shells_beta(
-            np.asarray([1]), 2, n_sample=None)
+        self.assertEqual(
+            perfectns.maths_functions.sample_nsphere_shells_normal(
+                np.asarray([1]), 2, n_sample=None).shape, (1, 2))
+        self.assertEqual(
+            perfectns.maths_functions.sample_nsphere_shells_beta(
+                np.asarray([1]), 2, n_sample=None).shape, (1, 2))
 
     def test_nested_sampling(self):
         settings = copy.deepcopy(self.settings)

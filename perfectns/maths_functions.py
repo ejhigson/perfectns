@@ -120,7 +120,7 @@ def sample_nsphere_shells_normal(r, n_dim, n_sample=None):
     """
     if n_sample is None:
         n_sample = n_dim
-        assert n_sample <= n_dim, 'so far only set up for nsample <= ndim'
+    assert n_sample <= n_dim, 'so far only set up for nsample <= ndim'
     thetas = np.random.normal(size=(r.shape[0], n_dim))
     # calculate normalisation so sum_i(theta_i^2) = r^2 for each row
     norm = r / np.sqrt(np.sum(thetas ** 2, axis=1))
