@@ -67,12 +67,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     -------
     results: pandas data frame
         results data frame.
-        Contains two columns for each estimator - the second column (with
-        '_unc' appended to the title) shows the numerical uncertainty in the
-        first column.
         Contains rows:
-            true values: analytical values of estimators for this likelihood
-                and posterior if available
             mean [dynamic goal]: mean calculation result for standard nested
                 sampling and dynamic nested sampling with each input dynamic
                 goal.
@@ -123,8 +118,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     # get info on the number of samples taken in each run as well
     estimator_list = [e.CountSamples()] + estimator_list_in
     est_names = [est.latex_name for est in estimator_list]
-    df_dict = {}
     method_names = []
+    method_values = []
     assert dynamic_goals[0] is None, \
         'Need to start with standard ns to calculate efficiency gains'
     for i, dynamic_goal in enumerate(dynamic_goals):
@@ -138,9 +133,11 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         # of performance. Otherwise dynamic nested sampling will end up using
         # more samples than standard nested sampling as it does not terminate
         # until after the number of samples is greater than n_samples_max.
-        if settings.dynamic_goal is not None and 'standard' in df_dict:
-            n_samples_max = df_dict['standard'].loc[('mean', 'value'),
-                                                    est_names[0]]
+        if i != 0 and settings.dynamic_goal is not None:
+            assert dynamic_goals[0] is None
+            assert isinstance(estimator_list[0], e.CountSamples)
+            n_samples_max = np.mean(np.asarray([val[0] for val in
+                                                method_values[0]]))
             # This factor is a function of the dynamic goal as typically
             # evidence calculations have longer additional threads than
             # parameter estimation calculations.
@@ -162,24 +159,70 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                    max_workers=max_workers,
                                    cache_dir=cache_dir,
                                    overwrite_existing=overwrite_existing)
-        values_list = pu.parallel_apply(ar.run_estimators, run_list,
-                                        func_args=(estimator_list,),
-                                        max_workers=max_workers,
-                                        parallelise=parallelise)
-        df = pf.summary_df_from_list(values_list, est_names)
-        if dynamic_goal is not None:
+        method_values.append(pu.parallel_apply(ar.run_estimators, run_list,
+                                               func_args=(estimator_list,),
+                                               max_workers=max_workers,
+                                               parallelise=parallelise))
+    results = efficiency_gain_df(method_names, method_values, est_names)
+    if save:
+        # save the results data frame
+        print('get_dynamic_results: saving results to\n' + save_file)
+        results.to_pickle(save_file)
+    return results
+
+
+def efficiency_gain_df(method_names, method_values, est_names):
+    """
+    Calculated data frame showing
+
+    efficiency gain ~ [(st dev standard) / (st dev new method)] ** 2
+
+    The standard method on which to base the gain is assumed to be the first
+    method input.
+
+    Parameters
+    ----------
+    method names: list of strs
+    method values: list
+        Each element is a list of 1d arrays of results for the method. Each
+        array must have shape (len(est_names),).
+    est_names: list of strs
+        Provide column titles for output df.
+
+    Returns
+    -------
+    results: pandas data frame
+        results data frame.
+        Contains rows:
+            mean [dynamic goal]: mean calculation result for standard nested
+                sampling and dynamic nested sampling with each input dynamic
+                goal.
+            std [dynamic goal]: standard deviation of results for standard
+                nested sampling and dynamic nested sampling with each input
+                dynamic goal.
+            gain [dynamic goal]: the efficiency gain (computational speedup)
+                from dynamic nested sampling compared to standard nested
+                sampling. This equals (variance of standard results) /
+                (variance of dynamic results); see the dynamic nested
+                sampling paper for more details.
+    """
+    assert len(method_names) == len(method_values)
+    df_dict = {}
+    for i, method_name in enumerate(method_names):
+        df = pf.summary_df_from_list(method_values[i], est_names)
+        if i != 0:
             # Calculate efficiency gain vs standard ns
-            std_ratio = (df_dict['standard'].loc[('std', 'value')]
+            std_ratio = (df_dict[method_names[0]].loc[('std', 'value')]
                          / df.loc[('std', 'value')])
             std_ratio_unc = mf.array_ratio_std(
-                df_dict['standard'].loc[('std', 'value')],
-                df_dict['standard'].loc[('std', 'uncertainty')],
+                df_dict[method_names[0]].loc[('std', 'value')],
+                df_dict[method_names[0]].loc[('std', 'uncertainty')],
                 df.loc[('std', 'value')],
                 df.loc[('std', 'uncertainty')])
             df.loc[('efficiency gain', 'value'), :] = std_ratio ** 2
             df.loc[('efficiency gain', 'uncertainty'), :] = \
                 2 * std_ratio * std_ratio_unc
-        df_dict[method_names[-1]] = df
+        df_dict[method_name] = df
     results = pd.concat(df_dict)
     results.index.rename('dynamic settings', level=0, inplace=True)
     new_ind = []
@@ -192,10 +235,6 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     new_ind.append(results.index.get_level_values('result type'))
     results.set_index(new_ind, inplace=True)
     results.sort_index(inplace=True)
-    if save:
-        # save the results data frame
-        print('get_dynamic_results: saving results to\n' + save_file)
-        results.to_pickle(save_file)
     return results
 
 
