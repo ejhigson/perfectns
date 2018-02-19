@@ -78,10 +78,26 @@ class TestPerfectNS(unittest.TestCase):
             5, [0, 0.25, 1, 1], self.estimator_list, self.settings, load=True,
             save=True, cache_dir=self.cache_dir,
             parallelise=False, tuned_dynamic_ps=[False, False, False, True])
-        print(dynamic_table)
+        print(dynamic_table.loc[('mean', 'standard', 'value')])
+        # Check the values of every row for the theta1 estimator
+        vals = [-0.03276229, 0.05189854, 0.07024217, 0.04730565, 0.00600488,
+                0.05591436, 0.03303161, 0.02324355, 0.03059874, 0.02895691,
+                0.11604866, 0.0410294, 0.10577865, 0.0373984, 0.12502832,
+                0.04420419, 0.05197415, 0.01837564, 0.06474962, 0.02289245,
+                1.20360556, 1.20360556, 0.86151625, 0.86151625, 4.98546241,
+                4.98546241, 3.21222349, 3.21222349]
+        series = dynamic_table[e.ParamMean().latex_name]
+        for i, (index, value) in enumerate(series.iteritems()):
+            self.assertAlmostEqual(value, vals[i], places=7, msg=str(index))
+        # Check the mean result values for dynamic G=1
+        vals = [2.37600000e+2, -6.46216428e+0, 1.89956745e-03, 3.30316072e-02,
+                1.00735644e+0, 1.18630936e-02, 1.01750690e+00, 1.25671291e+00,
+                1.92168532e+0]
+        series = dynamic_table.loc[('mean', 'dynamic $G=1$', 'value')]
+        for i, (index, value) in enumerate(series.iteritems()):
+            self.assertAlmostEqual(value, vals[i], places=7, msg=str(index))
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(dynamic_table.values)))
-        # print(dynamic_table[e.ParamMean().latex_name])
         # Check the kwargs checking
         self.assertRaises(TypeError, rt.get_dynamic_results, 5, [0],
                           self.estimator_list, self.settings, unexpected=1)
@@ -129,7 +145,6 @@ class TestPerfectNS(unittest.TestCase):
         settings.logz_analytic()
         ns_run = ns.generate_ns_run(settings)
         values = ar.run_estimators(ns_run, self.estimator_list)
-        # print(values)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_cauchy_likelihood_gaussian_prior(self):
