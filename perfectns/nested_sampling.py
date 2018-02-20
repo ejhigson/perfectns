@@ -277,7 +277,7 @@ def generate_dynamic_run(settings):
     standard_run = generate_standard_run(settings, is_dynamic_initial_run=True)
     # create samples array with columns:
     # [logl, r, logx, thread label, change in nlive, params]
-    samples = ar.samples_array_given_run(standard_run)
+    samples = samples_array_given_run(standard_run)
     thread_min_max = standard_run['thread_min_max']
     n_samples = samples.shape[0]
     n_samples_max = copy.deepcopy(settings.n_samples_max)
@@ -315,7 +315,7 @@ def generate_dynamic_run(settings):
     # To compute nlive from the changes in nlive at each step, first find nlive
     # for the first point (= the number of threads which sample from the entire
     # prior)
-    run = ar.dict_given_samples_array(samples, thread_min_max)
+    run = dict_given_samples_array(samples, thread_min_max)
     run['settings'] = settings.get_settings_dict()
     return run
 
@@ -373,7 +373,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     nested sampling parameter estimation and evidence calculation' (Higson et
     al. 2017).
     """
-    run_dict = ar.dict_given_samples_array(samples, thread_min_max)
+    run_dict = dict_given_samples_array(samples, thread_min_max)
     logw = ar.get_logw(run_dict, simulate=simulate)
     # subtract logw.max() to avoids numerical errors with very small numbers
     w_relative = np.exp(logw - logw.max())
@@ -471,3 +471,75 @@ def min_max_importance(importance, samples, settings):
             ' of the samples array (shape ' + str(samples.shape) + ')'
         logx_max = samples[ind[0], 2]
     return [logl_min, logl_max], [logx_min, logx_max]
+
+
+def samples_array_given_run(ns_run):
+    """
+    Converts information on samples in a nested sampling run dictionary into a
+    numpy array representation. This allows fast addition of more samples and
+    recalculation of nlive.
+
+    Parameters
+    ----------
+    ns_run: dict
+        Nested sampling run dictionary.
+        Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
+        'theta'
+
+    Returns
+    -------
+    samples: numpy array
+        Numpy array containing columns
+        [logl, r, logx, thread label, change in nlive at sample, (thetas)]
+        with each row representing a single sample.
+    """
+    samples = np.zeros((ns_run['logl'].shape[0], 5 + ns_run['theta'].shape[1]))
+    samples[:, 0] = ns_run['logl']
+    samples[:, 1] = ns_run['r']
+    samples[:, 2] = ns_run['logx']
+    samples[:, 3] = ns_run['thread_labels']
+    # Calculate 'change in nlive' after each step
+    samples[:-1, 4] = np.diff(ns_run['nlive_array'])
+    samples[-1, 4] = -1  # nlive drops to zero after final point
+    samples[:, 5:] = ns_run['theta']
+    return samples
+
+
+def dict_given_samples_array(samples, thread_min_max):
+    """
+    Converts an array of information about samples back into a dictionary.
+
+    Parameters
+    ----------
+    samples: numpy array
+        Numpy array containing columns
+        [logl, r, logx, thread label, change in nlive at sample, (thetas)]
+        with each row representing a single sample.
+    thread_min_max': numpy array, optional
+        2d array with a row for each thread containing the likelihoods at which
+        it begins and ends.
+        Needed to calculate nlive_array (otherwise this is set to None).
+
+    Returns
+    -------
+    ns_run: dict
+        Nested sampling run dictionary corresponding to the samples array.
+        Contains keys: 'logl', 'r', 'logx', 'thread_label', 'nlive_array',
+        'theta'
+        N.B. this does not contain a record of the run's settings.
+    """
+    nlive_0 = (thread_min_max[:, 0] == -np.inf).sum()
+    nlive_array = np.zeros(samples.shape[0]) + nlive_0
+    nlive_array[1:] += np.cumsum(samples[:-1, 4])
+    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!' \
+        '\nnlive_array = ' + str(nlive_array)
+    assert nlive_array[-1] == 1, 'final point in nlive_array != 1!' \
+        '\nnlive_array = ' + str(nlive_array)
+    ns_run = {'logl': samples[:, 0],
+              'r': samples[:, 1],
+              'logx': samples[:, 2],
+              'thread_labels': samples[:, 3],
+              'nlive_array': nlive_array,
+              'thread_min_max': thread_min_max,
+              'theta': samples[:, 5:]}
+    return ns_run

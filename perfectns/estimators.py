@@ -123,11 +123,12 @@ class RCred(object):
 
     """One-tailed credible interval on the value of |theta|."""
 
-    def __init__(self, probability):
+    def __init__(self, probability, from_theta=False):
         assert 1 > probability > 0, 'credible interval probability = ' + \
             str(probability) + ' must be between 0 and 1'
         self.name = 'rc_' + str(probability)
         self.probability = probability
+        self.from_theta = from_theta
         # format percent without trailing zeros
         percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
         self.latex_name = r'$\mathrm{C.I.}_{' + percent_str + r'\%}(|\theta|)$'
@@ -137,7 +138,17 @@ class RCred(object):
         # get sorted array of r values with their posterior weight
         wr = np.zeros((logw.shape[0], 2))
         wr[:, 0] = np.exp(logw - logw.max())
-        wr[:, 1] = ns_run['r']
+        if self.from_theta:
+            # If run contains a dims_to_sample setting, check that samples from
+            # every dimension are included
+            try:
+                assert (ns_run['settings']['dims_to_sample'] ==
+                        ns_run['settings']['n_dim']), "Cannot work out radius!"
+            except KeyError:
+                pass
+            wr[:, 1] = np.sqrt(np.sum(ns_run['theta'] ** 2, axis=1))
+        else:
+            wr[:, 1] = ns_run['r']
         wr = wr[np.argsort(wr[:, 1], axis=0)]
         # calculate cumulative distribution function (cdf)
         # Adjust by subtracting 0.5 * weight of first point to correct skew

@@ -44,11 +44,12 @@ class TestPerfectNS(unittest.TestCase):
                                e.ParamSquaredMean(),
                                e.ParamCred(0.5),
                                e.ParamCred(0.84),
-                               e.RMean(),
-                               e.RCred(0.84)]
+                               e.RMean(from_theta=True),
+                               e.RCred(0.84, from_theta=True)]
         self.settings = perfectns.settings.PerfectNSSettings()
         self.settings.likelihood = likelihoods.Gaussian(likelihood_scale=1)
         self.settings.prior = priors.Gaussian(prior_scale=10)
+        self.settings.dims_to_sample = 2
         self.settings.n_dim = 2
         self.settings.nlive_const = 20
         self.settings.dynamic_goal = None
@@ -275,6 +276,14 @@ class TestPerfectNS(unittest.TestCase):
         # coordinates (1, 1) the radius should be sqrt(2)
         self.assertEqual(e.RMean(from_theta=True)(
             np.zeros(2), {'theta': np.full((2, 2), 1)}), np.sqrt(2))
+        # Check without deriving r from theta
+        self.assertEqual(e.RMean(from_theta=False)(
+            np.zeros(2), {'r': np.full((2,), np.sqrt(2))}), np.sqrt(2))
+        # Check RCred
+        e.RCred(0.84, from_theta=True)(np.zeros(2),
+                                       {'theta': np.full((2, 2), 1)})
+        e.RCred(0.84, from_theta=False)(np.zeros(2),
+                                        {'r': np.full((2,), np.sqrt(2))})
         # Check CountSamples estimator is working ok
         self.assertEqual(e.CountSamples()(np.zeros(10), {}), 10)
 
