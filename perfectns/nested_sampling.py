@@ -234,7 +234,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     # Get array of data on threads' beginnings and ends. Each starts by
     # sampling the whole prior and ends on one of the final live points.
     run['thread_min_max'] = np.zeros((nlive_const, 2))
-    run['thread_min_max'][:, 0] = np.nan
+    run['thread_min_max'][:, 0] = -np.inf
     run['thread_min_max'][:, 1] = live_points[:, 0]
     return run
 
@@ -300,7 +300,7 @@ def generate_dynamic_run(settings):
                                             logx_start=logx_min_max[0],
                                             keep_final_point=True)
             # update run
-            if not np.isnan(logl_min_max[0]):
+            if logl_min_max[0] != -np.inf:
                 start_ind = np.where(samples[:, 0] == logl_min_max[0])[0]
                 # check there is exactly one point with the likelihood at which
                 # the new thread starts, and note that nlive increases by 1
@@ -444,7 +444,7 @@ def min_max_importance(importance, samples, settings):
     # where to start the additional threads:
     high_importance_inds = np.where(importance > settings.dynamic_fraction)[0]
     if high_importance_inds[0] == 0:  # start from sampling the whole prior
-        logl_min = np.nan
+        logl_min = -np.inf
         logx_min = 0
     else:
         logl_min = samples[:, 0][high_importance_inds[0] - 1]
