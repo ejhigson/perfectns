@@ -159,6 +159,9 @@ class TestPerfectNS(unittest.TestCase):
     def test_cached_gaussian_prior(self):
         """Check the cached_gaussian prior."""
         settings = copy.deepcopy(self.settings)
+        self.assertRaises(
+            TypeError, priors.GaussianCached,
+            prior_scale=10, unexpected=0)
         settings.prior = priors.GaussianCached(
             prior_scale=10, save_dict=True, n_dim=settings.n_dim,
             cache_dir=self.cache_dir,

@@ -12,9 +12,6 @@ import nestcheck.io_utils as iou
 import perfectns.maths_functions as mf
 
 
-# Maths functions
-
-
 def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     """
     Generate a dictionary containing arrays of logx and r values for use in

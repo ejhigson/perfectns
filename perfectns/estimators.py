@@ -116,6 +116,10 @@ class RMean:
 
     @staticmethod
     def ftilde(logx, settings):
+        """
+        ftilde(X) is mean of f(theta) on the iso-likelihood contour
+        L(theta) = L(X).
+        """
         return settings.r_given_logx(logx)
 
 
@@ -190,6 +194,10 @@ class ParamMean(object):
 
     @staticmethod
     def ftilde(logx, settings):
+        """
+        ftilde(X) is mean of f(theta) on the iso-likelihood contour
+        L(theta) = L(X).
+        """
         return np.zeros(logx.shape)
 
 

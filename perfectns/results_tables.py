@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """
-Functions used to generate the results in:
-'Dynamic nested sampling: an improved algorithm for nested sampling parameter
-estimation and evidence calculation' (Higson et al. 2017).
+Functions used to generate results tables.
+
+Used for results in 'Dynamic nested sampling: an improved algorithm for nested
+sampling parameter estimation and evidence calculation' (Higson et al. 2017).
 """
 
 import copy
@@ -30,7 +31,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     This function was used for Tables 1, 2, 3 and 4, as well as to generate the
     results shown in figures 6 and 7 of 'Dynamic nested sampling: an improved
     algorithm for nested sampling parameter estimation and evidence
-    calculation' (Higson et al. 2017). See the paper for a more detailed
+    calculation' (Higson 2017). See the paper for a more detailed
     description.
 
     Parameters

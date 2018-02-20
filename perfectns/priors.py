@@ -101,8 +101,14 @@ class GaussianCached(object):
     """
     interp_d = {'n_dim': None, 'prior_scale': None}
 
-    def __init__(self, prior_scale, save_dict=True, n_dim=None,
-                 interp_density=10, logx_min=-4500, cache_dir='cache/'):
+    def __init__(self, prior_scale, **kwargs):
+        save_dict = kwargs.pop('save_dict', True)
+        n_dim = kwargs.pop('n_dim', None)
+        interp_density = kwargs.pop('interp_density', 10)
+        logx_min = kwargs.pop('logx_min', -4500)
+        cache_dir = kwargs.pop('cache_dir', 'cache/')
+        if kwargs:
+            raise TypeError('Unexpected **kwargs: %r' % kwargs)
         self.prior_scale = prior_scale
         self.save_dict = save_dict
         self.interp_density = interp_density
