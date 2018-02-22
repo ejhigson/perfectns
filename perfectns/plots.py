@@ -133,22 +133,25 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     """
     tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
                                   [False] * len(dynamic_goals))
-    logx_min = kwargs.pop('logx_min', None)
     save = kwargs.pop('save', True)
     load = kwargs.pop('load', True)
-    ymax = kwargs.pop('ymax', None)
     n_run = kwargs.pop('n_run', 10)
-    figsize = kwargs.pop('figsize', (6.4, 2))
-    npoints = kwargs.pop('npoints', 100)
-    if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # Confine settings edits to within this function
     settings = copy.deepcopy(settings_in)
     run_dict = {}
     # work out n_samples_max from first set of runs
     n_sample_stats = np.zeros((len(dynamic_goals), 2))
+    method_names = []  # use list to store labels so order is preserved
     for i, dg in enumerate(dynamic_goals):
         print('dynamic_goal=' + str(dg))
+        # Make label
+        if dg is None:
+            label = 'standard'
+        else:
+            label = 'dynamic $G=' + str(dg) + '$'
+            if tuned_dynamic_ps[i] is True:
+                label = 'tuned ' + label
+        method_names.append(label)
         settings.dynamic_goal = dg
         settings.tuned_dynamic_p = tuned_dynamic_ps[i]
         temp_runs = ns.get_run_data(settings, n_run, parallelise=True,
@@ -160,9 +163,58 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
             settings.n_samples_max = int(n_sample_stats[0, 0] *
                                          (settings.nlive_const - 1) /
                                          settings.nlive_const)
-        run_dict[(dg, tuned_dynamic_ps[i])] = temp_runs
+        run_dict[label] = temp_runs
         print('mean samples per run:', n_sample_stats[i, 0],
               'std:', n_sample_stats[i, 1])
+    fig = plot_run_nlive(method_names, run_dict, settings,
+                         post_mass_norm='dynamic $G=1$',
+                         cum_post_mass_norm='dynamic $G=0$',
+                         plot_tuned_post_mass=any(tuned_dynamic_ps),
+                         tuned_post_mass_norm='dynamic $G=1$ tuned',
+                         **kwargs)
+    return fig
+
+
+def plot_run_nlive(method_names, run_dict, settings, **kwargs):
+    """
+    Plot the allocations of live points as a function of logX for the input
+    sets of nested sampling runs.
+    Plots also include analytically calculated distributions of relative
+    posterior mass and relative posterior mass remaining.
+
+    Parameters
+    ----------
+
+    method_names: list of strs
+    run_dict: dict of lists of nested sampling runs.
+        Keys of run_dict must be method_names
+    settings_in: PerfectNSSettings object
+    logx_min: float, optional
+        Lower limit of logx axis. If not specified this is set to the lowest
+        logx reached by any of the runs.
+    ymax: bool, optional
+        Maximum value for plot's nlive axis (yaxis).
+    npoints: int, optional
+        How many points to have in the logx array used to calculate and plot
+        analytical weights.
+    figsize: tuple, optional
+        Size of figure in inches.
+
+    Returns
+    -------
+    fig: matplotlib figure
+    """
+    logx_min = kwargs.pop('logx_min', None)
+    ymax = kwargs.pop('ymax', None)
+    figsize = kwargs.pop('figsize', (6.4, 2))
+    npoints = kwargs.pop('npoints', 100)
+    post_mass_norm = kwargs.pop('post_mass_norm', None)
+    cum_post_mass_norm = kwargs.pop('cum_post_mass_norm', None)
+    plot_tuned_post_mass = kwargs.pop('plot_tuned_post_mass', False)
+    tuned_post_mass_norm = kwargs.pop('tuned_post_mass_norm', None)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+    assert set(method_names) == set(run_dict.keys())
     # Plotting
     # --------
     fig = plt.figure(figsize=figsize)
@@ -172,34 +224,27 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     ax.set_prop_cycle('color', [colors[i] for i in [2, 8, 4, 9, 1, 6]])
     integrals_dict = {}
-    for i, dg in enumerate(dynamic_goals):
-        integrals = np.zeros(n_run)
-        # Make label
-        if dg is None:
-            label = 'standard'
-        else:
-            label = 'dynamic $G=' + str(dg) + '$'
-            if tuned_dynamic_ps[i] is True:
-                label = 'tuned ' + label
-        for nr, run in enumerate(run_dict[(dg, tuned_dynamic_ps[i])]):
-            logx = run['logx']
+    for method_name in method_names:
+        integrals = np.zeros(len(run_dict[method_name]))
+        for nr, run in enumerate(run_dict[method_name]):
+            logx = settings.logx_given_logl(run['logl'])
             logx[0] = 0  # to make lines extend all the way to the end
             if nr == 0:
                 # Label the first line and store it so we can access its color
                 line, = ax.plot(logx, run['nlive_array'], linewidth=1,
-                                label=label)
+                                label=method_name)
             else:
                 # Set other lines to same color and don't add labels
                 ax.plot(logx, run['nlive_array'], linewidth=1,
                         color=line.get_color())
             # for normalising analytic weight lines
             integrals[nr] = -np.trapz(run['nlive_array'], x=logx)
-        integrals_dict[(dg, tuned_dynamic_ps[i])] = integrals
+        integrals_dict[method_name] = integrals
     # find analytic w
     if logx_min is None:
         logx_min_list = []
-        for i, dg in enumerate(dynamic_goals):
-            for run in run_dict[(dg, tuned_dynamic_ps[i])]:
+        for method_name in method_names:
+            for run in run_dict[method_name]:
                 logx_min_list.append(run['logx'][-1])
         logx_min = np.asarray(logx_min_list).min()
     logx = np.linspace(logx_min, 0, npoints)
@@ -210,10 +255,16 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     # we want to compare to it). If they are not available just normalise it to
     # the average area under all the runs (which should be about the same if
     # they have the same number of samples).
-    try:
-        w_an *= np.mean(integrals_dict[(1, False)])
-    except KeyError:
+    if post_mass_norm is None:
         w_an *= np.mean(np.concatenate(list(integrals_dict.values())))
+    else:
+        try:
+            w_an *= np.mean(integrals_dict[post_mass_norm])
+        except KeyError:
+            print('method name "' + post_mass_norm + '" not found, so ' +
+                  'normalise area under the analytic relative posterior ' +
+                  'mass curve using the mean of all methods.')
+            w_an *= np.mean(np.concatenate(list(integrals_dict.values())))
     ax.plot(logx, w_an, linewidth=2, label='relative posterior mass',
             linestyle=':', color='k')
     # plot cumulative posterior mass
@@ -224,13 +275,19 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
     # we want to compare to it). If they are not available just normalise it to
     # the average area under all the runs (which should be about the same if
     # they have the same number of samples).
-    try:
-        w_an_c *= np.mean(integrals_dict[(0, False)])
-    except KeyError:
+    if cum_post_mass_norm is None:
         w_an_c *= np.mean(np.concatenate(list(integrals_dict.values())))
+    else:
+        try:
+            w_an_c *= np.mean(integrals_dict[cum_post_mass_norm])
+        except KeyError:
+            print('method name "' + cum_post_mass_norm + '" not found, so ' +
+                  'normalise area under the analytic posterior mass remaining '
+                  'curve using the mean of all methods.')
+            w_an_c *= np.mean(np.concatenate(list(integrals_dict.values())))
     ax.plot(logx, w_an_c, linewidth=2, linestyle='--', dashes=(2, 3),
             label='posterior mass remaining', color='darkblue')
-    if any(tuned_dynamic_ps):
+    if plot_tuned_post_mass:
         # Get expected magnitude of parameter
         # This is not defined for logx=0 so exclude final value of logx
         param_exp = settings.r_given_logx(logx[:-1]) / np.sqrt(settings.n_dim)
@@ -238,10 +295,17 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         # magnitude of the paramer being considered
         w_tuned = w_an[:-1] * param_exp
         w_tuned /= np.trapz(w_tuned, x=logx[:-1])
-        try:
-            w_tuned *= np.mean(integrals_dict[(1, True)])
-        except KeyError:
+        if tuned_post_mass_norm is None:
             w_tuned *= np.mean(np.concatenate(list(integrals_dict.values())))
+        else:
+            try:
+                w_tuned *= np.mean(integrals_dict[tuned_post_mass_norm])
+            except KeyError:
+                print('method name "' + tuned_post_mass_norm + '" not ' +
+                      'found, so normalise area under the analytic tuned ' +
+                      'posterior mass curve using the mean of all methods.')
+                w_tuned *= np.mean(np.concatenate(
+                    list(integrals_dict.values())))
         ax.plot(logx[:-1], w_tuned, linewidth=2, label='tuned importance',
                 linestyle='-.', dashes=(2, 1.5, 1, 1.5), color='k')
     ax.set_ylabel('number of live points')

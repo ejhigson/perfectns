@@ -121,13 +121,17 @@ def get_run_data(settings, n_repeat, **kwargs):
             if check_loaded_settings:
                 # Assume all runs in the loaded list have the same settings, in
                 # which case we only need check the first one.
-                if settings.get_settings_dict() == data[0]['settings']:
-                    print('Loaded settings = current settings')
-                else:
-                    print('Loaded settings =')
-                    print(data[0]['settings'])
-                    print('are not equal to current settings =')
-                    print(settings.get_settings_dict())
+                if settings.get_settings_dict() != data[0]['settings']:
+                    # print any differences
+                    loaded = copy.deepcopy(data[0]['settings'])
+                    current = copy.deepcopy(settings.get_settings_dict())
+                    for key in set(loaded.keys()) & set(current.keys()):
+                        if loaded[key] == current[key]:
+                            del loaded[key]
+                            del current[key]
+                    print('Loaded settings != current settings. ' +
+                          'Differences are:', current, loaded,
+                          'Generate new runs instead.')
                     del data
                     load = False
         except (OSError, EOFError) as exception:
