@@ -224,7 +224,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
            'logl': points[:, 0],
            'r': points[:, 1],
            'logx': points[:, 2],
-           'thread_labels': points[:, 3]}
+           'thread_labels': points[:, 3].astype(int)}
     # add array of parameter values sampled from the hyperspheres corresponding
     # to the radial coordinate of each point.
     run['theta'] = mf.sample_nsphere_shells(run['r'], settings.n_dim,
@@ -501,7 +501,7 @@ def samples_array_given_run(ns_run):
     samples[:, 0] = ns_run['logl']
     samples[:, 1] = ns_run['r']
     samples[:, 2] = ns_run['logx']
-    samples[:, 3] = ns_run['thread_labels']
+    samples[:, 3] = ns_run['thread_labels'].astype(int)
     # Calculate 'change in nlive' after each step
     samples[:-1, 4] = np.diff(ns_run['nlive_array'])
     samples[-1, 4] = -1  # nlive drops to zero after final point
@@ -542,7 +542,7 @@ def dict_given_samples_array(samples, thread_min_max):
     ns_run = {'logl': samples[:, 0],
               'r': samples[:, 1],
               'logx': samples[:, 2],
-              'thread_labels': samples[:, 3],
+              'thread_labels': samples[:, 3].astype(int),
               'nlive_array': nlive_array,
               'thread_min_max': thread_min_max,
               'theta': samples[:, 5:]}
