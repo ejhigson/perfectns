@@ -262,14 +262,3 @@ def r_given_log_cauchy(logl, sigma, n_dim):
     exponent = np.exp(exponent) - 1.0
     r_squared = exponent * (sigma ** 2)
     return np.sqrt(r_squared)
-
-
-def array_ratio_std(values_n, sigmas_n, values_d, sigmas_d):
-    """
-    Gives error on the ratio of 2 floats or 2 1dimensional arrays given their
-    values and errors assuming the errors are uncorrelated.
-    This assumes covariance = 0. _n and _d denote the numerator and
-    denominator.
-    """
-    return (values_n / values_d) * (((sigmas_n / values_n) ** 2 +
-                                     (sigmas_d / values_d) ** 2)) ** 0.5

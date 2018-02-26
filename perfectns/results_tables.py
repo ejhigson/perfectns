@@ -14,7 +14,6 @@ import nestcheck.analyse_run as ar
 import nestcheck.parallel_utils as pu
 import nestcheck.pandas_functions as pf
 import perfectns.nested_sampling as ns
-import perfectns.maths_functions as mf
 import perfectns.estimators as e
 
 
@@ -164,78 +163,11 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                                func_args=(estimator_list,),
                                                max_workers=max_workers,
                                                parallelise=parallelise))
-    results = efficiency_gain_df(method_names, method_values, est_names)
+    results = pf.efficiency_gain_df(method_names, method_values, est_names)
     if save:
         # save the results data frame
         print('get_dynamic_results: saving results to\n' + save_file)
         results.to_pickle(save_file)
-    return results
-
-
-def efficiency_gain_df(method_names, method_values, est_names):
-    """
-    Calculated data frame showing
-
-    efficiency gain ~ [(st dev standard) / (st dev new method)] ** 2
-
-    The standard method on which to base the gain is assumed to be the first
-    method input.
-
-    Parameters
-    ----------
-    method names: list of strs
-    method values: list
-        Each element is a list of 1d arrays of results for the method. Each
-        array must have shape (len(est_names),).
-    est_names: list of strs
-        Provide column titles for output df.
-
-    Returns
-    -------
-    results: pandas data frame
-        results data frame.
-        Contains rows:
-            mean [dynamic goal]: mean calculation result for standard nested
-                sampling and dynamic nested sampling with each input dynamic
-                goal.
-            std [dynamic goal]: standard deviation of results for standard
-                nested sampling and dynamic nested sampling with each input
-                dynamic goal.
-            gain [dynamic goal]: the efficiency gain (computational speedup)
-                from dynamic nested sampling compared to standard nested
-                sampling. This equals (variance of standard results) /
-                (variance of dynamic results); see the dynamic nested
-                sampling paper for more details.
-    """
-    assert len(method_names) == len(method_values)
-    df_dict = {}
-    for i, method_name in enumerate(method_names):
-        df = pf.summary_df_from_list(method_values[i], est_names)
-        if i != 0:
-            # Calculate efficiency gain vs standard ns
-            std_ratio = (df_dict[method_names[0]].loc[('std', 'value')]
-                         / df.loc[('std', 'value')])
-            std_ratio_unc = mf.array_ratio_std(
-                df_dict[method_names[0]].loc[('std', 'value')],
-                df_dict[method_names[0]].loc[('std', 'uncertainty')],
-                df.loc[('std', 'value')],
-                df.loc[('std', 'uncertainty')])
-            df.loc[('efficiency gain', 'value'), :] = std_ratio ** 2
-            df.loc[('efficiency gain', 'uncertainty'), :] = \
-                2 * std_ratio * std_ratio_unc
-        df_dict[method_name] = df
-    results = pd.concat(df_dict)
-    results.index.rename('dynamic settings', level=0, inplace=True)
-    new_ind = []
-    new_ind.append(pd.CategoricalIndex(
-        results.index.get_level_values('calculation type'), ordered=True,
-        categories=['mean', 'std', 'efficiency gain']))
-    new_ind.append(pd.CategoricalIndex(
-        results.index.get_level_values('dynamic settings'),
-        ordered=True, categories=method_names))
-    new_ind.append(results.index.get_level_values('result type'))
-    results.set_index(new_ind, inplace=True)
-    results.sort_index(inplace=True)
     return results
 
 
@@ -374,7 +306,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # from repeated calculations.
     results.loc[('bs std / repeats std', 'value'), :] = \
         (bs_df.loc[('mean', 'value')] / results.loc[('repeats std', 'value')])
-    bs_std_ratio_unc = mf.array_ratio_std(
+    bs_std_ratio_unc = pf.array_ratio_std(
         bs_df.loc[('mean', 'value')],
         bs_df.loc[('mean', 'uncertainty')],
         results.loc[('repeats std', 'value')],
@@ -400,7 +332,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         results.loc[('sim std / repeats std', 'value'), :] = \
             (sim_df.loc[('mean', 'value')] /
              results.loc[('repeats std', 'value')])
-        sim_std_ratio_unc = mf.array_ratio_std(
+        sim_std_ratio_unc = pf.array_ratio_std(
             sim_df.loc[('mean', 'value')],
             sim_df.loc[('mean', 'uncertainty')],
             results.loc[('repeats std', 'value')],
