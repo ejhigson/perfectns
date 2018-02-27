@@ -188,7 +188,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     # [loglikelihood, radial coordinate, logx coordinate, thread label]
     live_points = np.zeros((nlive_const, 4))
     # Thread labels are 1 to nlive_const
-    live_points[:, 3] = np.arange(nlive_const) + 1
+    live_points[:, 3] = np.arange(nlive_const)
     live_points[:, 2] = np.log(np.random.random(live_points.shape[0]))
     live_points[:, 1] = settings.r_given_logx(live_points[:, 2])
     live_points[:, 0] = settings.logl_given_r(live_points[:, 1])
@@ -297,7 +297,7 @@ def generate_dynamic_run(settings):
                                                         settings)
         for _ in range(settings.nbatch):
             # make new thread
-            thread_label = thread_min_max.shape[0] + 1
+            thread_label = thread_min_max.shape[0]
             thread = generate_single_thread(settings,
                                             logx_min_max[1],
                                             thread_label,

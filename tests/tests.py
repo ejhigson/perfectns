@@ -21,6 +21,7 @@ import perfectns.maths_functions
 import perfectns.priors as priors
 import perfectns.plots
 import nestcheck.analyse_run as ar
+import nestcheck.data_processing as dp
 
 
 class TestPerfectNS(unittest.TestCase):
@@ -60,6 +61,18 @@ class TestPerfectNS(unittest.TestCase):
             shutil.rmtree(self.cache_dir[:-1])
         except FileNotFoundError:
             pass
+
+    def test_nestcheck_run_format(self):
+        """
+        Check perfectns runs are compatable with the nestcheck run format
+        (excepting their additional 'logx' and 'r' keys).
+        """
+        settings = copy.deepcopy(self.settings)
+        for dynamic_goal in [None, 0, 0.5, 1]:
+            run = ns.generate_ns_run(settings)
+            del run['logx']
+            del run['r']
+            dp.check_ns_run(run)
 
     def test_dynamic_results_table(self):
         """
