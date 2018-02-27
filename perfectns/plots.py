@@ -12,37 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import perfectns.nested_sampling as ns
 import perfectns.estimators as e
-
-
-def rel_posterior_mass(logx, n_dim, likelihood, prior):
-    """
-    Calculate the relative poterior mass for some array of logx values
-    given the likelihood, prior and number of dimensions.
-    The posterior mass at each logX value is proportional to L(X)X, where L(X)
-    is the likelihood.
-    The weight is returned normalized so that the integral of the weight with
-    respect to logX is 1.
-
-    Parameters
-    ----------
-    logx: 1d numpy array
-        logx values at which to calculate posterior mass.
-    n_dim: int
-        number of dimensions
-    likelihood: perfectns likelihood object
-    prior: perfectns prior object
-
-    Returns
-    -------
-    w_rel: 1d numpy array
-        Relative posterior mass at each input logx value
-    """
-    r = prior.r_given_logx(logx, n_dim)
-    logl = likelihood.logl_given_r(r, n_dim)
-    logw = logx + logl
-    w_rel = np.exp(logw - logw.max())
-    w_rel /= np.trapz(w_rel, logx)
-    return w_rel
+import nestcheck.analyse_run as ar
 
 
 def plot_rel_posterior_mass(likelihood_list, prior, dim_list, logx, **kwargs):
@@ -83,7 +53,8 @@ def plot_rel_posterior_mass(likelihood_list, prior, dim_list, logx, **kwargs):
             else:
                 label = type(likelihood).__name__ + ':'
             label += ' $d=' + str(dim) + '$'
-            w_rel = rel_posterior_mass(logx, dim, likelihood, prior)
+            logl = likelihood.logl_given_r(prior.r_given_logx(logx, dim), dim)
+            w_rel = ar.rel_posterior_mass(logx, logl)
             plt.plot(logx, w_rel, linestyle=linestyles[nl], label=label)
     ax = plt.gca()
     ax.legend(ncol=2)
@@ -135,6 +106,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
                                   [False] * len(dynamic_goals))
     save = kwargs.pop('save', True)
     load = kwargs.pop('load', True)
+    npoints = kwargs.pop('npoints', 100)
     n_run = kwargs.pop('n_run', 10)
     # Confine settings edits to within this function
     settings = copy.deepcopy(settings_in)
@@ -166,16 +138,41 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         run_dict[label] = temp_runs
         print('mean samples per run:', n_sample_stats[i, 0],
               'std:', n_sample_stats[i, 1])
-    fig = plot_run_nlive(method_names, run_dict, settings,
+    fig = plot_run_nlive(method_names, run_dict,
                          post_mass_norm='dynamic $G=1$',
+                         npoints=npoints,
+                         logx_given_logl=settings.logx_given_logl,
+                         logl_given_logx=settings.logl_given_logx,
                          cum_post_mass_norm='dynamic $G=0$',
-                         plot_tuned_post_mass=any(tuned_dynamic_ps),
-                         tuned_post_mass_norm='dynamic $G=1$ tuned',
                          **kwargs)
+    # Plot the tuned posterior mass
+    if 'dynamic $G=1$ tuned' in method_names:
+        print(fig.axes, type(fig.axes), fig.axes.get_xlim())
+        ax = fig.axes
+        logx = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], npoints)
+        # Get expected magnitude of parameter
+        # This is not defined for logx=0 so exclude final value of logx
+        param_exp = settings.r_given_logx(logx[:-1]) / np.sqrt(settings.n_dim)
+        # Tuned weight is the relative posterior mass times the expected
+        # magnitude of the paramer being considered
+        w_an = ar.rel_posterior_mass(logx, settings.logl_given_logx(logx))
+        w_tuned = w_an[:-1] * param_exp
+        w_tuned /= np.trapz(w_tuned, x=logx[:-1])
+        # Get the normalising constant
+        integrals = np.zeros(len(run_dict['dynamic $G=1$ tuned']))
+        for nr, run in enumerate(run_dict['dynamic $G=1$ tuned']):
+            logx_run = settings.logx_given_logl(run['logl'])
+            logx[0] = 0  # to make lines extend all the way to the end
+            # for normalising analytic weight lines
+            integrals[nr] = -np.trapz(run['nlive_array'], x=logx_run)
+        w_tuned *= np.mean(integrals)
+        # Plot the tuned posterior mass
+        ax.plot(logx[:-1], w_tuned, linewidth=2, label='tuned importance',
+                linestyle='-.', dashes=(2, 1.5, 1, 1.5), color='k')
     return fig
 
 
-def plot_run_nlive(method_names, run_dict, settings, **kwargs):
+def plot_run_nlive(method_names, run_dict, **kwargs):
     """
     Plot the allocations of live points as a function of logX for the input
     sets of nested sampling runs.
@@ -188,7 +185,13 @@ def plot_run_nlive(method_names, run_dict, settings, **kwargs):
     method_names: list of strs
     run_dict: dict of lists of nested sampling runs.
         Keys of run_dict must be method_names
-    settings_in: PerfectNSSettings object
+    logx_given_logl: function
+        For mapping points' logl values to logx values.
+        If not specified the logx coordinates for each run are estimated using
+        its numbers of live points.
+    logl_given_logx: function
+        For calculating the relative posterior mass and posterior mass
+        remaining at each logx coordinate.
     logx_min: float, optional
         Lower limit of logx axis. If not specified this is set to the lowest
         logx reached by any of the runs.
@@ -207,11 +210,11 @@ def plot_run_nlive(method_names, run_dict, settings, **kwargs):
     logx_min = kwargs.pop('logx_min', None)
     ymax = kwargs.pop('ymax', None)
     figsize = kwargs.pop('figsize', (6.4, 2))
+    logx_given_logl = kwargs.pop('logx_given_logl', None)
+    logl_given_logx = kwargs.pop('logl_given_logx', None)
     npoints = kwargs.pop('npoints', 100)
-    post_mass_norm = kwargs.pop('post_mass_norm', None)
-    cum_post_mass_norm = kwargs.pop('cum_post_mass_norm', None)
-    plot_tuned_post_mass = kwargs.pop('plot_tuned_post_mass', False)
-    tuned_post_mass_norm = kwargs.pop('tuned_post_mass_norm', None)
+    post_mass_norm = kwargs.pop('post_mass_norm', 'dynamic $G=0$')
+    cum_post_mass_norm = kwargs.pop('cum_post_mass_norm', 'dynamic $G=1$')
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     assert set(method_names) == set(run_dict.keys())
@@ -227,7 +230,10 @@ def plot_run_nlive(method_names, run_dict, settings, **kwargs):
     for method_name in method_names:
         integrals = np.zeros(len(run_dict[method_name]))
         for nr, run in enumerate(run_dict[method_name]):
-            logx = settings.logx_given_logl(run['logl'])
+            if logx_given_logl is not None:
+                logx = logx_given_logl(run['logl'])
+            else:
+                logx = ar.get_logx(run['nlive_array'], simulate=False)
             logx[0] = 0  # to make lines extend all the way to the end
             if nr == 0:
                 # Label the first line and store it so we can access its color
@@ -240,74 +246,55 @@ def plot_run_nlive(method_names, run_dict, settings, **kwargs):
             # for normalising analytic weight lines
             integrals[nr] = -np.trapz(run['nlive_array'], x=logx)
         integrals_dict[method_name] = integrals
-    # find analytic w
+    # if not specified, set logx min to the lowest logx reached by a run
     if logx_min is None:
         logx_min_list = []
         for method_name in method_names:
             for run in run_dict[method_name]:
                 logx_min_list.append(run['logx'][-1])
         logx_min = np.asarray(logx_min_list).min()
-    logx = np.linspace(logx_min, 0, npoints)
-    w_an = rel_posterior_mass(logx, settings.n_dim, settings.likelihood,
-                              settings.prior)
-    # Try normalising the analytic distribution of posterior mass to have the
-    # same area under the curve as the runs with dynamic_goal=1 (the ones which
-    # we want to compare to it). If they are not available just normalise it to
-    # the average area under all the runs (which should be about the same if
-    # they have the same number of samples).
-    if post_mass_norm is None:
-        w_an *= np.mean(np.concatenate(list(integrals_dict.values())))
-    else:
-        try:
-            w_an *= np.mean(integrals_dict[post_mass_norm])
-        except KeyError:
-            print('method name "' + post_mass_norm + '" not found, so ' +
-                  'normalise area under the analytic relative posterior ' +
-                  'mass curve using the mean of all methods.')
+    if logl_given_logx is not None:
+        # Plot analytic posterior mass and cumulative posterior mass
+        logx = np.linspace(logx_min, 0, npoints)
+        w_an = ar.rel_posterior_mass(logx, logl_given_logx(logx))
+        # Try normalising the analytic distribution of posterior mass to have
+        # the same area under the curve as the runs with dynamic_goal=1 (the
+        # ones which we want to compare to it). If they are not available just
+        # normalise it to the average area under all the runs (which should be
+        # about the same if they have the same number of samples).
+        if post_mass_norm is None:
             w_an *= np.mean(np.concatenate(list(integrals_dict.values())))
-    ax.plot(logx, w_an, linewidth=2, label='relative posterior mass',
-            linestyle=':', color='k')
-    # plot cumulative posterior mass
-    w_an_c = np.cumsum(w_an)
-    w_an_c /= np.trapz(w_an_c, x=logx)
-    # Try normalising the cumulative distribution of posterior mass to have the
-    # same area under the curve as the runs with dynamic_goal=0 (the ones which
-    # we want to compare to it). If they are not available just normalise it to
-    # the average area under all the runs (which should be about the same if
-    # they have the same number of samples).
-    if cum_post_mass_norm is None:
-        w_an_c *= np.mean(np.concatenate(list(integrals_dict.values())))
-    else:
-        try:
-            w_an_c *= np.mean(integrals_dict[cum_post_mass_norm])
-        except KeyError:
-            print('method name "' + cum_post_mass_norm + '" not found, so ' +
-                  'normalise area under the analytic posterior mass remaining '
-                  'curve using the mean of all methods.')
-            w_an_c *= np.mean(np.concatenate(list(integrals_dict.values())))
-    ax.plot(logx, w_an_c, linewidth=2, linestyle='--', dashes=(2, 3),
-            label='posterior mass remaining', color='darkblue')
-    if plot_tuned_post_mass:
-        # Get expected magnitude of parameter
-        # This is not defined for logx=0 so exclude final value of logx
-        param_exp = settings.r_given_logx(logx[:-1]) / np.sqrt(settings.n_dim)
-        # Tuned weight is the relative posterior mass times the expected
-        # magnitude of the paramer being considered
-        w_tuned = w_an[:-1] * param_exp
-        w_tuned /= np.trapz(w_tuned, x=logx[:-1])
-        if tuned_post_mass_norm is None:
-            w_tuned *= np.mean(np.concatenate(list(integrals_dict.values())))
         else:
             try:
-                w_tuned *= np.mean(integrals_dict[tuned_post_mass_norm])
+                w_an *= np.mean(integrals_dict[post_mass_norm])
             except KeyError:
-                print('method name "' + tuned_post_mass_norm + '" not ' +
-                      'found, so normalise area under the analytic tuned ' +
-                      'posterior mass curve using the mean of all methods.')
-                w_tuned *= np.mean(np.concatenate(
+                print('method name "' + post_mass_norm + '" not found, so ' +
+                      'normalise area under the analytic relative posterior ' +
+                      'mass curve using the mean of all methods.')
+                w_an *= np.mean(np.concatenate(list(integrals_dict.values())))
+        ax.plot(logx, w_an, linewidth=2, label='relative posterior mass',
+                linestyle=':', color='k')
+        # plot cumulative posterior mass
+        w_an_c = np.cumsum(w_an)
+        w_an_c /= np.trapz(w_an_c, x=logx)
+        # Try normalising the cumulative distribution of posterior mass to have
+        # the same area under the curve as the runs with dynamic_goal=0 (the
+        # ones which we want to compare to it). If they are not available just
+        # normalise it to the average area under all the runs (which should be
+        # about the same if they have the same number of samples).
+        if cum_post_mass_norm is None:
+            w_an_c *= np.mean(np.concatenate(list(integrals_dict.values())))
+        else:
+            try:
+                w_an_c *= np.mean(integrals_dict[cum_post_mass_norm])
+            except KeyError:
+                print('method name "' + cum_post_mass_norm + '" not found, ' +
+                      'so normalise area under the analytic posterior mass ' +
+                      'remaining curve using the mean of all methods.')
+                w_an_c *= np.mean(np.concatenate(
                     list(integrals_dict.values())))
-        ax.plot(logx[:-1], w_tuned, linewidth=2, label='tuned importance',
-                linestyle='-.', dashes=(2, 1.5, 1, 1.5), color='k')
+        ax.plot(logx, w_an_c, linewidth=2, linestyle='--', dashes=(2, 3),
+                label='posterior mass remaining', color='darkblue')
     ax.set_ylabel('number of live points')
     ax.set_xlabel(r'$\log X $')
     # set limits
