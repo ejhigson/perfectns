@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+"""perfectns setup."""
 import os
 import setuptools
 
