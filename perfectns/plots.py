@@ -147,9 +147,8 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
                                          cum_post_mass_norm='dynamic $G=0$',
                                          **kwargs)
     # Plot the tuned posterior mass
-    if 'dynamic $G=1$ tuned' in method_names:
-        print(fig.axes, type(fig.axes), fig.axes.get_xlim())
-        ax = fig.axes
+    if 'tuned dynamic $G=1$' in method_names:
+        ax = fig.axes[0]
         logx = np.linspace(ax.get_xlim()[0], ax.get_xlim()[1], npoints)
         # Get expected magnitude of parameter
         # This is not defined for logx=0 so exclude final value of logx
@@ -160,8 +159,8 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         w_tuned = w_an[:-1] * param_exp
         w_tuned /= np.trapz(w_tuned, x=logx[:-1])
         # Get the normalising constant
-        integrals = np.zeros(len(run_dict['dynamic $G=1$ tuned']))
-        for nr, run in enumerate(run_dict['dynamic $G=1$ tuned']):
+        integrals = np.zeros(len(run_dict['tuned dynamic $G=1$']))
+        for nr, run in enumerate(run_dict['tuned dynamic $G=1$']):
             logx_run = settings.logx_given_logl(run['logl'])
             logx[0] = 0  # to make lines extend all the way to the end
             # for normalising analytic weight lines

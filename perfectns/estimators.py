@@ -29,29 +29,39 @@ Estimators should also contain class variables:
 
 """
 
+import functools
 import numpy as np
 import scipy
 import perfectns.maths_functions as mf
 import nestcheck.analyse_run as ar
+import nestcheck.estimators as ne
 
 
 # Estimators
 # ----------
 
+class EstimatorBase(object):
 
-class LogZ(object):
+    """Base class for estimators."""
+
+    def __init__(self, func, **kwargs):
+        if kwargs:
+            self.func = functools.partial(func, **kwargs)
+        else:
+            self.func = func
+        self.latex_name = ne.get_latex_name(func, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        """Returns estimator value for run."""
+        return self.func(*args, **kwargs)
+
+
+class LogZ(EstimatorBase):
 
     """Natural log of Bayesian evidence."""
 
-    name = 'logz'
-    latex_name = r'$\mathrm{log} \mathcal{Z}$'
-
-    @staticmethod
-    def __call__(ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        return scipy.special.logsumexp(logw)
+    def __init__(self):
+        EstimatorBase.__init__(self, ne.logz)
 
     @staticmethod
     def analytical(settings):
@@ -59,19 +69,12 @@ class LogZ(object):
         return settings.logz_analytic()
 
 
-class Z(object):
+class Z(EstimatorBase):
 
     """Bayesian evidence."""
 
-    name = 'z'
-    latex_name = r'$\mathcal{Z}$'
-
-    @staticmethod
-    def __call__(ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        return np.exp(scipy.special.logsumexp(logw))
+    def __init__(self):
+        EstimatorBase.__init__(self, ne.evidence)
 
     @staticmethod
     def analytical(settings):
@@ -79,128 +82,23 @@ class Z(object):
         return np.exp(settings.logz_analytic())
 
 
-class CountSamples(object):
+class CountSamples(EstimatorBase):
 
     """Number of samples in run."""
 
-    name = 'n_samples'
-    latex_name = r'\# samples'
-
-    @staticmethod
-    def __call__(ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        return ns_run['logl'].shape[0]
+    def __init__(self):
+        EstimatorBase.__init__(self, ne.count_samples)
 
 
-class RMean:
-
-    """Mean of |theta| (the radial distance from the centre)."""
-
-    min_value = 0
-
-    def __init__(self, from_theta=False):
-        self.name = 'r'
-        self.latex_name = r'$\overline{|\theta|}$'
-        self.from_theta = from_theta
-
-    def __call__(self, ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        w_relative = np.exp(logw - logw.max())
-        if self.from_theta:
-            # If run contains a dims_to_sample setting, check that samples from
-            # every dimension are included
-            try:
-                assert (ns_run['settings']['dims_to_sample'] ==
-                        ns_run['settings']['n_dim']), "Cannot work out radius!"
-            except KeyError:
-                pass
-            r = np.sqrt(np.sum(ns_run['theta'] ** 2, axis=1))
-        else:
-            r = ns_run['r']
-        return np.sum(w_relative * r) / np.sum(w_relative)
-
-    def analytical(self, settings):
-        """Returns analytical value of estimator given settings."""
-        return check_by_integrating(self.ftilde, settings)
-
-    @staticmethod
-    def ftilde(logx, settings):
-        """
-        ftilde(X) is mean of f(theta) on the iso-likelihood contour
-        L(theta) = L(X).
-        """
-        return settings.r_given_logx(logx)
-
-
-class RCred(object):
-
-    """One-tailed credible interval on the value of |theta|."""
-
-    def __init__(self, probability, from_theta=False):
-        assert 1 > probability > 0, 'credible interval probability = ' + \
-            str(probability) + ' must be between 0 and 1'
-        self.name = 'rc_' + str(probability)
-        self.probability = probability
-        self.from_theta = from_theta
-        # format percent without trailing zeros
-        percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
-        self.latex_name = r'$\mathrm{C.I.}_{' + percent_str + r'\%}(|\theta|)$'
-
-    def __call__(self, ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        # get sorted array of r values with their posterior weight
-        wr = np.zeros((logw.shape[0], 2))
-        wr[:, 0] = np.exp(logw - logw.max())
-        if self.from_theta:
-            # If run contains a dims_to_sample setting, check that samples from
-            # every dimension are included
-            try:
-                assert (ns_run['settings']['dims_to_sample'] ==
-                        ns_run['settings']['n_dim']), "Cannot work out radius!"
-            except KeyError:
-                pass
-            wr[:, 1] = np.sqrt(np.sum(ns_run['theta'] ** 2, axis=1))
-        else:
-            wr[:, 1] = ns_run['r']
-        wr = wr[np.argsort(wr[:, 1], axis=0)]
-        # calculate cumulative distribution function (cdf)
-        # Adjust by subtracting 0.5 * weight of first point to correct skew
-        # - otherwise we need cdf=1 to return the last value but will return
-        # the smallest value if cdf<the fractional weight of the first point.
-        # This should not much matter as typically points' relative weights
-        # will be very small compared to self.probability or
-        # 1-self.probability.
-        cdf = np.cumsum(wr[:, 0]) - (wr[0, 0] / 2)
-        cdf /= np.sum(wr[:, 0])
-        # calculate cdf
-        # linearly interpolate value
-        return np.interp(self.probability, cdf, wr[:, 1])
-
-
-class ParamMean(object):
+class ParamMean(EstimatorBase):
 
     """
     Mean of a single parameter (single component of theta).
     By symmetry all parameters have the same distribution.
     """
 
-    def __init__(self, param_ind=1):
-        self.param_ind = param_ind
-        self.name = 'theta' + str(param_ind)
-        self.latex_name = (r'$\overline{\theta_{\hat{' + str(param_ind) +
-                           '}}}$')
-
-    def __call__(self, ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        w_relative = np.exp(logw - logw.max())
-        return ((np.sum(w_relative * ns_run['theta'][:, self.param_ind - 1])
-                 / np.sum(w_relative)))
+    def __init__(self, param_ind=0):
+        EstimatorBase.__init__(self, ne.param_mean, param_ind=param_ind)
 
     @staticmethod
     def analytical(settings):
@@ -216,7 +114,7 @@ class ParamMean(object):
         return np.zeros(logx.shape)
 
 
-class ParamCred(object):
+class ParamCred(EstimatorBase):
 
     """
     One-tailed credible interval on the value of a single parameter (component
@@ -224,43 +122,10 @@ class ParamCred(object):
     By symmetry all parameters have the same distribution.
     """
 
-    def __init__(self, probability, param_ind=1):
-        assert 1 > probability > 0, 'credible interval probability = ' + \
-            str(probability) + ' must be between 0 and 1'
-        self.param_ind = param_ind
-        self.name = 'theta' + str(param_ind) + 'c_' + str(probability)
+    def __init__(self, probability, param_ind=0):
         self.probability = probability
-        param_str = r'\theta_{\hat{' + str(param_ind) + '}}'
-        if probability == 0.5:
-            self.name = 'Median(theta' + str(param_ind) + ')'
-            self.latex_name = r'$\mathrm{median}(' + param_str + ')$'
-        else:
-            self.name = 'theta' + str(param_ind) + 'c_' + str(probability)
-            # format percent without trailing zeros
-            percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
-            self.latex_name = (r'$\mathrm{C.I.}_{' + percent_str +
-                               r'\%}(' + param_str + ')$')
-
-    def __call__(self, ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        # get sorted array of parameter values with their posterior weight
-        wp = np.zeros((logw.shape[0], 2))
-        wp[:, 0] = np.exp(logw - logw.max())
-        wp[:, 1] = ns_run['theta'][:, self.param_ind - 1]
-        wp = wp[np.argsort(wp[:, 1], axis=0)]
-        # calculate cumulative distribution function (cdf)
-        # Adjust by subtracting 0.5 * weight of first point to correct skew
-        # - otherwise we need cdf=1 to return the last value but will return
-        # the smallest value if cdf<the fractional weight of the first point.
-        # This should not much matter as typically points' relative weights
-        # will be very small compared to self.probability or
-        # 1-self.probability.
-        cdf = np.cumsum(wp[:, 0]) - (wp[0, 0] / 2)
-        cdf /= np.sum(wp[:, 0])
-        # linearly interpolate value
-        return np.interp(self.probability, cdf, wp[:, 1])
+        EstimatorBase.__init__(self, ne.param_cred, probability=probability,
+                               param_ind=param_ind)
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
@@ -285,7 +150,7 @@ class ParamCred(object):
             return zscore * sigma
 
 
-class ParamSquaredMean:
+class ParamSquaredMean(EstimatorBase):
 
     """
     Mean of the square of single parameter (second moment of its posterior
@@ -295,20 +160,9 @@ class ParamSquaredMean:
 
     min_value = 0
 
-    def __init__(self, param_ind=1):
-        self.param_ind = param_ind
-        self.name = 'theta' + str(param_ind) + 'squ'
-        self.latex_name = (r'$\overline{\theta^2_{\hat{' + str(param_ind) +
-                           '}}}$')
-
-    def __call__(self, ns_run, logw=None, simulate=False):
-        """Returns estimator value for run."""
-        if logw is None:
-            logw = ar.get_logw(ns_run, simulate=simulate)
-        w_relative = np.exp(logw - logw.max())  # protect against overflow
-        w_relative /= np.sum(w_relative)
-        return np.sum(w_relative *
-                      (ns_run['theta'][:, self.param_ind - 1] ** 2))
+    def __init__(self, param_ind=0):
+        EstimatorBase.__init__(self, ne.param_squared_mean,
+                               param_ind=param_ind)
 
     @staticmethod
     def ftilde(logx, settings):
@@ -323,6 +177,91 @@ class ParamSquaredMean:
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
         return check_by_integrating(self.ftilde, settings)
+
+
+class RMean(EstimatorBase):
+
+    """Mean of |theta| (the radial distance from the centre)."""
+
+    min_value = 0
+
+    def __init__(self, from_theta=False):
+        EstimatorBase.__init__(self, ne.r_mean)
+        self.from_theta = from_theta
+
+    def __call__(self, ns_run, logw=None, simulate=False):
+        """
+        Overwrite __call__ from nestcheck r_mean to allow use of perfectns'
+        'r' key if from_theta=False, and to check all the dimensions have been
+        sampled if from_theta=True.
+        """
+        if self.from_theta:
+            # If run contains a dims_to_sample setting, check that samples from
+            # every dimension are included
+            assert (ns_run['settings']['dims_to_sample'] ==
+                    ns_run['settings']['n_dim']), "Cannot work out radius!"
+            return self.func(ns_run, logw=logw, simulate=simulate)
+        else:
+            if logw is None:
+                logw = ar.get_logw(ns_run, simulate=simulate)
+            w_relative = np.exp(logw - logw.max())
+            r = ns_run['r']
+            return np.sum(w_relative * r) / np.sum(w_relative)
+
+    def analytical(self, settings):
+        """Returns analytical value of estimator given settings."""
+        return check_by_integrating(self.ftilde, settings)
+
+    @staticmethod
+    def ftilde(logx, settings):
+        """
+        ftilde(X) is mean of f(theta) on the iso-likelihood contour
+        L(theta) = L(X).
+        """
+        return settings.r_given_logx(logx)
+
+
+class RCred(EstimatorBase):
+
+    """One-tailed credible interval on the value of |theta|."""
+
+    min_value = 0
+
+    def __init__(self, probability, from_theta=False):
+        self.probability = probability
+        EstimatorBase.__init__(self, ne.r_cred, probability=probability)
+        self.from_theta = from_theta
+
+    def __call__(self, ns_run, logw=None, simulate=False):
+        """Returns estimator value for run."""
+        if self.from_theta:
+            # If run contains a dims_to_sample setting, check that samples from
+            # every dimension are included
+            assert (ns_run['settings']['dims_to_sample'] ==
+                    ns_run['settings']['n_dim']), "Cannot work out radius!"
+            return self.func(ns_run, logw=logw, simulate=simulate,
+                             probability=self.probability)
+        else:
+            if logw is None:
+                logw = ar.get_logw(ns_run, simulate=simulate)
+            # get sorted array of r values with their posterior weight
+            wr = np.zeros((logw.shape[0], 2))
+            wr[:, 0] = np.exp(logw - logw.max())
+            wr[:, 1] = ns_run['r']
+            wr = wr[np.argsort(wr[:, 1], axis=0)]
+            # calculate cumulative distribution function (cdf)
+            # Adjust by subtracting 0.5 * weight of first point to correct skew
+            # - otherwise we need cdf=1 to return the last value but will
+            # return the smallest value if cdf<the fractional weight of the
+            # first point.
+            # This should not much matter as typically points' relative weights
+            # will be very small compared to self.probability or
+            # 1-self.probability.
+            cdf = np.cumsum(wr[:, 0]) - (wr[0, 0] / 2)
+            cdf /= np.sum(wr[:, 0])
+            # calculate cdf
+            # linearly interpolate value
+            return np.interp(self.probability, cdf, wr[:, 1])
 
 
 # Functions for checking estimator results

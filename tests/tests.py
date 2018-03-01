@@ -290,16 +290,23 @@ class TestPerfectNS(unittest.TestCase):
             e.get_true_estimator_values([e.RCred(0.84)], self.settings)[0]))
         # Check calculating the radius from theta: when points in theta have
         # coordinates (1, 1) the radius should be sqrt(2)
+        run_dict_temp = {'theta': np.full((2, 2), 1),
+                         'r': np.full((2,), np.sqrt(2)),
+                         'logl': np.full((2,), 0.),
+                         'nlive_array': np.full((2,), 5.),
+                         'settings': {'dims_to_sample': 2, 'n_dim': 2}}
+        logw_temp = np.zeros(2)
         self.assertEqual(e.RMean(from_theta=True)(
-            {'theta': np.full((2, 2), 1)}, logw=np.zeros(2)), np.sqrt(2))
+            run_dict_temp, logw=logw_temp), np.sqrt(2))
         # Check without deriving r from theta
         self.assertEqual(e.RMean(from_theta=False)(
-            {'r': np.full((2,), np.sqrt(2))}, logw=np.zeros(2)), np.sqrt(2))
+            run_dict_temp, logw=logw_temp), np.sqrt(2))
         # Check RCred
-        e.RCred(0.84, from_theta=True)({'theta': np.full((2, 2), 1)},
-                                       logw=np.zeros(2))
-        e.RCred(0.84, from_theta=False)({'r': np.full((2,), np.sqrt(2))},
-                                        logw=np.zeros(2))
+        e.RCred(0.84, from_theta=True)(run_dict_temp, logw=logw_temp)
+        e.RCred(0.84, from_theta=False)(run_dict_temp, logw=logw_temp)
+        # Check logw=None
+        e.RMean(from_theta=False)(run_dict_temp, logw=None)
+        e.RCred(0.84, from_theta=False)(run_dict_temp, logw=None)
         # Check CountSamples estimator is working ok
         self.assertEqual(e.CountSamples()({'logl': np.zeros(10)}), 10)
 

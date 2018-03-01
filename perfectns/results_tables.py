@@ -274,7 +274,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         except OSError:
             pass
     # start function
-    est_names = [est.name for est in estimator_list]
+    est_names = [est.latex_name for est in estimator_list]
     # generate runs
     run_list = ns.get_run_data(settings, n_run, save=save, load=load,
                                cache_dir=cache_dir,
