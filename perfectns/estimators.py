@@ -6,8 +6,12 @@ sampling run.
 Each estimator class should contain a mandatory member function returning the
 value of the estimator for a nested sampling run:
 
-    def __call__(self, logw, ns_run):
+    def __call__(self, ns_run, logw=None, simulate=False):
         ...
+
+This allows logw to be provided if many estimators are being calculated from
+the same run so logw is only calculated once. Otherwise logw is calculated from
+the run if required.
 
 They may also optionally contain a function giving its analytical value for
 some given set of calculation settings (for use in checking results):
@@ -28,6 +32,7 @@ Estimators should also contain class variables:
 import numpy as np
 import scipy
 import perfectns.maths_functions as mf
+import nestcheck.analyse_run as ar
 
 
 # Estimators
@@ -42,8 +47,10 @@ class LogZ(object):
     latex_name = r'$\mathrm{log} \mathcal{Z}$'
 
     @staticmethod
-    def __call__(logw, ns_run):
+    def __call__(ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         return scipy.special.logsumexp(logw)
 
     @staticmethod
@@ -60,8 +67,10 @@ class Z(object):
     latex_name = r'$\mathcal{Z}$'
 
     @staticmethod
-    def __call__(logw, ns_run):
+    def __call__(ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         return np.exp(scipy.special.logsumexp(logw))
 
     @staticmethod
@@ -78,9 +87,9 @@ class CountSamples(object):
     latex_name = r'\# samples'
 
     @staticmethod
-    def __call__(logw, ns_run):
+    def __call__(ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
-        return logw.shape[0]
+        return ns_run['logl'].shape[0]
 
 
 class RMean:
@@ -94,8 +103,10 @@ class RMean:
         self.latex_name = r'$\overline{|\theta|}$'
         self.from_theta = from_theta
 
-    def __call__(self, logw, ns_run):
+    def __call__(self, ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         w_relative = np.exp(logw - logw.max())
         if self.from_theta:
             # If run contains a dims_to_sample setting, check that samples from
@@ -137,8 +148,10 @@ class RCred(object):
         percent_str = ('%f' % (probability * 100)).rstrip('0').rstrip('.')
         self.latex_name = r'$\mathrm{C.I.}_{' + percent_str + r'\%}(|\theta|)$'
 
-    def __call__(self, logw, ns_run):
+    def __call__(self, ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         # get sorted array of r values with their posterior weight
         wr = np.zeros((logw.shape[0], 2))
         wr[:, 0] = np.exp(logw - logw.max())
@@ -181,8 +194,10 @@ class ParamMean(object):
         self.latex_name = (r'$\overline{\theta_{\hat{' + str(param_ind) +
                            '}}}$')
 
-    def __call__(self, logw, ns_run):
+    def __call__(self, ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         w_relative = np.exp(logw - logw.max())
         return ((np.sum(w_relative * ns_run['theta'][:, self.param_ind - 1])
                  / np.sum(w_relative)))
@@ -226,8 +241,10 @@ class ParamCred(object):
             self.latex_name = (r'$\mathrm{C.I.}_{' + percent_str +
                                r'\%}(' + param_str + ')$')
 
-    def __call__(self, logw, ns_run):
+    def __call__(self, ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         # get sorted array of parameter values with their posterior weight
         wp = np.zeros((logw.shape[0], 2))
         wp[:, 0] = np.exp(logw - logw.max())
@@ -284,8 +301,10 @@ class ParamSquaredMean:
         self.latex_name = (r'$\overline{\theta^2_{\hat{' + str(param_ind) +
                            '}}}$')
 
-    def __call__(self, logw, ns_run):
+    def __call__(self, ns_run, logw=None, simulate=False):
         """Returns estimator value for run."""
+        if logw is None:
+            logw = ar.get_logw(ns_run, simulate=simulate)
         w_relative = np.exp(logw - logw.max())  # protect against overflow
         w_relative /= np.sum(w_relative)
         return np.sum(w_relative *

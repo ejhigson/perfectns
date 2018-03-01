@@ -291,17 +291,17 @@ class TestPerfectNS(unittest.TestCase):
         # Check calculating the radius from theta: when points in theta have
         # coordinates (1, 1) the radius should be sqrt(2)
         self.assertEqual(e.RMean(from_theta=True)(
-            np.zeros(2), {'theta': np.full((2, 2), 1)}), np.sqrt(2))
+            {'theta': np.full((2, 2), 1)}, logw=np.zeros(2)), np.sqrt(2))
         # Check without deriving r from theta
         self.assertEqual(e.RMean(from_theta=False)(
-            np.zeros(2), {'r': np.full((2,), np.sqrt(2))}), np.sqrt(2))
+            {'r': np.full((2,), np.sqrt(2))}, logw=np.zeros(2)), np.sqrt(2))
         # Check RCred
-        e.RCred(0.84, from_theta=True)(np.zeros(2),
-                                       {'theta': np.full((2, 2), 1)})
-        e.RCred(0.84, from_theta=False)(np.zeros(2),
-                                        {'r': np.full((2,), np.sqrt(2))})
+        e.RCred(0.84, from_theta=True)({'theta': np.full((2, 2), 1)},
+                                       logw=np.zeros(2))
+        e.RCred(0.84, from_theta=False)({'r': np.full((2,), np.sqrt(2))},
+                                        logw=np.zeros(2))
         # Check CountSamples estimator is working ok
-        self.assertEqual(e.CountSamples()(np.zeros(10), {}), 10)
+        self.assertEqual(e.CountSamples()({'logl': np.zeros(10)}), 10)
 
     def test_maths_functions(self):
         # By default only used in high dim so manually test with dim=100
