@@ -69,6 +69,7 @@ class TestPerfectNS(unittest.TestCase):
         """
         settings = copy.deepcopy(self.settings)
         for dynamic_goal in [None, 0, 0.5, 1]:
+            settings.dynamic_goal = dynamic_goal
             run = ns.generate_ns_run(settings)
             del run['logx']
             del run['r']
@@ -88,7 +89,9 @@ class TestPerfectNS(unittest.TestCase):
             5, [0, 0.25, 1, 1], self.estimator_list, self.settings, load=True,
             save=True, cache_dir=self.cache_dir,
             parallelise=False, tuned_dynamic_ps=[False, False, False, True])
-        # dynamic_table.to_pickle('tests/test_dynamic_table_value.pkl')
+        # Uncomment below line to update values if they change for a known
+        # reason
+        # dynamic_table.to_pickle('tests/dynamic_table_test_values.pkl')
         # Check the values of every row for the theta1 estimator
         test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
         numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
