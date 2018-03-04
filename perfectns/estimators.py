@@ -34,7 +34,7 @@ import numpy as np
 import scipy
 import perfectns.maths_functions as mf
 import nestcheck.analyse_run as ar
-import nestcheck.estimators as ne
+import nestcheck.estimators
 
 
 # Estimators
@@ -49,7 +49,7 @@ class EstimatorBase(object):
             self.func = functools.partial(func, **kwargs)
         else:
             self.func = func
-        self.latex_name = ne.get_latex_name(func, **kwargs)
+        self.latex_name = nestcheck.estimators.get_latex_name(func, **kwargs)
 
     def __call__(self, *args, **kwargs):
         """Returns estimator value for run."""
@@ -61,7 +61,7 @@ class LogZ(EstimatorBase):
     """Natural log of Bayesian evidence."""
 
     def __init__(self):
-        EstimatorBase.__init__(self, ne.logz)
+        EstimatorBase.__init__(self, nestcheck.estimators.logz)
 
     @staticmethod
     def analytical(settings):
@@ -74,7 +74,7 @@ class Z(EstimatorBase):
     """Bayesian evidence."""
 
     def __init__(self):
-        EstimatorBase.__init__(self, ne.evidence)
+        EstimatorBase.__init__(self, nestcheck.estimators.evidence)
 
     @staticmethod
     def analytical(settings):
@@ -87,7 +87,7 @@ class CountSamples(EstimatorBase):
     """Number of samples in run."""
 
     def __init__(self):
-        EstimatorBase.__init__(self, ne.count_samples)
+        EstimatorBase.__init__(self, nestcheck.estimators.count_samples)
 
 
 class ParamMean(EstimatorBase):
@@ -98,7 +98,8 @@ class ParamMean(EstimatorBase):
     """
 
     def __init__(self, param_ind=0):
-        EstimatorBase.__init__(self, ne.param_mean, param_ind=param_ind)
+        EstimatorBase.__init__(self, nestcheck.estimators.param_mean,
+                               param_ind=param_ind)
 
     @staticmethod
     def analytical(settings):
@@ -124,8 +125,8 @@ class ParamCred(EstimatorBase):
 
     def __init__(self, probability, param_ind=0):
         self.probability = probability
-        EstimatorBase.__init__(self, ne.param_cred, probability=probability,
-                               param_ind=param_ind)
+        EstimatorBase.__init__(self, nestcheck.estimators.param_cred,
+                               probability=probability, param_ind=param_ind)
 
     def analytical(self, settings):
         """Returns analytical value of estimator given settings."""
@@ -161,7 +162,7 @@ class ParamSquaredMean(EstimatorBase):
     min_value = 0
 
     def __init__(self, param_ind=0):
-        EstimatorBase.__init__(self, ne.param_squared_mean,
+        EstimatorBase.__init__(self, nestcheck.estimators.param_squared_mean,
                                param_ind=param_ind)
 
     @staticmethod
@@ -186,7 +187,7 @@ class RMean(EstimatorBase):
     min_value = 0
 
     def __init__(self, from_theta=False):
-        EstimatorBase.__init__(self, ne.r_mean)
+        EstimatorBase.__init__(self, nestcheck.estimators.r_mean)
         self.from_theta = from_theta
 
     def __call__(self, ns_run, logw=None, simulate=False):
@@ -229,7 +230,8 @@ class RCred(EstimatorBase):
 
     def __init__(self, probability, from_theta=False):
         self.probability = probability
-        EstimatorBase.__init__(self, ne.r_cred, probability=probability)
+        EstimatorBase.__init__(self, nestcheck.estimators.r_cred,
+                               probability=probability)
         self.from_theta = from_theta
 
     def __call__(self, ns_run, logw=None, simulate=False):
