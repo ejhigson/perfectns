@@ -30,14 +30,14 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
               'for n_dim<100 the "gaussian" prior works fine and you should '
               'use it instead of the "gaussian_cached" prior')
         # use a smaller logx_max as the point at which the logx at which the
-        # scipy method (scipy.special.gammainc) fails is lower in lower.
+        # scipy method (scipy.special.gammainc) fails is lower in lower
         # dimensions. logx_max=-10 will mean the gaussian_cached prior works
         # for all n_dim>2.
         logx_max = kwargs.pop('logx_max', -10)
     else:
         logx_max = kwargs.pop('logx_max', -200)
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     save_name = (cache_dir + 'interp_gauss_prior_' + str(n_dim) + 'd_' +
                  str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' +
                  str(logx_max) + 'xmax_' + str(interp_density) + 'id')

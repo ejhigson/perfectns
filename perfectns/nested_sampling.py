@@ -111,7 +111,7 @@ def get_run_data(settings, n_repeat, **kwargs):
     random_seeds = kwargs.pop('random_seeds', [None] * n_repeat)
     assert len(random_seeds) == n_repeat
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     save_name = cache_dir + settings.save_name()
     save_name += '_' + str(n_repeat) + 'reps'
     if load:

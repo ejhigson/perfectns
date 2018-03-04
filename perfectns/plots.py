@@ -44,7 +44,7 @@ def plot_rel_posterior_mass(likelihood_list, prior, dim_list, logx, **kwargs):
     linestyles = kwargs.pop('linestyles', ['solid', 'dashed', 'dotted'])
     figsize = kwargs.pop('figsize', (6.4, 2))
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     fig = plt.figure(figsize=figsize)
     for dim in dim_list:
         for nl, likelihood in enumerate(likelihood_list):
@@ -139,13 +139,11 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         run_dict[label] = temp_runs
         print('mean samples per run:', n_sample_stats[i, 0],
               'std:', n_sample_stats[i, 1])
-    fig = nestcheck.plots.plot_run_nlive(method_names, run_dict,
-                                         post_mass_norm='dynamic $G=1$',
-                                         npoints=npoints,
-                                         logx_given_logl=settings.logx_given_logl,
-                                         logl_given_logx=settings.logl_given_logx,
-                                         cum_post_mass_norm='dynamic $G=0$',
-                                         **kwargs)
+    fig = nestcheck.plots.plot_run_nlive(
+        method_names, run_dict, post_mass_norm='dynamic $G=1$',
+        npoints=npoints, logx_given_logl=settings.logx_given_logl,
+        logl_given_logx=settings.logl_given_logx,
+        cum_post_mass_norm='dynamic $G=0$', **kwargs)
     # Plot the tuned posterior mass
     if 'tuned dynamic $G=1$' in method_names:
         ax = fig.axes[0]
@@ -215,7 +213,7 @@ def plot_parameter_logx_diagram(settings, ftheta, **kwargs):
     else:
         ymin = kwargs.pop('ymin', -ymax)
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # Plotting settings
     max_sigma = 3.5
     contour_line_levels = [1, 2, 3]

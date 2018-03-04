@@ -97,7 +97,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     dynamic_goals = [None] + dynamic_goals_in
     tuned_dynamic_ps = [False] + tuned_dynamic_ps
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # Make a copy of the input settings to stop us editing them
     settings = copy.deepcopy(settings_in)
     # make save_name
@@ -260,7 +260,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     n_run_ci = kwargs.pop('n_run_ci', n_run)
     cred_int = kwargs.pop('cred_int', 0.95)
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # make save_name
     save_root = ('bootstrap_results_' + str(n_simulate) + 'nsim_' +
                  str(ninit_sep) + 'sep')
@@ -280,11 +280,6 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                cache_dir=cache_dir,
                                max_workers=max_workers,
                                parallelise=parallelise)
-    # # Add true values to check numbers are correct - these
-    # # should be close to the mean calculation values
-    # results = e.get_true_estimator_values(estimator_list, settings)
-    # results.loc['true values_unc'] = 0
-    # get mean and std of repeated calculations
     rep_values = pu.parallel_apply(ar.run_estimators, run_list,
                                    func_args=(estimator_list,),
                                    max_workers=max_workers,

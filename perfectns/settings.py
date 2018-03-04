@@ -89,7 +89,7 @@ class PerfectNSSettings(object):
             setattr(self, setting_name,
                     kwargs.pop(setting_name, default_value))
         if kwargs:
-            raise TypeError('Unexpected **kwargs: %r' % kwargs)
+            raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
         # prevent more settings from being added later
         self.__isfrozen = True
 

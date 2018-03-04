@@ -108,7 +108,7 @@ class GaussianCached(object):
         logx_min = kwargs.pop('logx_min', -4500)
         cache_dir = kwargs.pop('cache_dir', 'cache/')
         if kwargs:
-            raise TypeError('Unexpected **kwargs: %r' % kwargs)
+            raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
         self.prior_scale = prior_scale
         self.save_dict = save_dict
         self.interp_density = interp_density
@@ -118,11 +118,6 @@ class GaussianCached(object):
         # Otherwise wait until r_given_logx is called.
         if n_dim is not None:
             self.check_cache(n_dim)
-        #     self.interp_d = cgp.interp_r_logx_dict(
-        #         n_dim, self.prior_scale, save_dict=self.save_dict)
-        #     self.interp_f = scipy.interpolate.interp1d(
-        #         self.interp_d['logx_array'], self.interp_d['r_array'])
-        # else:
 
     def r_given_logx(self, logx, n_dim):
         """
