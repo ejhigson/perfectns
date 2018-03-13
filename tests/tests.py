@@ -360,19 +360,14 @@ class TestPlotting(unittest.TestCase):
             [2], np.linspace(-10, 0, 100), unexpected=0)
 
 
-class TestResultsTables(unittest.TestCase):
+class TestDynamicResultsTables(unittest.TestCase):
 
     def setUp(self):
-        """
-        Set up list of estimator objects and settings for each test.
-        Use all the estimators in the module in each case, and choose settings
-        so the tests run quickly.
-        """
+        """Check TEST_CACHE_DIR does not already exist."""
         assert not os.path.exists(TEST_CACHE_DIR[:-1]), \
             ('Directory ' + TEST_CACHE_DIR[:-1] + ' exists! Tests use this ' +
              'dir to check caching then delete it afterwards, so the path ' +
              'should be left empty.')
-        self.settings = get_minimal_settings()
 
     def tearDown(self):
         """Remove any caches created by the tests."""
@@ -381,7 +376,7 @@ class TestResultsTables(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-    def test_dynamic_results_table(self):
+    def test_dynamic_results_table_values(self):
         """
         Test generating a table comparing dynamic and standard nested sampling;
         this covers a lot of the perfectns module's functionality.
@@ -390,25 +385,44 @@ class TestResultsTables(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        # Need parallelise=False for coverage module to give correct answers
+        settings = get_minimal_settings()
         dynamic_table = rt.get_dynamic_results(
-            5, [0, 0.25, 1, 1], ESTIMATOR_LIST, self.settings, load=True,
+            5, [0, 0.25, 1, 1], ESTIMATOR_LIST, settings, load=True,
             save=True, cache_dir=TEST_CACHE_DIR,
             parallelise=True, tuned_dynamic_ps=[False, False, False, True])
-        # Uncomment below line to update values if they change for a known
-        # reason
+        # None of the values in the table should be NaN:
+        self.assertFalse(np.any(np.isnan(dynamic_table.values)))
+        # Uncomment below line to update values if they are deliberately
+        # changed:
         # dynamic_table.to_pickle('tests/dynamic_table_test_values.pkl')
         # Check the values of every row for the theta1 estimator
         test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
         numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
                                       rtol=1e-13)
-        # None of the other values in the table should be NaN:
-        self.assertFalse(np.any(np.isnan(dynamic_table.values)))
-        # Check the kwargs checking
-        self.assertRaises(TypeError, rt.get_dynamic_results, 5, [0],
-                          ESTIMATOR_LIST, self.settings, unexpected=1)
 
-    def test_bootstrap_results_table(self):
+    def test_dynamic_results_table_unexpected_kwargs(self):
+        settings = get_minimal_settings()
+        self.assertRaises(TypeError, rt.get_dynamic_results, 5, [0],
+                          ESTIMATOR_LIST, settings, unexpected=1)
+
+
+class TestBootstrapResultsTables(unittest.TestCase):
+
+    def setUp(self):
+        """Check TEST_CACHE_DIR does not already exist."""
+        assert not os.path.exists(TEST_CACHE_DIR[:-1]), \
+            ('Directory ' + TEST_CACHE_DIR[:-1] + ' exists! Tests use this ' +
+             'dir to check caching then delete it afterwards, so the path ' +
+             'should be left empty.')
+
+    def tearDown(self):
+        """Remove any caches created by the tests."""
+        try:
+            shutil.rmtree(TEST_CACHE_DIR[:-1])
+        except FileNotFoundError:
+            pass
+
+    def test_bootstrap_results_table_values(self):
         """
         Generate a table showing sampling error estimates using the bootstrap
         method.
@@ -417,26 +431,21 @@ class TestResultsTables(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        # Need parallelise=False for coverage module to give correct answers
-        bootstrap_table = rt.get_bootstrap_results(5, 10,
-                                                   ESTIMATOR_LIST,
-                                                   self.settings,
-                                                   n_run_ci=2,
-                                                   n_simulate_ci=100,
-                                                   add_sim_method=True,
-                                                   cred_int=0.95,
-                                                   load=True, save=True,
-                                                   cache_dir=TEST_CACHE_DIR,
-                                                   ninit_sep=True,
-                                                   parallelise=True)
+        bootstrap_table = rt.get_bootstrap_results(
+            5, 10, ESTIMATOR_LIST, get_minimal_settings(), n_run_ci=2,
+            n_simulate_ci=100, add_sim_method=True, cred_int=0.95, load=True,
+            save=True, cache_dir=TEST_CACHE_DIR, ninit_sep=True,
+            parallelise=True)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(bootstrap_table.values[1:, :])))
-        # Check the kwargs checking
+
+    def test_bootstrap_results_table_unexpected_kwargs(self):
+        settings = get_minimal_settings()
         self.assertRaises(TypeError, rt.get_bootstrap_results, 3, 10,
-                          ESTIMATOR_LIST, self.settings, unexpected=1)
+                          ESTIMATOR_LIST, settings, unexpected=1)
 
 
 # Helper functions
