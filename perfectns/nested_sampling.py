@@ -130,8 +130,8 @@ def get_run_data(settings, n_repeat, **kwargs):
                             del loaded[key]
                             del current[key]
                     print('Loaded settings != current settings. ' +
-                          'Differences are:', current, loaded,
-                          'Generate new runs instead.')
+                          'Differences are: loaded =', loaded, '!= current =',
+                          current, 'Generate new runs instead.')
                     del data
                     load = False
         except (OSError, EOFError) as exception:
@@ -161,7 +161,7 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     in settings.
 
     For more details see 'Sampling errors in nested sampling parameter
-    estimation' (Higson et al. 2017).
+    estimation' (Higson 2017).
 
     The run terminates when the estimated posterior mass contained in the live
     points is less than settings.termination_fraction. The evidence in the
@@ -252,7 +252,7 @@ def generate_dynamic_run(settings):
     Generate a dynamic nested sampling run.
     For details of the dynamic nested sampling algorithm, see 'Dynamic nested
     sampling: an improved algorithm for nested sampling parameter estimation
-    and evidence calculation' (Higson et al. 2017).
+    and evidence calculation' (Higson 2017).
 
     The run terminates when the number of samples reaches some limit
     settings.n_samples_max. If this is not set, the function will estimate the
@@ -400,8 +400,8 @@ def z_importance(w_relative, nlive, exact=False):
     Calculate the relative importance of each point for evidence calculation.
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
-    nested sampling parameter estimation and evidence calculation' (Higson et
-    al. 2017).
+    nested sampling parameter estimation and evidence calculation'
+    (Higson 2017).
     """
     importance = np.cumsum(w_relative)
     importance = importance.max() - importance

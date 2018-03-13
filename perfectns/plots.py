@@ -167,6 +167,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         # Plot the tuned posterior mass
         ax.plot(logx[:-1], w_tuned, linewidth=2, label='tuned importance',
                 linestyle='-.', dashes=(2, 1.5, 1, 1.5), color='k')
+        ax.legend(ncol=3)
     return fig
 
 
