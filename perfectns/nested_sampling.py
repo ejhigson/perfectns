@@ -105,14 +105,14 @@ def get_run_data(settings, n_repeat, **kwargs):
     max_workers = kwargs.pop('max_workers', None)
     load = kwargs.pop('load', True)
     save = kwargs.pop('save', True)
-    cache_dir = kwargs.pop('cache_dir', 'cache/')
+    cache_dir = kwargs.pop('cache_dir', 'cache')
     overwrite_existing = kwargs.pop('overwrite_existing', True)
     check_loaded_settings = kwargs.pop('check_loaded_settings', True)
     random_seeds = kwargs.pop('random_seeds', [None] * n_repeat)
     assert len(random_seeds) == n_repeat
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    save_name = cache_dir + settings.save_name()
+    save_name = cache_dir + '/' + settings.save_name()
     save_name += '_' + str(n_repeat) + 'reps'
     if load:
         print('get_run_data: ' + save_name)

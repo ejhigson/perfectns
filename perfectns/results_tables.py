@@ -84,7 +84,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     save = kwargs.pop('save', False)
     max_workers = kwargs.pop('max_workers', None)
     parallelise = kwargs.pop('parallelise', True)
-    cache_dir = kwargs.pop('cache_dir', 'cache/')
+    cache_dir = kwargs.pop('cache_dir', 'cache')
     overwrite_existing = kwargs.pop('overwrite_existing', True)
     run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
     tuned_dynamic_ps = kwargs.pop('tuned_dynamic_ps',
@@ -106,7 +106,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         save_root += '_' + str(dg).replace('.', '_')
     save_root += '_' + settings.save_name(include_dg=False)
     save_root += '_' + str(n_run) + 'reps'
-    save_file = cache_dir + save_root + '.pkl'
+    save_file = cache_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:
         try:
@@ -254,7 +254,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     max_workers = kwargs.pop('max_workers', None)
     ninit_sep = kwargs.pop('ninit_sep', True)
     parallelise = kwargs.pop('parallelise', True)
-    cache_dir = kwargs.pop('cache_dir', 'cache/')
+    cache_dir = kwargs.pop('cache_dir', 'cache')
     add_sim_method = kwargs.pop('add_sim_method', False)
     n_simulate_ci = kwargs.pop('n_simulate_ci', n_simulate)
     n_run_ci = kwargs.pop('n_run_ci', n_run)
@@ -266,7 +266,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                  str(ninit_sep) + 'sep')
     save_root += '_' + settings.save_name()
     save_root += '_' + str(n_run) + 'reps'
-    save_file = cache_dir + save_root + '.pkl'
+    save_file = cache_dir + '/' + save_root + '.pkl'
     # try loading results
     if load:
         try:

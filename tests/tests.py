@@ -30,22 +30,22 @@ ESTIMATOR_LIST = [e.LogZ(),
                   e.ParamCred(0.84),
                   e.RMean(from_theta=True),
                   e.RCred(0.84, from_theta=True)]
-TEST_CACHE_DIR = 'cache_tests/'
+TEST_CACHE_DIR = 'cache_tests'
 
 
 class TestNestedSampling(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR[:-1]), \
-            ('Directory ' + TEST_CACHE_DIR[:-1] + ' exists! Tests use this ' +
+        assert not os.path.exists(TEST_CACHE_DIR), \
+            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
              'dir to check caching then delete it afterwards, so the path ' +
              'should be left empty.')
 
     def tearDown(self):
         """Remove any caches created by the tests."""
         try:
-            shutil.rmtree(TEST_CACHE_DIR[:-1])
+            shutil.rmtree(TEST_CACHE_DIR)
         except FileNotFoundError:
             pass
 
@@ -60,6 +60,7 @@ class TestNestedSampling(unittest.TestCase):
             run = ns.generate_ns_run(settings)
             del run['logx']
             del run['r']
+            del run['settings']
             dp.check_ns_run(run)
 
     def test_get_run_data_caching(self):
@@ -252,15 +253,15 @@ class TestPriors(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR[:-1]), \
-            ('Directory ' + TEST_CACHE_DIR[:-1] + ' exists! Tests use this ' +
+        assert not os.path.exists(TEST_CACHE_DIR), \
+            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
              'dir to check caching then delete it afterwards, so the path ' +
              'should be left empty.')
 
     def tearDown(self):
         """Remove any caches created by the tests."""
         try:
-            shutil.rmtree(TEST_CACHE_DIR[:-1])
+            shutil.rmtree(TEST_CACHE_DIR)
         except FileNotFoundError:
             pass
 
@@ -364,15 +365,15 @@ class TestDynamicResultsTables(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR[:-1]), \
-            ('Directory ' + TEST_CACHE_DIR[:-1] + ' exists! Tests use this ' +
+        assert not os.path.exists(TEST_CACHE_DIR), \
+            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
              'dir to check caching then delete it afterwards, so the path ' +
              'should be left empty.')
 
     def tearDown(self):
         """Remove any caches created by the tests."""
         try:
-            shutil.rmtree(TEST_CACHE_DIR[:-1])
+            shutil.rmtree(TEST_CACHE_DIR)
         except FileNotFoundError:
             pass
 
@@ -410,15 +411,15 @@ class TestBootstrapResultsTables(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR[:-1]), \
-            ('Directory ' + TEST_CACHE_DIR[:-1] + ' exists! Tests use this ' +
+        assert not os.path.exists(TEST_CACHE_DIR), \
+            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
              'dir to check caching then delete it afterwards, so the path ' +
              'should be left empty.')
 
     def tearDown(self):
         """Remove any caches created by the tests."""
         try:
-            shutil.rmtree(TEST_CACHE_DIR[:-1])
+            shutil.rmtree(TEST_CACHE_DIR)
         except FileNotFoundError:
             pass
 

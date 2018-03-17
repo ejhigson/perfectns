@@ -19,7 +19,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     """
     logx_min = kwargs.pop('logx_min')  # no default, must specify
     save_dict = kwargs.pop('save_dict', True)
-    cache_dir = kwargs.pop('cache_dir', 'cache/')
+    cache_dir = kwargs.pop('cache_dir', 'cache')
     interp_density = kwargs.pop('interp_density')  # no default, must specify
     if n_dim > 1000 and logx_min >= -4500:
         print('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
@@ -38,7 +38,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         logx_max = kwargs.pop('logx_max', -200)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    save_name = (cache_dir + 'interp_gauss_prior_' + str(n_dim) + 'd_' +
+    save_name = (cache_dir + '/interp_gauss_prior_' + str(n_dim) + 'd_' +
                  str(prior_scale) + 'rmax_' + str(logx_min) + 'xmin_' +
                  str(logx_max) + 'xmax_' + str(interp_density) + 'id')
     try:

@@ -16,7 +16,7 @@ setuptools.setup(name='perfectns',
                  version='1.0.3',
                  author='Edward Higson',
                  author_email='ejhigson@gmail.com',
-                 description=('Performs dynamic and standard nested sampling '
+                 description=('Dynamic and standard nested sampling '
                               'for spherically symmetric likelihoods and '
                               'priors.'),
                  url='https://github.com/ejhigson/perfectns',
@@ -24,11 +24,9 @@ setuptools.setup(name='perfectns',
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
                                    'pandas',
-                                   'mpmath',
-                                   'tqdm>=4.11',
                                    'matplotlib>=2.1.0',
-                                   'nestcheck',
-                                   'futures'],
+                                   'mpmath',
+                                   'nestcheck'],
                  test_suite='nose.collector',
                  tests_require=['nose', 'coverage'],
                  packages=['perfectns'])

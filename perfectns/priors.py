@@ -106,7 +106,7 @@ class GaussianCached(object):
         n_dim = kwargs.pop('n_dim', None)
         interp_density = kwargs.pop('interp_density', 10)
         logx_min = kwargs.pop('logx_min', -4500)
-        cache_dir = kwargs.pop('cache_dir', 'cache/')
+        cache_dir = kwargs.pop('cache_dir', 'cache')
         if kwargs:
             raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
         self.prior_scale = prior_scale
