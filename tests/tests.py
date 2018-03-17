@@ -31,16 +31,16 @@ ESTIMATOR_LIST = [e.LogZ(),
                   e.RMean(from_theta=True),
                   e.RCred(0.84, from_theta=True)]
 TEST_CACHE_DIR = 'cache_tests'
+TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
+                       'this dir to check caching then delete it afterwards, '
+                       'so the path should be left empty.')
 
 
 class TestNestedSampling(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR), \
-            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
-             'dir to check caching then delete it afterwards, so the path ' +
-             'should be left empty.')
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
 
     def tearDown(self):
         """Remove any caches created by the tests."""
@@ -253,10 +253,7 @@ class TestPriors(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR), \
-            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
-             'dir to check caching then delete it afterwards, so the path ' +
-             'should be left empty.')
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
 
     def tearDown(self):
         """Remove any caches created by the tests."""
@@ -365,10 +362,7 @@ class TestDynamicResultsTables(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR), \
-            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
-             'dir to check caching then delete it afterwards, so the path ' +
-             'should be left empty.')
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
 
     def tearDown(self):
         """Remove any caches created by the tests."""
@@ -411,10 +405,7 @@ class TestBootstrapResultsTables(unittest.TestCase):
 
     def setUp(self):
         """Check TEST_CACHE_DIR does not already exist."""
-        assert not os.path.exists(TEST_CACHE_DIR), \
-            ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use this ' +
-             'dir to check caching then delete it afterwards, so the path ' +
-             'should be left empty.')
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
 
     def tearDown(self):
         """Remove any caches created by the tests."""

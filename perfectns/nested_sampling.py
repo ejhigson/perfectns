@@ -95,6 +95,8 @@ def get_run_data(settings, n_repeat, **kwargs):
     check_loaded_settings: bool, optional
         if we load a cached file, should we check if the loaded file's settings
         match the current settings (and generate fresh runs if they do not)?
+    random_seeds: list, optional
+        random_seed arguments for each call of generate_ns_run.
 
     Returns
     -------
