@@ -434,13 +434,6 @@ class TestBootstrapResultsTables(unittest.TestCase):
         # been tested in test_dynamic_results_table.
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(bs_df.values[1:, :])))
-        # Uncomment below line to update values if they are deliberately
-        # changed:
-        # dynamic_table.to_pickle('tests/dynamic_table_test_values.pkl')
-        # Check the values of every row for the theta1 estimator
-        test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
-        numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
-                                      rtol=1e-13)
 
     def test_bootstrap_results_table_unexpected_kwargs(self):
         settings = get_minimal_settings()
