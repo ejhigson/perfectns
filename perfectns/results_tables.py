@@ -207,6 +207,8 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         how many times to resample the nested sampling run in each bootstrap
         credible interval estimate. These may require more simulations than the
         standard deviation estimate.
+    run_random_seeds: list, optional
+        list of random seeds to use for generating runs.
     n_run_ci: int, optional
         how many runs to use for each credible interval estimate. You may want
         to set this to lower than n_run if n_simulate_ci is large as otherwise
@@ -259,6 +261,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     n_simulate_ci = kwargs.pop('n_simulate_ci', n_simulate)
     n_run_ci = kwargs.pop('n_run_ci', n_run)
     cred_int = kwargs.pop('cred_int', 0.95)
+    run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # make save_name
@@ -277,9 +280,13 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     est_names = [est.latex_name for est in estimator_list]
     # generate runs
     run_list = ns.get_run_data(settings, n_run, save=save, load=load,
+                               random_seeds=run_random_seeds,
                                cache_dir=cache_dir,
                                max_workers=max_workers,
                                parallelise=parallelise)
+    # sort in order of random seeds. This makes credible intervals results
+    # reproducable even when only the first section of run_list is used.
+    run_list = sorted(run_list, key=lambda r: r['random_seed'])
     rep_values = pu.parallel_apply(ar.run_estimators, run_list,
                                    func_args=(estimator_list,),
                                    max_workers=max_workers,
@@ -344,8 +351,10 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # get bootstrap CI estimates
     bs_cis = pu.parallel_apply(ar.run_ci_bootstrap, run_list[:n_run_ci],
                                func_args=(estimator_list,),
-                               func_kwargs={'n_simulate': n_simulate_ci,
-                                            'cred_int': cred_int},
+                               func_kwargs={
+                                   'n_simulate': n_simulate_ci,
+                                   'cred_int': cred_int,
+                                   'random_seeds': range(n_simulate_ci)},
                                max_workers=max_workers,
                                parallelise=parallelise)
     bs_ci_df = pf.summary_df_from_list(bs_cis, est_names)

@@ -61,6 +61,7 @@ class TestNestedSampling(unittest.TestCase):
             del run['logx']
             del run['r']
             del run['settings']
+            del run['random_seed']
             dp.check_ns_run(run)
 
     def test_get_run_data_caching(self):
@@ -423,7 +424,7 @@ class TestBootstrapResultsTables(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        bootstrap_table = rt.get_bootstrap_results(
+        bs_df = rt.get_bootstrap_results(
             5, 10, ESTIMATOR_LIST, get_minimal_settings(), n_run_ci=2,
             n_simulate_ci=100, add_sim_method=True, cred_int=0.95, load=True,
             save=True, cache_dir=TEST_CACHE_DIR, ninit_sep=True,
@@ -432,7 +433,14 @@ class TestBootstrapResultsTables(unittest.TestCase):
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
         # None of the other values in the table should be NaN:
-        self.assertFalse(np.any(np.isnan(bootstrap_table.values[1:, :])))
+        self.assertFalse(np.any(np.isnan(bs_df.values[1:, :])))
+        # Uncomment below line to update values if they are deliberately
+        # changed:
+        # dynamic_table.to_pickle('tests/dynamic_table_test_values.pkl')
+        # Check the values of every row for the theta1 estimator
+        test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
+        numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
+                                      rtol=1e-13)
 
     def test_bootstrap_results_table_unexpected_kwargs(self):
         settings = get_minimal_settings()

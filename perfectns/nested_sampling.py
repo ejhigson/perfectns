@@ -57,9 +57,11 @@ def generate_ns_run(settings, random_seed=None):
     if random_seed is not False:
         np.random.seed(random_seed)
     if settings.dynamic_goal is None:
-        return generate_standard_run(settings)
+        run = generate_standard_run(settings)
     else:
-        return generate_dynamic_run(settings)
+        run = generate_dynamic_run(settings)
+    run['random_seed'] = random_seed
+    return run
 
 
 def get_run_data(settings, n_repeat, **kwargs):
