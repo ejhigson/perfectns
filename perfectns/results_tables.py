@@ -14,6 +14,7 @@ import nestcheck.analyse_run as ar
 import nestcheck.parallel_utils as pu
 import nestcheck.pandas_functions as pf
 import perfectns.nested_sampling as ns
+import perfectns.priors as priors
 import perfectns.estimators as e
 
 
@@ -168,6 +169,64 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         # save the results data frame
         print('get_dynamic_results: saving results to\n' + save_file)
         results.to_pickle(save_file)
+    return results
+
+
+def merged_dynamic_results(dim_scale_list, likelihood_list, settings,
+                           estimator_list, **kwargs):
+    """
+    Wrapper for running get_dynamic_results for many different likelihood,
+    dimension and prior scales, and merging the output into a single
+    data frame.
+    See get_dynamic_results doccumentation for more details.
+
+
+    Parameters
+    ----------
+    dim_scale_list: list of tuples
+        (dim, prior_scale) pairs to run
+    likelihood_list: list of likelihood objects
+    settings_in: PerfectNSSettings object
+    estimator_list: list of estimator objects
+    n_run: int, optional
+        number of runs for use with each setting.
+    dynamic_goals_in: list of floats, optional
+        which dynamic goals to test
+    (remaining kwargs passed to get_dynamic_results)
+
+    Returns
+    -------
+    results: pandas data frame
+    """
+    dynamic_goals = kwargs.pop('dynamic_goals', [0, 1])
+    n_run = kwargs.pop('n_run', 1000)
+    results_list = []
+    for likelihood in likelihood_list:
+        for n_dim, prior_scale in dim_scale_list:
+            settings.n_dim = n_dim
+            settings.likelihood = likelihood
+            if n_dim >= 100:
+                settings.prior = priors.GaussianCached(prior_scale=prior_scale)
+            else:
+                settings.prior = priors.Gaussian(prior_scale=prior_scale)
+            like_lab = (type(settings.likelihood).__name__
+                        .replace('ExpPower', 'Exp Power'))
+            if type(settings.likelihood).__name__ == 'ExpPower':
+                like_lab += (', $b=' + str(settings.likelihood.power)
+                             .replace('0.75', r'\frac{3}{4}') + '$')
+            df_temp = get_dynamic_results(
+                n_run, dynamic_goals, estimator_list, settings, **kwargs)
+            new_inds = ['likelihood', 'dimension $d$', r'$\sigma_\pi$']
+            df_temp[new_inds[0]] = like_lab
+            df_temp[new_inds[1]] = settings.n_dim
+            df_temp[new_inds[2]] = settings.prior.prior_scale
+            order = new_inds + list(df_temp.index.names)
+            df_temp.set_index(new_inds, drop=True, append=True,
+                              inplace=True)
+            df_temp = df_temp.reorder_levels(order)
+            results_list.append(df_temp)
+    results = pd.concat(results_list)
+    # results.sort_index(inplace=True)
     return results
 
 

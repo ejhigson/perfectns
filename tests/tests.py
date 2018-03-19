@@ -382,10 +382,13 @@ class TestDynamicResultsTables(unittest.TestCase):
         sufficient.
         """
         settings = get_minimal_settings()
+        n_run = 5
+        dynamic_goals = [0, 0.25, 1, 1]
+        tuned_dynamic_ps = [False, False, False, True]
         dynamic_table = rt.get_dynamic_results(
-            5, [0, 0.25, 1, 1], ESTIMATOR_LIST, settings, load=True,
+            n_run, dynamic_goals, ESTIMATOR_LIST, settings, load=True,
             save=True, cache_dir=TEST_CACHE_DIR,
-            parallelise=True, tuned_dynamic_ps=[False, False, False, True])
+            parallelise=True, tuned_dynamic_ps=tuned_dynamic_ps)
         # None of the values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(dynamic_table.values)))
         # Uncomment below line to update values if they are deliberately
@@ -395,11 +398,23 @@ class TestDynamicResultsTables(unittest.TestCase):
         test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
         numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
                                       rtol=1e-13)
+        # Check merged dynamic results
+        merged_df = rt.merged_dynamic_results(
+            [(settings.n_dim, settings.prior.prior_scale)],
+            [settings.likelihood], settings, ESTIMATOR_LIST,
+            dynamic_goals=dynamic_goals, n_run=n_run,
+            cache_dir=TEST_CACHE_DIR, tuned_dynamic_ps=tuned_dynamic_ps,
+            load=True, save=False)
+        self.assertTrue(np.array_equal(
+            merged_df.values, dynamic_table.values))
 
     def test_dynamic_results_table_unexpected_kwargs(self):
         settings = get_minimal_settings()
-        self.assertRaises(TypeError, rt.get_dynamic_results, 5, [0],
-                          ESTIMATOR_LIST, settings, unexpected=1)
+        # Run some of the code in merged_dynamic_results which is missed with
+        # different options
+        self.assertRaises(TypeError, rt.merged_dynamic_results, [(1000, 10)],
+                          [likelihoods.ExpPower()],
+                          settings, ESTIMATOR_LIST, unexpected=1)
 
 
 class TestBootstrapResultsTables(unittest.TestCase):
