@@ -199,6 +199,8 @@ def merged_dynamic_results(dim_scale_list, likelihood_list, settings,
     results: pandas data frame
     """
     dynamic_goals = kwargs.pop('dynamic_goals', [0, 1])
+    load = kwargs.pop('load', True)  # ensure default True for merged results
+    save = kwargs.pop('save', True)  # ensure default True for merged results
     n_run = kwargs.pop('n_run', 1000)
     results_list = []
     for likelihood in likelihood_list:
@@ -214,8 +216,11 @@ def merged_dynamic_results(dim_scale_list, likelihood_list, settings,
             if type(settings.likelihood).__name__ == 'ExpPower':
                 like_lab += (', $b=' + str(settings.likelihood.power)
                              .replace('0.75', r'\frac{3}{4}') + '$')
+            print(like_lab, 'd=' + str(n_dim),
+                  'prior_scale=' + str(prior_scale))
             df_temp = get_dynamic_results(
-                n_run, dynamic_goals, estimator_list, settings, **kwargs)
+                n_run, dynamic_goals, estimator_list, settings, save=save,
+                load=load, **kwargs)
             new_inds = ['likelihood', 'dimension $d$', r'$\sigma_\pi$']
             df_temp[new_inds[0]] = like_lab
             df_temp[new_inds[1]] = settings.n_dim
