@@ -383,7 +383,6 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     """
     run_dict = dict_given_samples_array(samples, thread_min_max)
     logw = ar.get_logw(run_dict, simulate=simulate)
-    # subtract logw.max() to avoids numerical errors with very small numbers
     w_relative = np.exp(logw - logw.max())
     if settings.dynamic_goal == 0:
         return z_importance(w_relative, run_dict['nlive_array'])
@@ -539,10 +538,16 @@ def dict_given_samples_array(samples, thread_min_max):
     nlive_0 = (thread_min_max[:, 0] == -np.inf).sum()
     nlive_array = np.zeros(samples.shape[0]) + nlive_0
     nlive_array[1:] += np.cumsum(samples[:-1, 4])
-    assert nlive_array.min() > 0, 'nlive contains 0s or negative values!' \
-        '\nnlive_array = ' + str(nlive_array)
-    assert nlive_array[-1] == 1, 'final point in nlive_array != 1!' \
-        '\nnlive_array = ' + str(nlive_array)
+    assert nlive_array.min() > 0, (
+        'nlive contains 0s or negative values!' +
+        '\nnlive_array = ' + str(nlive_array) +
+        '\nfinal row of samples arr = ' + str(samples[-4:, :]) +
+        '\nthread_min_max = ' + str(thread_min_max))
+    assert nlive_array[-1] == 1, (
+        'final point in nlive_array != 1!' +
+        '\nnlive_array = ' + str(nlive_array) +
+        '\nfinal row of samples arr = ' + str(samples[-4:, :]) +
+        '\nthread_min_max = ' + str(thread_min_max))
     ns_run = {'logl': samples[:, 0],
               'r': samples[:, 1],
               'logx': samples[:, 2],

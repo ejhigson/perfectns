@@ -35,7 +35,7 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
         # for all n_dim>2.
         logx_max = kwargs.pop('logx_max', -10)
     else:
-        logx_max = kwargs.pop('logx_max', -200)
+        logx_max = kwargs.pop('logx_max', -150)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     save_name = (cache_dir + '/interp_gauss_prior_' + str(n_dim) + 'd_' +
