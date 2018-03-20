@@ -127,7 +127,6 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         # set up settings
         settings.dynamic_goal = dynamic_goal
         settings.tuned_dynamic_p = tuned_dynamic_ps[i]
-        print('dynamic_goal = ' + str(settings.dynamic_goal))
         # if we have already done the standard calculation, set n_samples_max
         # for dynamic calculations so it is slightly smaller than the number
         # of samples the standard calculation used to ensure a fair comparison
@@ -145,6 +144,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
             reduce_factor = 1 - ((1.5 - 0.5 * settings.dynamic_goal) *
                                  (settings.nbatch / settings.nlive_const))
             settings.n_samples_max = int(n_samples_max * reduce_factor)
+        print('dynamic_goal=' + str(settings.dynamic_goal),
+              'n_samples_max=' + str(settings.n_samples_max))
         # get a name for this calculation method
         if dynamic_goal is None:
             method_names.append('standard')
