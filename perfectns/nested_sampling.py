@@ -363,11 +363,13 @@ def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
         lrxtn[:, 3] = thread_label
         lrxtn[:, 2] = np.asarray(logx_list)
         lrxtn[:, 1] = settings.r_given_logx(lrxtn[:, 2])
+        lrxtn[:, 0] = settings.logl_given_r(lrxtn[:, 1])
         # Check there are non nans mapping logx to r
         assert np.all(~np.isnan(lrxtn[:, 1])), (
             'nans in r_given_logx(logx)=' + str(lrxtn[:, 1]) +
+            '\nrows with nans are ' +
+            str(lrxtn[np.where(np.isnan(lrxtn[:, 1]))[0], :]) +
             '\nperhaps the prior is numerically unstable?')
-        lrxtn[:, 0] = settings.logl_given_r(lrxtn[:, 1])
         # set change in nlive to -1 where thread ends (zero elsewhere)
         lrxtn[-1, 4] = -1
         theta = mf.sample_nsphere_shells(lrxtn[:, 1],
