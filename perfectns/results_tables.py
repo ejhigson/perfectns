@@ -208,7 +208,7 @@ def merged_dynamic_results(dim_scale_list, likelihood_list, settings,
         for n_dim, prior_scale in dim_scale_list:
             settings.n_dim = n_dim
             settings.likelihood = likelihood
-            if n_dim >= 100:
+            if n_dim >= 50:
                 settings.prior = priors.GaussianCached(prior_scale=prior_scale)
             else:
                 settings.prior = priors.Gaussian(prior_scale=prior_scale)
