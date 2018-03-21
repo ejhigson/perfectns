@@ -80,7 +80,7 @@ class PerfectNSSettings(object):
             # not None.
             'dynamic_goal': None,
             'n_samples_max': None,
-            'ninit': 20,
+            'ninit': 10,
             'nbatch': 1,
             'dynamic_fraction': 0.9,
             'tuned_dynamic_p': False
