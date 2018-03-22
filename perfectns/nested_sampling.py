@@ -132,11 +132,11 @@ def get_run_data(settings, n_repeat, **kwargs):
                 if loaded['dynamic_goal'] is None and (current['dynamic_goal']
                                                        is None):
                         for key in ['dynamic_goal', 'n_samples_max', 'ninit',
-                                    'nbatch', 'dynamic_fraction', 'tuned_dynamic_p']:
+                                    'nbatch', 'dynamic_fraction',
+                                    'tuned_dynamic_p']:
                             del loaded[key]
                             del current[key]
-                        print(loaded, current)
-                if settings.get_settings_dict() != data[0]['settings']:
+                if loaded != current:
                     # print any differences
                     for key in set(loaded.keys()) & set(current.keys()):
                         if loaded[key] == current[key]:
