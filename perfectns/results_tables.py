@@ -113,7 +113,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         try:
             return pd.read_pickle(save_file)
         except OSError:
-            pass
+            print('Could not load file: ' + save_file)
     # start function
     # --------------
     # get info on the number of samples taken in each run as well
@@ -173,6 +173,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     return results
 
 
+@iou.timing_decorator
 def merged_dynamic_results(dim_scale_list, likelihood_list, settings,
                            estimator_list, **kwargs):
     """
