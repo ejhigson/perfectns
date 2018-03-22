@@ -125,10 +125,19 @@ def get_run_data(settings, n_repeat, **kwargs):
             if check_loaded_settings:
                 # Assume all runs in the loaded list have the same settings, in
                 # which case we only need check the first one.
+                loaded = copy.deepcopy(data[0]['settings'])
+                current = copy.deepcopy(settings.get_settings_dict())
+                # If runs are standard nested sampling there is no need to
+                # check settings which only affect dynamic ns match
+                if loaded['dynamic_goal'] is None and (current['dynamic_goal']
+                                                       is None):
+                        for key in ['dynamic_goal', 'n_samples_max', 'ninit',
+                                    'nbatch', 'dynamic_fraction', 'tuned_dynamic_p']:
+                            del loaded[key]
+                            del current[key]
+                        print(loaded, current)
                 if settings.get_settings_dict() != data[0]['settings']:
                     # print any differences
-                    loaded = copy.deepcopy(data[0]['settings'])
-                    current = copy.deepcopy(settings.get_settings_dict())
                     for key in set(loaded.keys()) & set(current.keys()):
                         if loaded[key] == current[key]:
                             del loaded[key]
