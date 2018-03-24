@@ -66,6 +66,7 @@ class TestNestedSampling(unittest.TestCase):
 
     def test_get_run_data_caching(self):
         settings = get_minimal_settings()
+        settings.dynamic_goal = 0
         settings.n_samples_max = 100
         ns.get_run_data(settings, 1, save=True, load=True,
                         check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
@@ -306,6 +307,9 @@ class TestPriors(unittest.TestCase):
         self.assertRaises(
             TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
             2000, 10, logx_min=-100, interp_density=1, unexpected=0)
+        self.assertRaises(
+            TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
+            200, 10, logx_min=-100, interp_density=1, unexpected=0)
 
 
 class TestPlotting(unittest.TestCase):

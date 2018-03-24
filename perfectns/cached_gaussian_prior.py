@@ -2,8 +2,9 @@
 """
 Contains helper functions for the 'gaussian_cached' prior.
 
-This is needed as the 'gaussian' prior suffers from overflow errors for very
-low values of X, which are reached in high dimensional problems.
+This is needed as the 'gaussian' prior suffers from overflow errors and
+numerical instability for very low values of X, which are reached in
+high dimensional problems.
 """
 
 
