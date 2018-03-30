@@ -121,8 +121,8 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     est_names = [est.latex_name for est in estimator_list]
     method_names = []
     method_values = []
-    assert dynamic_goals[0] is None, \
-        'Need to start with standard ns to calculate efficiency gains'
+    assert dynamic_goals[0] is None, (
+        'Need to start with standard ns to calculate efficiency gains')
     for i, dynamic_goal in enumerate(dynamic_goals):
         # set up settings
         settings.dynamic_goal = dynamic_goal

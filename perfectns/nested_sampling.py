@@ -119,7 +119,6 @@ def get_run_data(settings, n_repeat, **kwargs):
     save_name = cache_dir + '/' + settings.save_name()
     save_name += '_' + str(n_repeat) + 'reps'
     if load:
-        print('get_run_data: ' + save_name)
         try:
             data = iou.pickle_load(save_name)
             if check_loaded_settings:
@@ -162,7 +161,6 @@ def get_run_data(settings, n_repeat, **kwargs):
                                  max_workers=max_workers,
                                  parallelise=parallelise)
         if save:
-            print('Generated new runs: saving to ' + save_name)
             iou.pickle_save(data, save_name,
                             overwrite_existing=overwrite_existing)
     return data
