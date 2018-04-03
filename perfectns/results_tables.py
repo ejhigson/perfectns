@@ -233,7 +233,6 @@ def merged_dynamic_results(dim_scale_list, likelihood_list, settings,
             df_temp = df_temp.reorder_levels(order)
             results_list.append(df_temp)
     results = pd.concat(results_list)
-    # results.sort_index(inplace=True)
     return results
 
 
