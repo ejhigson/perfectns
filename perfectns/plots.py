@@ -127,7 +127,7 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         method_names.append(label)
         settings.dynamic_goal = dg
         settings.tuned_dynamic_p = tuned_dynamic_ps[i]
-        temp_runs = ns.get_run_data(settings, n_run, parallelise=True,
+        temp_runs = ns.get_run_data(settings, n_run, parallel=True,
                                     load=load, save=save)
         n_samples = np.asarray([run['logl'].shape[0] for run in temp_runs])
         n_sample_stats[i, 0] = np.mean(n_samples)

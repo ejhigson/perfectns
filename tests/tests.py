@@ -392,7 +392,7 @@ class TestDynamicResultsTables(unittest.TestCase):
         dynamic_table = rt.get_dynamic_results(
             n_run, dynamic_goals, ESTIMATOR_LIST, settings, load=True,
             save=True, cache_dir=TEST_CACHE_DIR,
-            parallelise=True, tuned_dynamic_ps=tuned_dynamic_ps)
+            parallel=True, tuned_dynamic_ps=tuned_dynamic_ps)
         # None of the values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(dynamic_table.values)))
         # Uncomment below line to update values if they are deliberately
@@ -447,7 +447,7 @@ class TestBootstrapResultsTables(unittest.TestCase):
             5, 10, ESTIMATOR_LIST, get_minimal_settings(), n_run_ci=2,
             n_simulate_ci=100, add_sim_method=True, cred_int=0.95, load=True,
             save=True, cache_dir=TEST_CACHE_DIR, ninit_sep=True,
-            parallelise=True)
+            parallel=True)
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.

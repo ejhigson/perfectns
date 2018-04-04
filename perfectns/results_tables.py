@@ -51,7 +51,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         overwrite the existing file when saved?
     run_random_seeds: list, optional
         list of random seeds to use for generating runs.
-    parallelise: bool, optional
+    parallel: bool, optional
     cache_dir: str, optional
         Directory to use for caching.
     tuned_dynamic_ps: list of bools, same length as dynamic_goals_in, optional
@@ -84,7 +84,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
     load = kwargs.pop('load', False)
     save = kwargs.pop('save', False)
     max_workers = kwargs.pop('max_workers', None)
-    parallelise = kwargs.pop('parallelise', True)
+    parallel = kwargs.pop('parallel', True)
     cache_dir = kwargs.pop('cache_dir', 'cache')
     overwrite_existing = kwargs.pop('overwrite_existing', True)
     run_random_seeds = kwargs.pop('run_random_seeds', list(range(n_run)))
@@ -155,7 +155,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
             if settings.tuned_dynamic_p is True:
                 method_names[-1] += ' tuned'
         # generate runs and get results
-        run_list = ns.get_run_data(settings, n_run, parallelise=parallelise,
+        run_list = ns.get_run_data(settings, n_run, parallel=parallel,
                                    random_seeds=run_random_seeds,
                                    load=load, save=save,
                                    max_workers=max_workers,
@@ -164,7 +164,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
         method_values.append(pu.parallel_apply(ar.run_estimators, run_list,
                                                func_args=(estimator_list,),
                                                max_workers=max_workers,
-                                               parallelise=parallelise))
+                                               parallel=parallel))
     results = pf.efficiency_gain_df(method_names, method_values, est_names)
     if save:
         # save the results data frame
@@ -261,7 +261,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         should run data and results be loaded if available?
     save: bool, optional
         should run data and results be saved?
-    parallelise: bool, optional
+    parallel: bool, optional
     cache_dir: str, optional
         Directory to use for caching.
     add_sim_method: bool, optional
@@ -320,7 +320,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     save = kwargs.pop('save', False)
     max_workers = kwargs.pop('max_workers', None)
     ninit_sep = kwargs.pop('ninit_sep', True)
-    parallelise = kwargs.pop('parallelise', True)
+    parallel = kwargs.pop('parallel', True)
     cache_dir = kwargs.pop('cache_dir', 'cache')
     add_sim_method = kwargs.pop('add_sim_method', False)
     n_simulate_ci = kwargs.pop('n_simulate_ci', n_simulate)
@@ -348,14 +348,14 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                random_seeds=run_random_seeds,
                                cache_dir=cache_dir,
                                max_workers=max_workers,
-                               parallelise=parallelise)
+                               parallel=parallel)
     # sort in order of random seeds. This makes credible intervals results
     # reproducable even when only the first section of run_list is used.
     run_list = sorted(run_list, key=lambda r: r['random_seed'])
     rep_values = pu.parallel_apply(ar.run_estimators, run_list,
                                    func_args=(estimator_list,),
                                    max_workers=max_workers,
-                                   parallelise=parallelise)
+                                   parallel=parallel)
     results = pf.summary_df_from_list(rep_values, est_names)
     new_index = ['repeats ' +
                  results.index.get_level_values('calculation type'),
@@ -367,7 +367,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                   func_args=(estimator_list,),
                                   func_kwargs={'n_simulate': n_simulate},
                                   max_workers=max_workers,
-                                  parallelise=parallelise)
+                                  parallel=parallel)
     bs_df = pf.summary_df_from_list(bs_values, est_names)
     # Get the mean bootstrap std estimate as a fraction of the std measured
     # from repeated calculations.
@@ -392,7 +392,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                        func_args=(estimator_list,),
                                        func_kwargs={'n_simulate': n_simulate},
                                        max_workers=max_workers,
-                                       parallelise=parallelise)
+                                       parallel=parallel)
         sim_df = pf.summary_df_from_list(sim_values, est_names)
         # Get the mean simulation std estimate as a fraction of the std
         # measured from repeated calculations.
@@ -421,7 +421,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
                                    'cred_int': cred_int,
                                    'random_seeds': range(n_simulate_ci)},
                                max_workers=max_workers,
-                               parallelise=parallelise)
+                               parallel=parallel)
     bs_ci_df = pf.summary_df_from_list(bs_cis, est_names)
     results.loc[('bs ' + str(cred_int) + ' CI', 'value'), :] = \
         bs_ci_df.loc[('mean', 'value')]

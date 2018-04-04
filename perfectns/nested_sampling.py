@@ -74,7 +74,7 @@ def get_run_data(settings, n_repeat, **kwargs):
     settings: PerfectNSSettings object
     n_repeat: int
         Number of nested sampling runs to generate.
-    parallelise: bool, optional
+    parallel: bool, optional
         Should runs be generated in parallel?
     max_workers: int or None, optional
         Number of processes.
@@ -105,7 +105,7 @@ def get_run_data(settings, n_repeat, **kwargs):
     run_list
         list of n_repeat nested sampling runs.
     """
-    parallelise = kwargs.pop('parallelise', True)
+    parallel = kwargs.pop('parallel', True)
     max_workers = kwargs.pop('max_workers', None)
     load = kwargs.pop('load', True)
     save = kwargs.pop('save', True)
@@ -159,7 +159,7 @@ def get_run_data(settings, n_repeat, **kwargs):
         data = pu.parallel_apply(generate_ns_run, random_seeds,
                                  func_pre_args=(settings,),
                                  max_workers=max_workers,
-                                 parallelise=parallelise)
+                                 parallel=parallel)
         if save:
             iou.pickle_save(data, save_name,
                             overwrite_existing=overwrite_existing)
