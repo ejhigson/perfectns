@@ -7,7 +7,7 @@ numerical instability for very low values of X, which are reached in
 high dimensional problems.
 """
 
-
+import warnings
 import numpy as np
 import nestcheck.io_utils as iou
 import perfectns.maths_functions as mf
@@ -23,13 +23,14 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     cache_dir = kwargs.pop('cache_dir', 'cache')
     interp_density = kwargs.pop('interp_density')  # no default, must specify
     if n_dim > 1000 and logx_min >= -4500:
-        print('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
-              'for very high dimensions, depending on the likelihood, you may '
-              'need to lower logx_min=' + str(logx_min))
+        warnings.warn(('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
+                       'for very high dimensions, depending on the likelihood, you may '
+                       'need to lower logx_min=' + str(logx_min)), UserWarning)
     if n_dim < 50:
-        print('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
-              'for n_dim<100 the "gaussian" prior works fine and you should '
-              'use it instead of the "gaussian_cached" prior')
+        warnings.warn(('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
+                       'for n_dim<50 the "gaussian" prior works fine and you should '
+                       'use it instead of the "gaussian_cached" prior'),
+                      UserWarning)
     # use a smaller logx_max as the point at which the logx at which the
     # scipy method (scipy.special.gammainc) fails is lower in lower
     # dimensions. logx_max=-10 will mean the gaussian_cached prior works

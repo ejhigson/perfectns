@@ -3,6 +3,7 @@
 Plotting functions.
 """
 
+import warnings
 import copy
 import numpy as np
 import scipy
@@ -376,7 +377,8 @@ def cdf_given_logx(estimator, value, logx, settings):
     elif estimator.__class__.__name__ == 'RMean':
         cdf = np.zeros(logx.shape)
     else:
-        print('WARNING: cdf not available for ' + estimator.__class__.__name__)
+        warnings.warn(('cdf not available for ' + estimator.__class__.__name__
+                       + '. Will use cdf=0 everywhere.'), UserWarning)
         cdf = np.zeros(logx.shape)
     assert cdf.min() >= 0, "cdf.min() = " + str(cdf.min()) + " < 0"
     assert cdf.max() <= 1, "cdf.max() = " + str(cdf.max()) + " > 1"
