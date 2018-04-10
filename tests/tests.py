@@ -291,11 +291,13 @@ class TestPriors(unittest.TestCase):
         self.assertRaises(
             TypeError, priors.GaussianCached,
             prior_scale=10, unexpected=0)
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             settings.prior = priors.GaussianCached(
                 prior_scale=10, save_dict=True, n_dim=settings.n_dim,
                 cache_dir=TEST_CACHE_DIR,
                 interp_density=10, logx_min=-30)
+            self.assertEqual(len(war), 1)
         # Test inside and outside cached regime (logx<-10).
         # Need fairly low number of places
         for logx in [-1, -11]:
@@ -314,10 +316,12 @@ class TestPriors(unittest.TestCase):
         values = nestcheck.ns_run_utils.run_estimators(ns_run, ESTIMATOR_LIST)
         self.assertFalse(np.any(np.isnan(values)))
         # check the argument options and messages for interp_r_logx_dict
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             self.assertRaises(
                 TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
                 2000, 10, logx_min=-100, interp_density=1, unexpected=0)
+            self.assertEqual(len(war), 1)
         self.assertRaises(
             TypeError, perfectns.cached_gaussian_prior.interp_r_logx_dict,
             200, 10, logx_min=-100, interp_density=1, unexpected=0)
@@ -346,9 +350,11 @@ class TestPlotting(unittest.TestCase):
                 settings, ftheta, x_points=50, y_points=50)
             self.assertIsInstance(fig, matplotlib.figure.Figure)
         # Test warning for estimators without CDF
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             perfectns.plots.cdf_given_logx(e.LogZ(), np.zeros(1), np.zeros(1),
                                            settings)
+            self.assertEqual(len(war), 1)
         # Test unexpected kwargs check
         self.assertRaises(
             TypeError, perfectns.plots.plot_parameter_logx_diagram,
