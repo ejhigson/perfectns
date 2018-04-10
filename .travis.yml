@@ -1,13 +1,17 @@
 language: python
 python:
- - '2.7'
- - '3.3'
  - '3.4'
  - '3.5'
  - '3.6'
 install:
+ - pip install git+https://github.com/williamjameshandley/fgivenx
+ - pip install git+https://github.com/ejhigson/nestcheck
  - pip install .
  - pip install coveralls
+before_script: # configure a headless display to test plot generation
+- "export DISPLAY=:99.0"
+- "sh -e /etc/init.d/xvfb start"
+- sleep 3 # give xvfb some time to start
 script:
  - nosetests --with-coverage --cover-erase --cover-package=perfectns 
 after_success:
