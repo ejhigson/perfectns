@@ -1,7 +1,7 @@
 perfectns
 =========
 
-[![Build Status](https://travis-ci.org/ejhigson/perfectns.svg?branch=master)](https://travis-ci.org/ejhigson/perfectns)
+[![Build Status](https://travis-ci.org/ejhigson/perfectns.svg?branch=master)](https://travis-ci.org/ejhigson/perfectns.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/ejhigson/perfectns/badge.svg?branch=master)](https://coveralls.io/github/ejhigson/perfectns?branch=master)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/perfectns/LICENSE)
 
