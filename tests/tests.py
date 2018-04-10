@@ -6,9 +6,9 @@ Test the perfectns module installation.
 import os
 import shutil
 import unittest
+import warnings
 import numpy as np
 import numpy.testing
-import pandas as pd
 import matplotlib
 import perfectns.settings
 import perfectns.estimators as e
@@ -66,7 +66,7 @@ class TestNestedSampling(unittest.TestCase):
 
     def test_get_run_data_caching(self):
         settings = get_minimal_settings()
-        settings.dynamic_goal = 0
+        settings.dynamic_goal = None
         settings.n_samples_max = 100
         ns.get_run_data(settings, 1, save=True, load=True,
                         check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
@@ -76,6 +76,9 @@ class TestNestedSampling(unittest.TestCase):
         # test loading and checking settings when settings are not the same
         # this only works for changing a setting which dosnt affect the save
         # name
+        settings.dynamic_goal = 0
+        ns.get_run_data(settings, 1, save=True, load=True,
+                        check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
         settings.n_samples_max += 1
         ns.get_run_data(settings, 1, save=True, load=True,
                         check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
@@ -329,11 +332,6 @@ class TestPlotting(unittest.TestCase):
             [None], settings, n_run=2,
             save=False, load=False,
             tuned_dynamic_ps=[True], ymax=1000)
-        # Test unexpected kwargs check
-        self.assertRaises(
-            TypeError, perfectns.plots.plot_dynamic_nlive,
-            [None, 0, 1, 1], settings, n_run=2,
-            tuned_dynamic_ps=[False, False, False, True], unexpected=0)
 
     def test_plot_parameter_logx_diagram(self):
         settings = get_minimal_settings()
@@ -384,9 +382,9 @@ class TestDynamicResultsTables(unittest.TestCase):
         Test generating a table comparing dynamic and standard nested sampling;
         this covers a lot of the perfectns module's functionality.
 
-        As the numerical values produced are stochastic we just test that the
-        function runs ok and does not produce NaN values - this should be
-        sufficient.
+        Tests of the expected values relies on default seeding of runs in
+        get_run_data using numpy.random.seed - this should be stable over
+        different platforms but may be worth checking if errors occur.
         """
         settings = get_minimal_settings()
         n_run = 5
@@ -396,16 +394,7 @@ class TestDynamicResultsTables(unittest.TestCase):
             n_run, dynamic_goals, ESTIMATOR_LIST, settings, load=True,
             save=True, cache_dir=TEST_CACHE_DIR,
             parallel=True, tuned_dynamic_ps=tuned_dynamic_ps)
-        # None of the values in the table should be NaN:
-        self.assertFalse(np.any(np.isnan(dynamic_table.values)))
-        # Uncomment below line to update values if they are deliberately
-        # changed:
-        # dynamic_table.to_pickle('tests/dynamic_table_test_values.pkl')
-        # Check the values of every row for the theta1 estimator
-        test_values = pd.read_pickle('tests/dynamic_table_test_values.pkl')
-        numpy.testing.assert_allclose(dynamic_table.values, test_values.values,
-                                      rtol=1e-13)
-        # Check merged dynamic results
+        # Check merged dynamic results function
         merged_df = rt.merged_dynamic_results(
             [(settings.n_dim, settings.prior.prior_scale)],
             [settings.likelihood], settings, ESTIMATOR_LIST,
@@ -414,6 +403,21 @@ class TestDynamicResultsTables(unittest.TestCase):
             load=True, save=False)
         self.assertTrue(np.array_equal(
             merged_df.values, dynamic_table.values))
+        # Check numerical values in dynamic_table
+        self.assertFalse(np.any(np.isnan(dynamic_table.values)))
+        # Check the values for one column (those for RMean)
+        expected_rmean_vals = np.asarray(
+            [1.05159345, 0.05910616, 1.09315952, 0.08192338, 1.14996638, 0.11357112,
+             1.24153945, 0.09478196, 1.24436994, 0.07220817, 0.13216539, 0.04672752,
+             0.18318625, 0.06476612, 0.25395275, 0.08978585, 0.21193890, 0.07493172,
+             0.16146238, 0.05708557, 0.52053477, 0.52053477, 0.27085052, 0.27085052,
+             0.38887867, 0.38887867, 0.67002776, 0.67002776])
+        numpy.testing.assert_allclose(
+            dynamic_table[e.RMean(from_theta=True).latex_name].values,
+            expected_rmean_vals, rtol=1e-7,
+            err_msg=('this relies on numpy.random.seed being consistent - '
+                     'this should be true but is perhaps worth checking for '
+                     'your platform.'))
 
     def test_dynamic_results_table_unexpected_kwargs(self):
         settings = get_minimal_settings()
@@ -446,16 +450,32 @@ class TestBootstrapResultsTables(unittest.TestCase):
         function runs ok and does not produce NaN values - this should be
         sufficient.
         """
-        bs_df = rt.get_bootstrap_results(
-            5, 10, ESTIMATOR_LIST, get_minimal_settings(), n_run_ci=2,
-            n_simulate_ci=100, add_sim_method=True, cred_int=0.95, load=True,
-            save=True, cache_dir=TEST_CACHE_DIR, ninit_sep=True,
-            parallel=True)
+        np.random.seed(0)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+            bs_df = rt.get_bootstrap_results(
+                5, 10, ESTIMATOR_LIST, get_minimal_settings(), n_run_ci=2,
+                n_simulate_ci=10, add_sim_method=True, cred_int=0.95, load=True,
+                save=True, cache_dir=TEST_CACHE_DIR, ninit_sep=True,
+                parallel=False)
+        # Check numerical values in dynamic_table:
         # The first row of the table contains analytic calculations of the
         # estimators' values given the likelihood and prior which have already
         # been tested in test_dynamic_results_table.
         # None of the other values in the table should be NaN:
         self.assertFalse(np.any(np.isnan(bs_df.values[1:, :])))
+        # Check the values for one column (those for RMean)
+        expected_rmean_vals = np.asarray(
+            [1.05159345e+00, 5.91061598e-02, 1.32165391e-01, 4.67275222e-02,
+             9.74212313e-01, 3.95418293e-01, 4.45773150e+01, 1.57604609e+01,
+             1.26559404e+00, 4.81565225e-01, 3.14517691e+01, 1.11198796e+01,
+             1.44503362e+00, 1.20619710e-01, 6.00000000e+01, 1.00000000e+02])
+        numpy.testing.assert_allclose(
+            bs_df[e.RMean(from_theta=True).latex_name].values,
+            expected_rmean_vals, rtol=1e-7,
+            err_msg=('this relies on numpy.random.seed being consistent - '
+                     'this should be true but is perhaps worth checking for '
+                     'your platform.'))
 
     def test_bootstrap_results_table_unexpected_kwargs(self):
         settings = get_minimal_settings()
