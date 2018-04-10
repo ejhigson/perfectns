@@ -137,15 +137,17 @@ def get_run_data(settings, n_repeat, **kwargs):
                         del loaded[key]
                         del current[key]
                 if loaded != current:
-                    # print any differences
-                    for key in set(loaded.keys()) & set(current.keys()):
-                        if loaded[key] == current[key]:
-                            del loaded[key]
-                            del current[key]
-                    warnings.warn(
-                        ('Loaded settings != current settings. Differences are: loaded='
-                         + str(loaded) + '!= current =' + str(current) +
-                         '. Generating new runs instead of using saved ones.'), UserWarning)
+                    #  remove shared keys and only print differences
+                    rm = [k for k in set(loaded.keys()) & set(current.keys())
+                          if loaded[k] == current[k]]
+                    loaded_diff = {k: v for k, v in loaded.items() if k
+                                   not in rm}
+                    current_diff = {k: v for k, v in current.items() if k
+                                    not in rm}
+                    msg = (('Loaded settings != current settings. Differences '
+                            'are: {0} != = {1}. Generating new runs instead.')
+                           .format(loaded_diff, current_diff))
+                    warnings.warn(msg, UserWarning)
                     del data
                     load = False
         except (OSError, EOFError) as exception:
