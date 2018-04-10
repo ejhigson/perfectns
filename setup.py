@@ -13,7 +13,7 @@ def read_file(fname):
 
 
 setuptools.setup(name='perfectns',
-                 version='1.0.3',
+                 version='2.0.0',
                  author='Edward Higson',
                  author_email='ejhigson@gmail.com',
                  description=('Dynamic and standard nested sampling '
