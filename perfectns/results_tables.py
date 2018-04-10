@@ -10,7 +10,8 @@ import copy
 import pandas as pd
 import numpy as np
 import nestcheck.io_utils as iou
-import nestcheck.analyse_run as ar
+import nestcheck.ns_run_utils
+import nestcheck.error_analysis
 import nestcheck.parallel_utils as pu
 import nestcheck.pandas_functions as pf
 import perfectns.nested_sampling as ns
@@ -161,7 +162,7 @@ def get_dynamic_results(n_run, dynamic_goals_in, estimator_list_in,
                                    max_workers=max_workers,
                                    cache_dir=cache_dir,
                                    overwrite_existing=overwrite_existing)
-        method_values.append(pu.parallel_apply(ar.run_estimators, run_list,
+        method_values.append(pu.parallel_apply(nestcheck.ns_run_utils.run_estimators, run_list,
                                                func_args=(estimator_list,),
                                                max_workers=max_workers,
                                                parallel=parallel))
@@ -352,7 +353,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     # sort in order of random seeds. This makes credible intervals results
     # reproducable even when only the first section of run_list is used.
     run_list = sorted(run_list, key=lambda r: r['random_seed'])
-    rep_values = pu.parallel_apply(ar.run_estimators, run_list,
+    rep_values = pu.parallel_apply(nestcheck.ns_run_utils.run_estimators, run_list,
                                    func_args=(estimator_list,),
                                    max_workers=max_workers,
                                    parallel=parallel)
@@ -363,7 +364,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
     results.set_index(new_index, inplace=True)
     results.index.rename('calculation type', level=0, inplace=True)
     # get bootstrap std estimate
-    bs_values = pu.parallel_apply(ar.run_std_bootstrap, run_list,
+    bs_values = pu.parallel_apply(nestcheck.error_analysis.run_std_bootstrap, run_list,
                                   func_args=(estimator_list,),
                                   func_kwargs={'n_simulate': n_simulate},
                                   max_workers=max_workers,
@@ -388,7 +389,7 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
         100 * bs_df.loc[('std', 'uncertainty')] / bs_df.loc[('mean', 'value')]
     if add_sim_method:
         # get std from simulation estimate
-        sim_values = pu.parallel_apply(ar.run_std_simulate, run_list,
+        sim_values = pu.parallel_apply(nestcheck.error_analysis.run_std_simulate, run_list,
                                        func_args=(estimator_list,),
                                        func_kwargs={'n_simulate': n_simulate},
                                        max_workers=max_workers,
@@ -414,14 +415,13 @@ def get_bootstrap_results(n_run, n_simulate, estimator_list, settings,
             (100 * sim_df.loc[('std', 'uncertainty')] /
              sim_df.loc[('mean', 'value')])
     # get bootstrap CI estimates
-    bs_cis = pu.parallel_apply(ar.run_ci_bootstrap, run_list[:n_run_ci],
-                               func_args=(estimator_list,),
-                               func_kwargs={
-                                   'n_simulate': n_simulate_ci,
-                                   'cred_int': cred_int,
-                                   'random_seeds': range(n_simulate_ci)},
-                               max_workers=max_workers,
-                               parallel=parallel)
+    bs_cis = pu.parallel_apply(
+        nestcheck.error_analysis.run_ci_bootstrap, run_list[:n_run_ci],
+        func_args=(estimator_list,),
+        func_kwargs={'n_simulate': n_simulate_ci,
+                     'cred_int': cred_int,
+                     'random_seeds': range(n_simulate_ci)},
+        max_workers=max_workers, parallel=parallel)
     bs_ci_df = pf.summary_df_from_list(bs_cis, est_names)
     results.loc[('bs ' + str(cred_int) + ' CI', 'value'), :] = \
         bs_ci_df.loc[('mean', 'value')]

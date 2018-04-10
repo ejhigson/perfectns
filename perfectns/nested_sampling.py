@@ -9,7 +9,7 @@ import copy
 import numpy as np
 import scipy.special
 import perfectns.maths_functions as mf
-import nestcheck.analyse_run as ar
+import nestcheck.ns_run_utils
 import nestcheck.parallel_utils as pu
 import nestcheck.io_utils as iou
 
@@ -397,7 +397,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     al. 2017).
     """
     run_dict = dict_given_samples_array(samples, thread_min_max)
-    logw = ar.get_logw(run_dict, simulate=simulate)
+    logw = nestcheck.ns_run_utils.get_logw(run_dict, simulate=simulate)
     w_relative = np.exp(logw - logw.max())
     if settings.dynamic_goal == 0:
         return z_importance(w_relative, run_dict['nlive_array'])

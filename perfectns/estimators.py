@@ -33,7 +33,7 @@ import functools
 import numpy as np
 import scipy
 import perfectns.maths_functions as mf
-import nestcheck.analyse_run as ar
+import nestcheck.ns_run_utils
 import nestcheck.estimators
 
 
@@ -204,7 +204,7 @@ class RMean(EstimatorBase):
             return self.func(ns_run, logw=logw, simulate=simulate)
         else:
             if logw is None:
-                logw = ar.get_logw(ns_run, simulate=simulate)
+                logw = nestcheck.ns_run_utils.get_logw(ns_run, simulate=simulate)
             w_relative = np.exp(logw - logw.max())
             r = ns_run['r']
             return np.sum(w_relative * r) / np.sum(w_relative)
@@ -245,7 +245,7 @@ class RCred(EstimatorBase):
                              probability=self.probability)
         else:
             if logw is None:
-                logw = ar.get_logw(ns_run, simulate=simulate)
+                logw = nestcheck.ns_run_utils.get_logw(ns_run, simulate=simulate)
             # get sorted array of r values with their posterior weight
             wr = np.zeros((logw.shape[0], 2))
             wr[:, 0] = np.exp(logw - logw.max())

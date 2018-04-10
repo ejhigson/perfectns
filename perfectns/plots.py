@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import perfectns.nested_sampling as ns
 import perfectns.estimators as e
-import nestcheck.analyse_run as ar
 import nestcheck.plots
 
 
@@ -56,7 +55,7 @@ def plot_rel_posterior_mass(likelihood_list, prior, dim_list, logx, **kwargs):
                 label = type(likelihood).__name__ + ':'
             label += ' $d=' + str(dim) + '$'
             logl = likelihood.logl_given_r(prior.r_given_logx(logx, dim), dim)
-            w_rel = ar.rel_posterior_mass(logx, logl)
+            w_rel = nestcheck.plots.rel_posterior_mass(logx, logl)
             plt.plot(logx, w_rel, linestyle=linestyles[nl], label=label)
     ax = plt.gca()
     ax.legend(ncol=2)
@@ -154,7 +153,8 @@ def plot_dynamic_nlive(dynamic_goals, settings_in, **kwargs):
         param_exp = settings.r_given_logx(logx[:-1]) / np.sqrt(settings.n_dim)
         # Tuned weight is the relative posterior mass times the expected
         # magnitude of the paramer being considered
-        w_an = ar.rel_posterior_mass(logx, settings.logl_given_logx(logx))
+        w_an = nestcheck.plots.rel_posterior_mass(
+            logx, settings.logl_given_logx(logx))
         w_tuned = w_an[:-1] * param_exp
         w_tuned /= np.trapz(w_tuned, x=logx[:-1])
         # Get the normalising constant

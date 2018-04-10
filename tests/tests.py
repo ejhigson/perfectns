@@ -19,7 +19,7 @@ import perfectns.results_tables as rt
 import perfectns.maths_functions
 import perfectns.priors as priors
 import perfectns.plots
-import nestcheck.analyse_run as ar
+import nestcheck.ns_run_utils
 import nestcheck.data_processing as dp
 
 ESTIMATOR_LIST = [e.LogZ(),
@@ -239,7 +239,7 @@ class TestLikelihoods(unittest.TestCase):
             -1.0, places=12)
         settings.logz_analytic()
         ns_run = ns.generate_ns_run(settings)
-        values = ar.run_estimators(ns_run, ESTIMATOR_LIST)
+        values = nestcheck.ns_run_utils.run_estimators(ns_run, ESTIMATOR_LIST)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_standard_ns_cauchy_likelihood_gaussian_prior(self):
@@ -251,7 +251,7 @@ class TestLikelihoods(unittest.TestCase):
             -1.0, places=12)
         settings.logz_analytic()
         ns_run = ns.generate_ns_run(settings)
-        values = ar.run_estimators(ns_run, ESTIMATOR_LIST)
+        values = nestcheck.ns_run_utils.run_estimators(ns_run, ESTIMATOR_LIST)
         self.assertFalse(np.any(np.isnan(values)))
 
 
@@ -277,7 +277,7 @@ class TestPriors(unittest.TestCase):
             -1.0, places=12)
         settings.logz_analytic()
         ns_run = ns.generate_ns_run(settings)
-        values = ar.run_estimators(ns_run, ESTIMATOR_LIST)
+        values = nestcheck.ns_run_utils.run_estimators(ns_run, ESTIMATOR_LIST)
         self.assertFalse(np.any(np.isnan(values)))
 
     def test_cached_gaussian_prior(self):
@@ -306,7 +306,7 @@ class TestPriors(unittest.TestCase):
         # Generate NS run using get_run_data to check it checks the cache
         # before submitting process to parallel apply
         ns_run = ns.get_run_data(settings, 1, load=False, save=False)[0]
-        values = ar.run_estimators(ns_run, ESTIMATOR_LIST)
+        values = nestcheck.ns_run_utils.run_estimators(ns_run, ESTIMATOR_LIST)
         self.assertFalse(np.any(np.isnan(values)))
         # check the argument options and messages for interp_r_logx_dict
         with self.assertWarns(UserWarning):
