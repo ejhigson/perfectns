@@ -4,6 +4,7 @@ Functions which perform standard and dynamic nested sampling runs and generate
 samples for use in evidence calculations and parameter estimation.
 """
 
+import warnings
 import copy
 import numpy as np
 import scipy.special
@@ -141,14 +142,15 @@ def get_run_data(settings, n_repeat, **kwargs):
                         if loaded[key] == current[key]:
                             del loaded[key]
                             del current[key]
-                    print('Loaded settings != current settings. ' +
-                          'Differences are: loaded =', loaded, '!= current =',
-                          current, 'Generate new runs instead.')
+                    warnings.warn(
+                        ('Loaded settings != current settings. Differences are: loaded='
+                         + str(loaded) + '!= current =' + str(current) +
+                         '. Generating new runs instead of using saved ones.'), UserWarning)
                     del data
                     load = False
         except (OSError, EOFError) as exception:
-            print('Loading failed (' + type(exception).__name__ + '): ' +
-                  'try generating new data')
+            print('Loading failed due to ' + type(exception).__name__ +
+                  ' - try generating new runs instead.')
             load = False
             overwrite_existing = True
     if not load:

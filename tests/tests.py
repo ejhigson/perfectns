@@ -80,8 +80,9 @@ class TestNestedSampling(unittest.TestCase):
         ns.get_run_data(settings, 1, save=True, load=True,
                         check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
         settings.n_samples_max += 1
-        ns.get_run_data(settings, 1, save=True, load=True,
-                        check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
+        with self.assertWarns(UserWarning):
+            ns.get_run_data(settings, 1, save=True, load=True,
+                            check_loaded_settings=True, cache_dir=TEST_CACHE_DIR)
 
     def test_get_run_data_unexpected_kwarg(self):
         settings = get_minimal_settings()
