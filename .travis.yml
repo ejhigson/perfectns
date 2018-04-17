@@ -1,9 +1,12 @@
 language: python
 python:
+ - '2.7'
+ - '3.2'
+ - '3.3'
+ - '3.4'
  - '3.5'
  - '3.6'
 install:
- - pip install git+https://github.com/williamjameshandley/fgivenx
  - pip install git+https://github.com/ejhigson/nestcheck
  - pip install .
  - pip install coveralls
