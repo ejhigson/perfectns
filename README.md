@@ -40,8 +40,8 @@ See the documentation in each file for more details.
 
 ### Getting Started
 
-perfectns works for Python 2 (>= 2.7.10) and Python 3, and requires the `nestcheck` module.
-To pip install perfectns and its requirements:
+perfectns works for Python >= 3.5, and requires the `nestcheck` module.
+To pip install perfectns and its dependencies:
 
 ```
 pip install perfectns
