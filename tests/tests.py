@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Test the perfectns module installation.
+Test the perfectns package installation.
 """
 
 import os
@@ -390,7 +390,7 @@ class TestDynamicResultsTables(unittest.TestCase):
     def test_dynamic_results_table_values(self):
         """
         Test generating a table comparing dynamic and standard nested sampling;
-        this covers a lot of the perfectns module's functionality.
+        this covers a lot of the perfectns package's functionality.
 
         Tests of the expected values relies on default seeding of runs in
         get_run_data using numpy.random.seed - this should be stable over

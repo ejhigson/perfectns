@@ -18,16 +18,16 @@ Nested sampling is a method for Bayesian computation which given some likelihood
 
 Nested sampling works by sampling some number of points randomly from the prior then iteratively replacing the point with the lowest likelihood with another point sampled from the region of the prior with a higher likelihood.
 Generating uncorrelated samples within the likelihood constraint is computationally challenging and can only be done approximately by software such as MultiNest and PolyChord.
-This module uses special cases where uncorrelated samples can be easily drawn from within some iso-likelihood contour to perform nested sampling perfectly in the manner described by [Keeton (2010)](https://academic.oup.com/mnras/article/414/2/1418/977810).
+This package uses special cases where uncorrelated samples can be easily drawn from within some iso-likelihood contour to perform nested sampling perfectly in the manner described by [Keeton (2010)](https://academic.oup.com/mnras/article/414/2/1418/977810).
 
 ##### Likelihoods and Priors
 
-This module uses only spherical likelihoods and priors L(r) and P(r), where the radial coordinate r = |theta|.
+This package uses only spherical likelihoods and priors L(r) and P(r), where the radial coordinate r = |theta|.
 Any perfect nested sampling evidence or parameter estimation calculation is equivalent to some problem with spherically symmetric likelihoods and priors (see Section 3 of [Higson (2017b)](https://arxiv.org/abs/1703.09701) for more details), so with suitable choices of L(r), P(r) and the parameter estimation quantity a wide variety of tests can be performed with this package.
 L(r) must be a monotonically decreasing function of the radius r, so that the likelihood increases as r decreases to a maximum at r=0.
 
 Nested statistically estimating the shrinkage in the fraction of the prior volume remaining X.
-This module generates nested sampling runs by sampling from the known distribution of prior volumes X, then using the prior to find the corresponding radial coordinates r(X) and the likelihood to find the likelihood values L(r(X)).
+This package generates nested sampling runs by sampling from the known distribution of prior volumes X, then using the prior to find the corresponding radial coordinates r(X) and the likelihood to find the likelihood values L(r(X)).
 Parameter vectors theta_i for each point i are sampled from the hyper-spherical shell with radius r_i.
 
 ##### Implementation
@@ -40,7 +40,7 @@ See the documentation in each file for more details.
 
 ### Getting Started
 
-perfectns works for Python >= 3.5, and requires the `nestcheck` module.
+perfectns works for Python >= 3.5, and requires the `nestcheck` package.
 To pip install perfectns and its dependencies:
 
 ```
