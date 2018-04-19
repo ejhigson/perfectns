@@ -8,8 +8,8 @@ perfectns
 
 ### Description
 
-perfectns performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
-In these cases the algorithms can be followed "perfectly" (without implementation-specific errors from correlated sampling), making them ideal for studying nested sampling.
+`perfectns` performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
+These cases are ideal for studying nested sampling as the algorithms can be followed "perfectly" - i.e. without implementation-specific errors from correlated samples (see [Higson et al., 2018](http://arxiv.org/abs/1804.06406) for a detailed discussion).
 This package contains the code used to generate results in the [dynamic nested sampling paper (Higson, 2017a)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
 
 ##### Background
@@ -33,15 +33,16 @@ Parameter vectors theta_i for each point i are sampled from the hyper-spherical 
 ##### Implementation
 
 The package uses a logarithmic number system for likelihoods and weights throughout to prevent overflow errors from extreme numerical values; this is particularly important in high dimensions.
-Most of the computational work is done within the numpy package for computational efficiency.
+Most of the computational work is done within the `numpy` package for computational efficiency.
+The package also makes extensive use of the `nestcheck` nested sampling functions.
 
 New likelihoods and priors can be added to `likelihoods.py` and `priors.py`, and new parameter estimation quantities can be added to `estimators.py`.
 See the documentation in each file for more details.
 
 ### Getting Started
 
-perfectns works for Python >= 3.5, and requires the `nestcheck` package.
-To pip install perfectns and its dependencies:
+`perfectns` works for Python >= 3.5; For a list of its dependencies see `setup.py`..
+To pip install `perfectns` and its dependencies:
 
 ```
 pip install perfectns
@@ -55,7 +56,4 @@ python setup.py test
 
 ##### Examples
 
-The `demo.ipynb` notebook contains a demonstration of perfectns' functionality.
-
-The results table generating functions used for the dynamic nested sampling paper [(Higson 2017a)](https://arxiv.org/abs/1704.03459) are shown in `demo.ipynb`.
-Any of the results can be replicated from these functions by choosing the settings to match those described. Note that the paper uses nbatch=1 and dynamic_fraction=0.9 throughout, and uses the 'cached_gaussian' prior in place of the 'gaussian' prior when the number of dimensions is 100 or more.
+See the `demo.ipynb` notebook contains a demonstration of `perfectns`' functionality.
