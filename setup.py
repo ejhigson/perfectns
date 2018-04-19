@@ -14,13 +14,28 @@ def read_file(fname):
 
 setuptools.setup(name='perfectns',
                  version='2.0.0',
-                 author='Edward Higson',
-                 author_email='ejhigson@gmail.com',
                  description=('Dynamic and standard nested sampling '
                               'for spherically symmetric likelihoods and '
                               'priors.'),
-                 url='https://github.com/ejhigson/perfectns',
                  long_description=read_file('README.md'),
+                 url='https://github.com/ejhigson/perfectns',
+                 author='Edward Higson',
+                 author_email='ejhigson@gmail.com',
+                 license='MIT',
+                 keywords='nested-sampling dynamic-nested-sampling',
+                 classifiers=[  # Optional
+                     'Development Status :: 4 - Beta',
+                     'Intended Audience :: Science/Research',
+                     'License :: OSI Approved :: MIT License',
+                     'Programming Language :: Python :: 3',
+                     'Programming Language :: Python :: 3.5',
+                     'Programming Language :: Python :: 3.6',
+                     'Topic :: Scientific/Engineering :: Astronomy',
+                     'Topic :: Scientific/Engineering :: Physics',
+                     'Topic :: Scientific/Engineering :: Visualization',
+                     'Topic :: Scientific/Engineering :: Information Analysis',
+                 ],
+                 packages=['perfectns'],
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
                                    'pandas',
@@ -28,5 +43,4 @@ setuptools.setup(name='perfectns',
                                    'mpmath',
                                    'nestcheck'],
                  test_suite='nose.collector',
-                 tests_require=['nose', 'coverage'],
-                 packages=['perfectns'])
+                 tests_require=['nose', 'coverage'])
