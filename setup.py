@@ -1,15 +1,20 @@
 #!/usr/bin/env python
-"""perfectns setup."""
+"""
+perfectns setup module.
+
+Based on https://github.com/pypa/sampleproject/blob/master/setup.py.
+"""
 import os
 import setuptools
 
 
-def read_file(fname):
-    """
-    For using the README file as the long description.
-    Taken from https://pythonhosted.org/an_example_pypi_project/setuptools.html
-    """
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+def get_long_description():
+    """Get PyPI long description from its own .rst file as PyPI does not render
+    the README well."""
+    here = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(here, '.pypi_long_desc.rst')) as readme_file:
+        long_description = readme_file.read()
+    return long_description
 
 
 setuptools.setup(name='perfectns',
@@ -17,7 +22,8 @@ setuptools.setup(name='perfectns',
                  description=('Dynamic and standard nested sampling '
                               'for spherically symmetric likelihoods and '
                               'priors.'),
-                 long_description=read_file('README.md'),
+                 long_description=get_long_description(),
+                 long_description_content_type='text/x-rst',
                  url='https://github.com/ejhigson/perfectns',
                  author='Edward Higson',
                  author_email='ejhigson@gmail.com',
