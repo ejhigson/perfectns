@@ -2,8 +2,11 @@ language: python
 python:
  - '3.5'
  - '3.6'
+# If a more up to date version of nestcheck than the one on pip is needed,
+# add:
+# - pip install git+https://github.com/ejhigson/nestcheck
+# before pip install .
 install:
- - pip install git+https://github.com/ejhigson/nestcheck
  - pip install .
  - pip install coveralls
 before_script: # configure a headless display to test plot generation

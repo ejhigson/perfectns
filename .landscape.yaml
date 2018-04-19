@@ -1,9 +1,0 @@
-# landscape configoration
-# -----------------------
-doc-warnings: true
-test-warnings: true
-strictness: veryhigh
-max-line-length: 79
-autodetect: true
-python-targets:
-  - 3

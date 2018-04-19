@@ -54,6 +54,8 @@ def analytic_logx_terminate(settings):
     if settings.logz_analytic() is not None:
         return logx_terminate_bound(logl_max, settings.termination_fraction,
                                     settings.logz_analytic())
+    else:
+        return None
 
 
 def logx_terminate_bound(logl_max, termination_fraction, logz_analytic):
