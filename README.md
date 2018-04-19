@@ -9,12 +9,12 @@ perfectns
 ### Description
 
 `perfectns` performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
-These cases are ideal for studying nested sampling as the algorithms can be followed "perfectly" - i.e. without implementation-specific errors from correlated samples (see [Higson et al., 2018](http://arxiv.org/abs/1804.06406) for a detailed discussion).
-This package contains the code used to generate results in the [dynamic nested sampling paper (Higson, 2017a)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
+These cases are ideal for studying nested sampling as the algorithms can be followed "perfectly" - i.e. without implementation-specific errors from correlated samples (see [Higson et al., 2018,](http://arxiv.org/abs/1804.06406) for a detailed discussion).
+This package contains the code used to generate results in the [dynamic nested sampling paper (Higson et al., 2017b)](https://arxiv.org/abs/1704.03459) and provides an example implementation of the algorithm to accompany the paper.
 
 ##### Background
 
-Nested sampling is a method for Bayesian computation which given some likelihood L(theta) and prior P(theta) will generate posterior samples and an estimate of the Bayesian evidence Z; for more details see [Higson (2017a)](https://arxiv.org/abs/1704.03459) and [Higson (2017b)](https://arxiv.org/abs/1703.09701).
+Nested sampling is a method for Bayesian computation which given some likelihood L(theta) and prior P(theta) will generate posterior samples and an estimate of the Bayesian evidence Z; for more details see [Higson et al. (2017a)](https://arxiv.org/abs/1703.09701) and [Higson et al. (2017b)](https://arxiv.org/abs/1704.03459).
 
 Nested sampling works by sampling some number of points randomly from the prior then iteratively replacing the point with the lowest likelihood with another point sampled from the region of the prior with a higher likelihood.
 Generating uncorrelated samples within the likelihood constraint is computationally challenging and can only be done approximately by software such as MultiNest and PolyChord.
@@ -23,7 +23,7 @@ This package uses special cases where uncorrelated samples can be easily drawn f
 ##### Likelihoods and Priors
 
 This package uses only spherical likelihoods and priors L(r) and P(r), where the radial coordinate r = |theta|.
-Any perfect nested sampling evidence or parameter estimation calculation is equivalent to some problem with spherically symmetric likelihoods and priors (see Section 3 of [Higson (2017b)](https://arxiv.org/abs/1703.09701) for more details), so with suitable choices of L(r), P(r) and the parameter estimation quantity a wide variety of tests can be performed with this package.
+Any perfect nested sampling evidence or parameter estimation calculation is equivalent to some problem with spherically symmetric likelihoods and priors (see Section 3 of [Higson et al. (2017a)](https://arxiv.org/abs/1703.09701) for more details), so with suitable choices of L(r), P(r) and the parameter estimation quantity a wide variety of tests can be performed with this package.
 L(r) must be a monotonically decreasing function of the radius r, so that the likelihood increases as r decreases to a maximum at r=0.
 
 Nested statistically estimating the shrinkage in the fraction of the prior volume remaining X.
