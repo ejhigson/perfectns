@@ -6,7 +6,7 @@ perfectns
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/perfectns/LICENSE)
 
 
-### Description
+## Description
 
 `perfectns` performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
 These cases are ideal for studying nested sampling as the algorithms can be followed "perfectly" - i.e. without implementation-specific errors from correlated samples (see [Higson et al., 2018,](http://arxiv.org/abs/1804.06406) for a detailed discussion).
@@ -39,21 +39,37 @@ The package also makes extensive use of the `nestcheck` nested sampling function
 New likelihoods and priors can be added to `likelihoods.py` and `priors.py`, and new parameter estimation quantities can be added to `estimators.py`.
 See the documentation in each file for more details.
 
-### Getting Started
+## Install
 
-`perfectns` works for Python >= 3.5; For a list of its dependencies see `setup.py`..
-To pip install `perfectns` and its dependencies:
+`perfectns` works for Python >= 3.5; for a list of its dependencies see the `setup.py` file.
+It can be installed with pip:
 
 ```
 pip install perfectns
 ```
 
-You can check your installation is working using the test suite (this requires nose):
+Alternatively, you can download the latest version of `perfectns` and install it by cloning the git repository:
 
 ```
-python setup.py test
+git clone https://github.com/ejhigson/perfectns.git
+cd perfectns
+python setup.py install
+```
+Both of these methods also automatically install any dependencies which are not already satisfied by your system.
+
+You can check your installation is working using the test suite (this requires `nose`) by running the following command in the install's root directory:
+
+```
+nosetests
 ```
 
-##### Examples
+To also get code coverage information (requires the `coverage` package)
+```
+nosetests --with-coverage --cover-erase --cover-package=perfectns
+```
 
-See the `demo.ipynb` notebook contains a demonstration of `perfectns`' functionality.
+If all the tests pass, the install should be working.
+
+## Demo and example use
+
+See the `demo.ipynb` notebook [here](https://github.com/ejhigson/perfectns/blob/master/demos/demo.ipynb) for a demonstration of `perfectns`' functionality.
