@@ -8,10 +8,10 @@ import warnings
 import copy
 import numpy as np
 import scipy.special
-import perfectns.maths_functions as mf
 import nestcheck.ns_run_utils
 import nestcheck.parallel_utils as pu
 import nestcheck.io_utils as iou
+import perfectns.maths_functions as mf
 
 
 def generate_ns_run(settings, random_seed=None):
@@ -175,9 +175,6 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     Performs standard nested sampling using the likelihood and prior specified
     in settings.
 
-    For more details see 'Sampling errors in nested sampling parameter
-    estimation' (Higson 2017).
-
     The run terminates when the estimated posterior mass contained in the live
     points is less than settings.termination_fraction. The evidence in the
     remaining live points is estimated as
@@ -267,7 +264,7 @@ def generate_dynamic_run(settings):
     Generate a dynamic nested sampling run.
     For details of the dynamic nested sampling algorithm, see 'Dynamic nested
     sampling: an improved algorithm for nested sampling parameter estimation
-    and evidence calculation' (Higson 2017).
+    and evidence calculation' (Higson et al., 2017).
 
     The run terminates when the number of samples reaches some limit
     settings.n_samples_max. If this is not set, the function will estimate the
@@ -396,7 +393,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation' (Higson et
-    al. 2017).
+    al., 2017).
     """
     run_dict = dict_given_samples_array(samples, thread_min_max)
     logw = nestcheck.ns_run_utils.get_logw(run_dict, simulate=simulate)
@@ -421,7 +418,7 @@ def z_importance(w_relative, nlive, exact=False):
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation'
-    (Higson 2017).
+    (Higson et al., 2017).
     """
     importance = np.cumsum(w_relative)
     importance = importance.max() - importance
@@ -441,7 +438,7 @@ def p_importance(theta, w_relative, tuned_dynamic_p=False,
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation' (Higson et
-    al. 2017).
+    al., 2017).
     """
     if tuned_dynamic_p is False:
         return w_relative / w_relative.max()

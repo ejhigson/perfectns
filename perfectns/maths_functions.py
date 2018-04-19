@@ -82,7 +82,7 @@ def sample_nsphere_shells_beta(r, n_dim, n_sample=None):
 
     Sample single parameters on n_dim-dimensional sphere independently, as
     as described in Section 3.2 of 'Sampling Errors in nested sampling
-    parameter estimation' (Higson et al. 2017).
+    parameter estimation' (Higson et al., 2017).
 
     NB if each parameter is sampled independently and combined into a vector,
     that vector will not have a magnitude r.

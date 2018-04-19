@@ -176,7 +176,7 @@ def plot_parameter_logx_diagram(settings, ftheta, **kwargs):
     """
     Plots parameter estimation diagram of the type described in Section 3.1 and
     shown in Figure 3 of "Sampling errors in nested sampling parameter
-    estimation" (Higson 2017).
+    estimation" (Higson et al., 2017).
 
     Parameters
     ----------
@@ -363,8 +363,8 @@ def cdf_given_logx(estimator, value, logx, settings):
     """
     assert value.shape == logx.shape
     if estimator.__class__.__name__ == 'ParamMean':
-        # From the sampling errors paper (Higson 2017) Section 4 the cdf of
-        # p1^2 is a beta distribution
+        # From the sampling errors paper (Higson et al., 2017) Section 4 the
+        # cdf of p1^2 is a beta distribution
         r = settings.r_given_logx(logx)
         p1squared_cdf = scipy.stats.beta.cdf((value / r) ** 2, 0.5,
                                              (settings.n_dim - 1) / 2.)
