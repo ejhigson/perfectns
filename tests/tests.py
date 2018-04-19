@@ -10,6 +10,8 @@ import warnings
 import numpy as np
 import numpy.testing
 import matplotlib
+import nestcheck.ns_run_utils
+import nestcheck.data_processing as dp
 import perfectns.settings
 import perfectns.estimators as e
 import perfectns.cached_gaussian_prior
@@ -19,8 +21,6 @@ import perfectns.results_tables as rt
 import perfectns.maths_functions
 import perfectns.priors as priors
 import perfectns.plots
-import nestcheck.ns_run_utils
-import nestcheck.data_processing as dp
 
 ESTIMATOR_LIST = [e.LogZ(),
                   e.Z(),
@@ -194,7 +194,17 @@ class TestEstimators(unittest.TestCase):
     def test_count_samples(self):
         self.assertEqual(e.CountSamples()({'logl': np.zeros(10)}), 10)
 
-    def test_maths_functions(self):
+
+class TestMathsFunctions(unittest.TestCase):
+
+    def test_analytic_logx_terminate(self):
+        """Check None is returned when the likelihood is not set up."""
+        settings = get_minimal_settings()
+        settings.likelihood = likelihoods.ExpPower(2)
+        self.assertIsNone(
+            perfectns.maths_functions.analytic_logx_terminate(settings))
+
+    def test_nsphere_sampling(self):
         # By default only used in high dim so manually test with dim=100
         perfectns.maths_functions.sample_nsphere_shells(
             np.asarray([1]), 100, n_sample=1)
