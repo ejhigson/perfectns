@@ -151,8 +151,9 @@ def get_run_data(settings, n_repeat, **kwargs):
                     del data
                     load = False
         except (OSError, EOFError) as exception:
-            print('Loading failed due to ' + type(exception).__name__ +
-                  ' - try generating new runs instead.')
+            print(('Loading {0} failed due to {1}'
+                   .format(save_name, type(exception).__name__)
+                   + ' - try generating new runs instead.'))
             load = False
             overwrite_existing = True
     if not load:
