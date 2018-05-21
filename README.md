@@ -3,7 +3,7 @@ perfectns
 
 [![Build Status](https://travis-ci.org/ejhigson/perfectns.svg?branch=master)](https://travis-ci.org/ejhigson/perfectns.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/ejhigson/perfectns/badge.svg?branch=master)](https://coveralls.io/github/ejhigson/perfectns?branch=master)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/perfectns/LICENSE)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ejhigson/perfectns/blob/master/LICENSE)
 
 `perfectns` performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
 These cases are ideal for studying nested sampling as the algorithms can be followed "perfectly" - i.e. without implementation-specific errors from correlated samples (see [Higson et al., 2018,](http://arxiv.org/abs/1804.06406) for a detailed discussion).
