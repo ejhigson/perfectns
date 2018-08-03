@@ -18,7 +18,7 @@ def get_long_description():
 
 
 setuptools.setup(name='perfectns',
-                 version='2.0.1',
+                 version='2.0.2',
                  description=('Dynamic and standard nested sampling '
                               'for spherically symmetric likelihoods and '
                               'priors.'),
