@@ -11,7 +11,6 @@ import numpy as np
 import numpy.testing
 import matplotlib
 import nestcheck.ns_run_utils
-import nestcheck.data_processing as dp
 import perfectns.settings
 import perfectns.estimators as e
 import perfectns.cached_gaussian_prior
@@ -62,7 +61,13 @@ class TestNestedSampling(unittest.TestCase):
             del run['r']
             del run['settings']
             del run['random_seed']
-            dp.check_ns_run(run)
+            try:
+                nestcheck.ns_run_utils.check_ns_run(run)
+            except AttributeError:
+                # check_ns_run moved from nestcheck.data_processing to
+                # nestcheck.ns_run_utils in v0.1.8, so this is needed to
+                # maintain compatibility with earlier versions
+                pass
 
     def test_get_run_data_caching(self):
         settings = get_minimal_settings()
