@@ -45,6 +45,15 @@ class EstimatorBase(object):
     """Base class for estimators."""
 
     def __init__(self, func, **kwargs):
+        """Set up estimator object, including making latex name and saving
+        kwargs.
+
+        Parameters
+        ----------
+        func: function
+        kwargs: dict, optional
+            Saved keyword arguments for function.
+        """
         if kwargs:
             self.func = functools.partial(func, **kwargs)
         else:
@@ -61,6 +70,7 @@ class LogZ(EstimatorBase):
     """Natural log of Bayesian evidence."""
 
     def __init__(self):
+        """See EstimatorBase __init__ docstring."""
         EstimatorBase.__init__(self, nestcheck.estimators.logz)
 
     @staticmethod
@@ -74,6 +84,7 @@ class Z(EstimatorBase):
     """Bayesian evidence."""
 
     def __init__(self):
+        """See EstimatorBase __init__ docstring."""
         EstimatorBase.__init__(self, nestcheck.estimators.evidence)
 
     @staticmethod
@@ -87,6 +98,7 @@ class CountSamples(EstimatorBase):
     """Number of samples in run."""
 
     def __init__(self):
+        """See EstimatorBase __init__ docstring."""
         EstimatorBase.__init__(self, nestcheck.estimators.count_samples)
 
 
@@ -98,6 +110,7 @@ class ParamMean(EstimatorBase):
     """
 
     def __init__(self, param_ind=0):
+        """See EstimatorBase __init__ docstring."""
         EstimatorBase.__init__(self, nestcheck.estimators.param_mean,
                                param_ind=param_ind)
 
@@ -109,6 +122,9 @@ class ParamMean(EstimatorBase):
     @staticmethod
     def ftilde(logx, settings):
         """
+        Helper function for finding the analytic value of the estimator.
+        See "check_by_integrating" docstring for more details.
+
         ftilde(X) is mean of f(theta) on the iso-likelihood contour
         L(theta) = L(X).
         """
@@ -124,6 +140,7 @@ class ParamCred(EstimatorBase):
     """
 
     def __init__(self, probability, param_ind=0):
+        """See EstimatorBase __init__ docstring."""
         self.probability = probability
         EstimatorBase.__init__(self, nestcheck.estimators.param_cred,
                                probability=probability, param_ind=param_ind)
@@ -162,12 +179,16 @@ class ParamSquaredMean(EstimatorBase):
     min_value = 0
 
     def __init__(self, param_ind=0):
+        """See EstimatorBase __init__ docstring."""
         EstimatorBase.__init__(self, nestcheck.estimators.param_squared_mean,
                                param_ind=param_ind)
 
     @staticmethod
     def ftilde(logx, settings):
         """
+        Helper function for finding the analytic value of the estimator.
+        See "check_by_integrating" docstring for more details.
+
         ftilde(X) is mean of f(theta) on the iso-likelihood contour
         L(theta) = L(X).
         """
@@ -187,6 +208,7 @@ class RMean(EstimatorBase):
     min_value = 0
 
     def __init__(self, from_theta=False):
+        """See EstimatorBase __init__ docstring."""
         EstimatorBase.__init__(self, nestcheck.estimators.r_mean)
         self.from_theta = from_theta
 
@@ -204,7 +226,8 @@ class RMean(EstimatorBase):
             return self.func(ns_run, logw=logw, simulate=simulate)
         else:
             if logw is None:
-                logw = nestcheck.ns_run_utils.get_logw(ns_run, simulate=simulate)
+                logw = nestcheck.ns_run_utils.get_logw(
+                    ns_run, simulate=simulate)
             w_relative = np.exp(logw - logw.max())
             r = ns_run['r']
             return np.sum(w_relative * r) / np.sum(w_relative)
@@ -216,6 +239,9 @@ class RMean(EstimatorBase):
     @staticmethod
     def ftilde(logx, settings):
         """
+        Helper function for finding the analytic value of the estimator.
+        See "check_by_integrating" docstring for more details.
+
         ftilde(X) is mean of f(theta) on the iso-likelihood contour
         L(theta) = L(X).
         """
@@ -229,6 +255,7 @@ class RCred(EstimatorBase):
     min_value = 0
 
     def __init__(self, probability, from_theta=False):
+        """See EstimatorBase __init__ docstring."""
         self.probability = probability
         EstimatorBase.__init__(self, nestcheck.estimators.r_cred,
                                probability=probability)
@@ -245,7 +272,8 @@ class RCred(EstimatorBase):
                              probability=self.probability)
         else:
             if logw is None:
-                logw = nestcheck.ns_run_utils.get_logw(ns_run, simulate=simulate)
+                logw = nestcheck.ns_run_utils.get_logw(
+                    ns_run, simulate=simulate)
             # get sorted array of r values with their posterior weight
             wr = np.zeros((logw.shape[0], 2))
             wr[:, 0] = np.exp(logw - logw.max())
@@ -281,8 +309,8 @@ def get_true_estimator_values(estimators, settings):
     estimators: estimator object or list of estimator objects
     settings: PerfectNSSettings object
 
-    Returns:
-    --------
+    Returns
+    -------
     output: np.array of size (len(estimators),) if estimators is a list, float
         otherwise.
     """
@@ -303,7 +331,7 @@ def get_true_estimator_values(estimators, settings):
 
 def check_by_integrating(ftilde, settings):
     """
-    Return the analytical value of the estimator using numerical
+    Return the true value of the estimator using numerical
     integration.
 
     Chopin and Robert (2010) show that the expectation of some function
@@ -313,6 +341,16 @@ def check_by_integrating(ftilde, settings):
 
     where ftilde(X) is mean of f(theta) on the iso-likelihood contour
     L(theta) = L(X).
+
+    Parameters
+    ----------
+    ftilde: function
+    settings: PerfectNSSettings object
+
+    Returns
+    -------
+    float
+        The estimator's true value.
     """
     logx_terminate = mf.analytic_logx_terminate(settings)
     assert logx_terminate is not None, \
@@ -323,10 +361,23 @@ def check_by_integrating(ftilde, settings):
 
 
 def check_integrand(logx, ftilde, settings):
-    """
-    Helper function to return integrand L(X) X ftilde(X) for checking
+    """Helper function to return integrand L(X) X ftilde(X) for checking
     estimator values by numerical integration.
-    Note that the integral must be normalised by multiplying by a factor (1/Z).
+    Note that the integral must be normalised by multiplying by a factor of
+    (1/Z).
+
+    Parameters
+    ----------
+    logx: 1d numpy array
+        Values on which to evaluate integrand.
+    ftilde: function
+        See check_by_integrating docstring for more details.
+    settings: PerfectNSSettings object
+
+    Returns
+    -------
+    1d numpy array
+        Integrand evaluated at input logx coordinates.
     """
     # returns L(X) X ftilde(X) for integrating dlogx
     return (np.exp(settings.logl_given_logx(logx) + logx)

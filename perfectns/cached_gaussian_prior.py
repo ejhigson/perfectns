@@ -17,20 +17,43 @@ def interp_r_logx_dict(n_dim, prior_scale, **kwargs):
     """
     Generate a dictionary containing arrays of logx and r values for use in
     interpolation, as well as a record of the settings used.
+
+    Parameters
+    ----------
+    n_dim: int
+        Number of dimensions.
+    prior_scale: float
+        Gaussian prior's standard deviation.
+    logx_min: float
+        Values for interpolation are generated between logx_min and logx_max.
+    save_dict: bool, optional
+        Whether or not to cache the output dictionary.
+    cache_dir: str, optional
+        Directory in which to cache output if save_dict is True.
+    interp_density: float
+        Number of points to include in interpolation arrays per unit of logx
+        (the number of points is cast to int so this can be a fraction).
+    logx_max: float, optional
+        Values for interpolation are generated between logx_min and logx_max.
+
+    Returns
+    -------
+    interp_dict: dict
     """
     logx_min = kwargs.pop('logx_min')  # no default, must specify
     save_dict = kwargs.pop('save_dict', True)
     cache_dir = kwargs.pop('cache_dir', 'cache')
     interp_density = kwargs.pop('interp_density')  # no default, must specify
     if n_dim > 1000 and logx_min >= -4500:
-        warnings.warn(('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
-                       'for very high dimensions, depending on the likelihood, you may '
-                       'need to lower logx_min=' + str(logx_min)), UserWarning)
+        warnings.warn(
+            ('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
+             'for very high dimensions, depending on the likelihood, you may '
+             'need to lower logx_min=' + str(logx_min)), UserWarning)
     if n_dim < 50:
-        warnings.warn(('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
-                       'for n_dim<50 the "gaussian" prior works fine and you should '
-                       'use it instead of the "gaussian_cached" prior'),
-                      UserWarning)
+        warnings.warn(
+            ('Interp_r_logx_dict: WARNING: n_dim=' + str(n_dim) + ': '
+             'for n_dim<50 the "gaussian" prior works fine and you should '
+             'use it instead of the "gaussian_cached" prior'), UserWarning)
     # use a smaller logx_max as the point at which the logx at which the
     # scipy method (scipy.special.gammainc) fails is lower in lower
     # dimensions. logx_max=-10 will mean the gaussian_cached prior works

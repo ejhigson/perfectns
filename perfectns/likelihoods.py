@@ -25,8 +25,8 @@ given prior and dimension, which is useful for checking results:
         ...
 """
 
-import perfectns.maths_functions as mf
 import numpy as np
+import perfectns.maths_functions as mf
 
 
 class Gaussian(object):
@@ -34,17 +34,24 @@ class Gaussian(object):
     """Spherically symmetric Gaussian likelihood."""
 
     def __init__(self, likelihood_scale=1.0):
+        """Store Gaussian likelihood's sigma."""
         self.likelihood_scale = likelihood_scale
 
     def logl_given_r(self, r, n_dim):
         """
+        Get loglikelihood values for input radial coordinates.
+
         Parameters
         ----------
         r: float or numpy array
+            Radial coordinates.
         n_dim: int
+            Number of dimensions.
+
         Returns
         -------
         logl: same type and size as r
+            Loglikelihood values.
         """
         return mf.log_gaussian_given_r(r, self.likelihood_scale, n_dim)
 
@@ -52,23 +59,43 @@ class Gaussian(object):
 
     def r_given_logl(self, logl, n_dim):
         """
+        Get the radial coordinates corresponding to the input loglikelihood
+        values.
+
         Parameters
         ----------
         logl: float or numpy array
+            Loglikelihood values.
         n_dim: int
+            Number of dimensions.
+
         Returns
         -------
         r: same type and size as logl
+            Radial coordinates.
         """
         return mf.r_given_log_gaussian(logl, self.likelihood_scale, n_dim)
 
     def logz_analytic(self, prior, n_dim):
         """
         Returns analytic value of the log evidence for the input prior and
-        dimension if known.
+        dimension if it is available.
+
         If not set up for this prior an AssertionError is thrown (this is
         caught in functions which check analytical values where they are
         available).
+
+        Parameters
+        ----------
+        prior: object
+        n_dim: int
+            Number of dimensions.
+
+        Returns
+        -------
+        float
+            Analytic value of log Z for this likelihood given the prior and
+            number of dimensions.
         """
         assert type(prior).__name__ in ['Uniform', 'Gaussian'], \
             ('No logz_analytic set up for ' + type(self).__name__ +
@@ -82,7 +109,8 @@ class Gaussian(object):
             return -logvol + mf.gaussian_logx_given_r(prior.prior_scale,
                                                       self.likelihood_scale,
                                                       n_dim)
-        elif type(prior).__name__ == 'Gaussian':
+        else:
+            assert type(prior).__name__ == 'Gaussian'
             # See 'Products and convolutions of Gaussian probability density
             # functions' (P Bromiley, 2003) page 3 for a derivation of this
             # result
@@ -99,18 +127,25 @@ class ExpPower(object):
     """
 
     def __init__(self, likelihood_scale=1, power=2):
+        """Save the likelihood scale and power."""
         self.likelihood_scale = likelihood_scale
         self.power = power
 
     def logl_given_r(self, r, n_dim):
         """
+        Get loglikelihood values for input radial coordinates.
+
         Parameters
         ----------
         r: float or numpy array
+            Radial coordinates.
         n_dim: int
+            Number of dimensions.
+
         Returns
         -------
         logl: same type and size as r
+            Loglikelihood values.
         """
         return mf.log_exp_power_given_r(r, self.likelihood_scale,
                                         n_dim, b=self.power)
@@ -119,13 +154,20 @@ class ExpPower(object):
 
     def r_given_logl(self, logl, n_dim):
         """
+        Get the radial coordinates corresponding to the input loglikelihood
+        values.
+
         Parameters
         ----------
         logl: float or numpy array
+            Loglikelihood values.
         n_dim: int
+            Number of dimensions.
+
         Returns
         -------
         r: same type and size as logl
+            Radial coordinates.
         """
         return mf.r_given_log_exp_power(logl, self.likelihood_scale,
                                         n_dim, b=self.power)
@@ -136,17 +178,24 @@ class Cauchy(object):
     """Spherically symmetric Cauchy likelihood."""
 
     def __init__(self, likelihood_scale=1):
+        """Save the likelihood scale."""
         self.likelihood_scale = likelihood_scale
 
     def logl_given_r(self, r, n_dim):
         """
+        Get loglikelihood values for input radial coordinates.
+
         Parameters
         ----------
         r: float or numpy array
+            Radial coordinates.
         n_dim: int
+            Number of dimensions.
+
         Returns
         -------
         logl: same type and size as r
+            Loglikelihood values.
         """
         return mf.log_cauchy_given_r(r, self.likelihood_scale, n_dim)
 
@@ -154,12 +203,19 @@ class Cauchy(object):
 
     def r_given_logl(self, logl, n_dim):
         """
+        Get the radial coordinates corresponding to the input loglikelihood
+        values.
+
         Parameters
         ----------
         logl: float or numpy array
+            Loglikelihood values.
         n_dim: int
+            Number of dimensions.
+
         Returns
         -------
         r: same type and size as logl
+            Radial coordinates.
         """
         return mf.r_given_log_cauchy(logl, self.likelihood_scale, n_dim)
