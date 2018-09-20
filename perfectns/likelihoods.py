@@ -123,7 +123,7 @@ class ExpPower(object):
 
     """
     Spherically symmetric exponential power likelihood.
-    When power=2, this is the same as the Gaussian likelihood.
+    When power=1, this is the same as the Gaussian likelihood.
     """
 
     def __init__(self, likelihood_scale=1, power=2):
