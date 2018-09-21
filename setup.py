@@ -43,7 +43,7 @@ setuptools.setup(name='perfectns',
                  license='MIT',
                  keywords='nested-sampling dynamic-nested-sampling',
                  classifiers=[  # Optional
-                     'Development Status :: 4 - Beta',
+                     'Development Status :: 5 - Production/Stable',
                      'Intended Audience :: Science/Research',
                      'License :: OSI Approved :: MIT License',
                      'Programming Language :: Python :: 3',
@@ -60,6 +60,10 @@ setuptools.setup(name='perfectns',
                                    'pandas',
                                    'matplotlib>=2.1.0',
                                    'mpmath',
-                                   'nestcheck'],
+                                   'nestcheck>=0.1.2'],
                  test_suite='nose.collector',
-                 tests_require=['nose', 'coverage'])
+                 extras_require={
+                     'docs': ['sphinx', 'numpydoc', 'sphinx-rtd-theme']}
+                 tests_require=['nose', 'coverage'],
+                 project_urls={  # Optional
+                     'Docs': 'http://perfectns.readthedocs.io/en/latest/'})
