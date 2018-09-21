@@ -2,6 +2,9 @@
 """
 Functions which perform standard and dynamic nested sampling runs and generate
 samples for use in evidence calculations and parameter estimation.
+
+Nested sampling runs are stored a format compatible with the nestcheck
+package.
 """
 
 import warnings
@@ -185,6 +188,9 @@ def generate_standard_run(settings, is_dynamic_initial_run=False):
     Parameters
     ----------
     settings: PerfectNSSettings object
+    is_dynamic_initial_run: bool, optional
+        Set to True if this is the initial exploratory run in dynamic nested
+        sampling.
 
     Returns
     -------
@@ -345,6 +351,20 @@ def generate_thread_logx(logx_end, logx_start=0, keep_final_point=True):
     """
     Generate logx co-ordinates of a new nested sampling thread (single live
     point run).
+
+    Parameters
+    ----------
+    logx_end: float
+        Logx value at which run terminates.
+    logx_start: float, optional.
+        Logx value at which run starts. 0 corresponds to sampling from the
+        whole prior.
+    keep_final_point: bool, optional
+        If False, the final point with logx less than logx_end is removed.
+
+    Returns
+    -------
+    logx_list: list of floats
     """
     logx_list = [logx_start + np.log(np.random.random())]
     while logx_list[-1] > logx_end:
@@ -360,6 +380,16 @@ def generate_single_thread(settings, logx_end, thread_label, logx_start=0,
     Generates a samples array for a thread (single live point run) between
     logx_start and logx_end.
     Settings argument specifies how the calculation is done.
+
+    Parameters
+    ----------
+    settings: PerfectNSSettings object
+    logx_end: float
+    thread_label: int
+        Index labelling the thread.
+    logx_start: float, optional
+    keep_final_point: bool, optional
+        See generate_thread_logx docstring.
     """
     assert logx_start > logx_end, 'generate_single_thread: logx_start=' + \
         str(logx_start) + ' <= logx_end=' + str(logx_end)
@@ -395,6 +425,23 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation' (Higson et
     al., 2017).
+
+    Parameters
+    ----------
+    samples: 2d numpy array
+        See dict_given_samples_arrry docstring for details of columns.
+    thread_min_max: 2d numpy array
+        First column is starting logl of each thread and second column is
+        ending logl.
+    settings: PerfectNSSettings object
+    simulate: bool, optional
+        Passed to nestcheck.ns_run_utils.get_logw.
+
+    Returns
+    -------
+    importance: 1d numpy array
+        Relative point importances of the rows of the input samples array.
+        Normalised so the biggest value in the array is equal to 1.
     """
     run_dict = dict_given_samples_array(samples, thread_min_max)
     logw = nestcheck.ns_run_utils.get_logw(run_dict, simulate=simulate)
@@ -413,22 +460,30 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
         return importance / importance.max()
 
 
-def z_importance(w_relative, nlive, exact=False):
+def z_importance(w_relative, nlive):
     """
     Calculate the relative importance of each point for evidence calculation.
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation'
     (Higson et al., 2017).
+
+    Parameters
+    ----------
+    w_relative: 1d numpy array
+        Relative point weights.
+    nlive: 1d numpu array
+        Number of live points.
+
+    Returns
+    -------
+    importance: 1d numpy array
+        Relative point importances.
+        Normalised so the biggest value in the array is equal to 1.
     """
     importance = np.cumsum(w_relative)
     importance = importance.max() - importance
-    if exact:
-        importance *= (((nlive ** 2) - 3) * (nlive ** 1.5))
-        importance /= (((nlive + 1) ** 3) * ((nlive + 2) ** 1.5))
-        importance += w_relative * (nlive ** 0.5) / ((nlive + 2) ** 1.5)
-    else:
-        importance *= 1.0 / nlive
+    importance *= 1.0 / nlive
     return importance / importance.max()
 
 
@@ -440,6 +495,26 @@ def p_importance(theta, w_relative, tuned_dynamic_p=False,
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation' (Higson et
     al., 2017).
+
+    Parameters
+    ----------
+    theta: 2d numpy array
+        Each row gives parameter values of samples.
+    w_relative: 1d numpy array
+        Relative point weights.
+    tuned_dynamic_p: bool, optional
+        Whether or not to tune for a specific parameter estimation problem.
+        See the dynamic nested sampling paper for more details.
+    tuning_type: str, optional
+        Which parameter estimation problem to tune for. Only used if
+        tuned_dynamic_p is True. So far only set up to tune for the mean of the
+        first parameter.
+
+    Returns
+    -------
+    importance: 1d numpy array
+        Relative point importances.
+        Normalised so the biggest value in the array is equal to 1.
     """
     if tuned_dynamic_p is False:
         return w_relative / w_relative.max()
@@ -459,6 +534,22 @@ def min_max_importance(importance, samples, settings):
     """
     Find the logl and logx values at which to start and end additional dynamic
     nested sampling threads.
+
+    Parameters
+    ----------
+    importance: 1d numpy array
+        Relative importances of samples.
+    samples: 2d numpy array
+        See dict_given_samples_arrry docstring for details of columns.
+    settings: PerfectNSSettings object
+
+    Returns
+    -------
+    list of two floats
+        Contains logl_min and logl_max defining the start and end of the region
+        from which new points should be sampled.
+    list of two floats
+        Logx values corresponding to logl_min and logl_max.
     """
     assert settings.dynamic_fraction > 0. and settings.dynamic_fraction < 1., \
         'min_max_importance: settings.dynamic_fraction = ' + \

@@ -106,13 +106,6 @@ class TestNestedSampling(unittest.TestCase):
         self.assertIsNone(ns.generate_single_thread(
             settings, -(10 ** -150), 0, keep_final_point=False))
 
-    def test_exact_z_importance(self):
-        """Check z_importance with exact=True."""
-        imp_exact = ns.z_importance(np.asarray([1., 2.]), np.asarray([5, 5]),
-                                    exact=True)
-        self.assertEqual(imp_exact[0], 1.)
-        self.assertAlmostEqual(imp_exact[1], 0.99082569, places=6)
-
     def test_min_max_importance(self):
         """
         Check importance condition when the final point is one of the
