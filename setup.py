@@ -63,7 +63,8 @@ setuptools.setup(name='perfectns',
                                    'nestcheck>=0.1.2'],
                  test_suite='nose.collector',
                  extras_require={
-                     'docs': ['sphinx', 'numpydoc', 'sphinx-rtd-theme']},
+                     'docs': ['sphinx', 'numpydoc', 'sphinx-rtd-theme',
+                              'nbsphinx>=0.3.3']},
                  tests_require=['nose', 'coverage'],
                  project_urls={  # Optional
                      'Docs': 'http://perfectns.readthedocs.io/en/latest/'})
