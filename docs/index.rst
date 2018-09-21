@@ -56,6 +56,8 @@ Documentation contents
    :maxdepth: 2
 
    install
+   demo
+   api
 
 Attribution
 -----------
