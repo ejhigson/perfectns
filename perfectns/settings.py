@@ -5,6 +5,7 @@ This includes likelihood and prior objects as well as the parameters
 controlling how the calculation is performed - for example the number of live
 points and whether or not dynamic nested sampling is to be used.
 """
+# pylint: disable=no-member
 
 import copy
 import perfectns.priors as priors
@@ -23,7 +24,7 @@ class PerfectNSSettings(object):
     parameter estimation and evidence calculation' (Higson et al.
     2017).
     2) 'Sampling errors in nested sampling parameter estimation' (Higson et al.
-    2017)
+    2018)
 
     Parameters
     ----------
@@ -65,6 +66,13 @@ class PerfectNSSettings(object):
     __isfrozen = False
 
     def __init__(self, **kwargs):
+        """Initialise settings object and store settings
+
+        Parameters
+        ----------
+        kwargs: dict, optional
+            See the class docstring for a description of the allowed settings.
+        """
         default_settings = {
             # likelihood and prior settings
             # -----------------------------
@@ -97,6 +105,13 @@ class PerfectNSSettings(object):
         """
         Freeze the class to prevent unexpected settings from being accidentally
         added.
+
+        Parameters
+        ----------
+        key: str
+            Name of attribute
+        value: any type
+            Value of attribute
         """
         if self.__isfrozen and not hasattr(self, key):
             raise TypeError('Frozen PerfectNSSettings instance given ' +
@@ -106,11 +121,13 @@ class PerfectNSSettings(object):
     # functions of the spherically symmetric prior
 
     def logx_given_r(self, r):
-        """
+        """Maps input radial coordinates to logx values.
+
         Parameters
         ----------
         r: float or numpy array
-            radial coordinate(s)
+        n_dim: int
+
         Returns
         -------
         logx: same type and size as r
@@ -118,10 +135,13 @@ class PerfectNSSettings(object):
         return self.prior.logx_given_r(r, self.n_dim)
 
     def r_given_logx(self, logx):
-        """
+        """Maps input logx values to radial coordinates.
+
         Parameters
         ----------
         logx: float or numpy array
+        n_dim: int
+
         Returns
         -------
         r: same type and size as logx
@@ -131,11 +151,13 @@ class PerfectNSSettings(object):
     # functions of the spherically symmetric likelihood
 
     def logl_given_r(self, r):
-        """
+        """Maps input radial coordinates to loglikelihood values.
+
         Parameters
         ----------
         r: float or numpy array
-            radial coordinate(s)
+        n_dim: int
+
         Returns
         -------
         logl: same type and size as r
@@ -143,23 +165,29 @@ class PerfectNSSettings(object):
         return self.likelihood.logl_given_r(r, self.n_dim)
 
     def r_given_logl(self, logl):
-        """
+        """Maps input loglikelihood values to radial coordinates.
+
         Parameters
         ----------
-        logl: float or numpy array
+        r: float or numpy array
+        n_dim: int
+
         Returns
         -------
-        r: same type and size as logl
+        logl: same type and size as r
         """
         return self.likelihood.r_given_logl(logl, self.n_dim)
 
     # functions of both the likelihood and the prior
 
     def logl_given_logx(self, logx):
-        """
+        """Maps input logx values to loglikelihoods.
+
         Parameters
         ----------
         logx: float or numpy array
+        n_dim: int
+
         Returns
         -------
         logl: same type and size as logx
@@ -167,10 +195,13 @@ class PerfectNSSettings(object):
         return self.logl_given_r(self.r_given_logx(logx))
 
     def logx_given_logl(self, logl):
-        """
+        """Maps input loglikelihoods to logx values.
+
         Parameters
         ----------
         logl: float or numpy array
+        n_dim: int
+
         Returns
         -------
         logx: same type and size as logl
@@ -184,6 +215,11 @@ class PerfectNSSettings(object):
 
         This functionality is stored in the likelihood object. If it has not
         been set up then an error message is printed and nothing is returned.
+
+        Returns
+        -------
+        float or None
+            True value of logz or None if it is not available.
         """
         try:
             return self.likelihood.logz_analytic(self.prior, self.n_dim)
@@ -191,12 +227,17 @@ class PerfectNSSettings(object):
             print('No logz_analytic set up for ' +
                   type(self.likelihood).__name__ +
                   " likelihoods and " + type(self.prior).__name__ + " priors.")
+            return None
 
     def get_settings_dict(self):
         """
         Returns a dictionary containing settings information. The names and
         parameters of the likelihoods and priors are stored instead of the
         objects themselves so they can be saved with pickle.
+
+        Returns
+        -------
+        settings_dict: dict
         """
         settings_dict = copy.deepcopy(self.__dict__)
         # Replace the likelihood and prior objects with information about them
@@ -215,6 +256,17 @@ class PerfectNSSettings(object):
     def save_name(self, include_dg=True, include_samples_max=False):
         """
         Make a standard save name format for a given settings configoration.
+
+        Parameters
+        ----------
+        include_dg: bool, optional
+            Whether or not to include the dynamic_goal setting in save_name.
+        include_samples_max: bool, optional
+            Whether or not to include the n_samples_max setting in save_name.
+
+        Returns
+        -------
+        save_name: str
         """
         save_name = ''
         if include_dg:

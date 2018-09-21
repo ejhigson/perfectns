@@ -337,6 +337,15 @@ def sigma_given_cdf(cdf):
     to get a positive answer.
     erf is definted in terms of int e^(-t^2) which corresponds to a Gaussian
     with sigma = 1/sqrt(2). So we must multiply sigma_temp by sqrt(2)
+
+    Parameters
+    ----------
+    cdf: float or numpy array
+
+    Returns
+    -------
+    float or numpy array
+        Same type and shape as input cdf.
     """
     sigma_temp = abs(scipy.special.erfinv((cdf * 2) - 1))
     return np.sqrt(2) * sigma_temp

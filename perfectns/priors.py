@@ -32,14 +32,17 @@ class Uniform(object):
     """Spherically symmetric uniform prior."""
 
     def __init__(self, prior_scale):
+        """Save input prior size."""
         self.prior_scale = prior_scale
 
     def r_given_logx(self, logx, n_dim):
-        """
+        """Maps input logx values to radial coordinates.
+
         Parameters
         ----------
         logx: float or numpy array
         n_dim: int
+
         Returns
         -------
         r: same type and size as logx
@@ -47,11 +50,13 @@ class Uniform(object):
         return mf.nsphere_r_given_logx(logx, self.prior_scale, n_dim)
 
     def logx_given_r(self, r, n_dim):
-        """
+        """Maps input radial coordinates to logx values.
+
         Parameters
         ----------
         r: float or numpy array
         n_dim: int
+
         Returns
         -------
         logx: same type and size as r
@@ -64,14 +69,17 @@ class Gaussian(object):
     """Spherically symmetric uniform prior."""
 
     def __init__(self, prior_scale):
+        """Save input prior size."""
         self.prior_scale = prior_scale
 
     def r_given_logx(self, logx, n_dim):
-        """
+        """Maps input logx values to radial coordinates.
+
         Parameters
         ----------
         logx: float or numpy array
         n_dim: int
+
         Returns
         -------
         r: same type and size as logx
@@ -79,11 +87,13 @@ class Gaussian(object):
         return mf.gaussian_r_given_logx(logx, self.prior_scale, n_dim)
 
     def logx_given_r(self, r, n_dim):
-        """
+        """Maps input radial coordinates to logx values.
+
         Parameters
         ----------
         r: float or numpy array
         n_dim: int
+
         Returns
         -------
         logx: same type and size as r
@@ -102,6 +112,8 @@ class GaussianCached(object):
     interp_d = {'n_dim': None, 'prior_scale': None}
 
     def __init__(self, prior_scale, **kwargs):
+        """Save input prior size, as well as parameters defining
+        interpolation arrays and their caching."""
         save_dict = kwargs.pop('save_dict', True)
         n_dim = kwargs.pop('n_dim', None)
         interp_density = kwargs.pop('interp_density', 10)
@@ -120,11 +132,13 @@ class GaussianCached(object):
             self.check_cache(n_dim)
 
     def r_given_logx(self, logx, n_dim):
-        """
+        """Maps input logx values to radial coordinates.
+
         Parameters
         ----------
         logx: float or numpy array
         n_dim: int
+
         Returns
         -------
         r: same type and size as logx
@@ -148,11 +162,13 @@ class GaussianCached(object):
                                                 n_dim)
 
     def logx_given_r(self, r, n_dim):
-        """
+        """Maps input radial coordinates to logx values.
+
         Parameters
         ----------
         r: float or numpy array
         n_dim: int
+
         Returns
         -------
         logx: same type and size as r
