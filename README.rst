@@ -5,8 +5,8 @@ perfectns
    :target: https://travis-ci.org/ejhigson/perfectns
 .. image:: https://coveralls.io/repos/github/ejhigson/perfectns/badge.svg?branch=master
    :target: https://coveralls.io/github/ejhigson/perfectns?branch=master&service=github
-.. image:: https://readthedocs.org/projects/dypolychord/badge/?version=latest
-   :target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/perfectns/badge/?version=latest
+   :target: http://perfectns.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 .. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
    :target: https://codeclimate.com/github/ejhigson/perfectns/maintainability
