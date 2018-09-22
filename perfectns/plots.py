@@ -227,7 +227,7 @@ def plot_parameter_logx_diagram(settings, ftheta, **kwargs):
     # -----------------
     fig = plt.figure(figsize=figsize)
     gs = gridspec.GridSpec(2, 4, width_ratios=[1, 1, 40, 1],
-                           height_ratios=[1, 5])
+                           height_ratios=[1, 4])
     gs.update(wspace=0.1, hspace=0.1)
     # plot weights
     # ------------
