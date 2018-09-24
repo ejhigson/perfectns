@@ -23,7 +23,7 @@ bibliography: paper.bib
 Nested sampling [@Skilling2006] is a popular Monte Carlo method for computing Bayesian evidences and generating posterior samples given some likelihood and prior.
 Both standard nested sampling and its more general variant dynamic nested sampling [@Higson2017b] require sampling randomly from the prior within a hard likelihood constraint.
 This is a computationally challenging problem, and typically only be done approximately for practical problems.
-Popular methods include rejection sampling, utilized by ``MultiNest`` [@Feroz2008; @Feroz2009; @Feroz2013], and slice sampling, which is used by ``PolyChord`` [@Handley2015a; @Handley2015b] and ``dyPolyChord`` [@Higson2018dypolychord].
+Popular methods include rejection sampling, utilized by ``MultiNest`` [@Feroz2008; @Feroz2009; @Feroz2013], and slice sampling, which is used by ``PolyChord`` [@Handley2015a; @Handley2015b] and ``dyPolyChord`` [@Higson2018dypolychord; @Higson2017b].
 However all such approximate techniques can lead to additional errors, for example due to correlated samples or missing a mode of a multimodal posterior; for more details see [@Higson2018a].
 
 In order to test the statistical properties of the nested sampling algorithm or check numerical implementations, it is useful to follow approach introduced by [@Keeton2011] and consider special cases where totally uncorrelated samples can be produced within hard likelihood constrains.
@@ -31,8 +31,9 @@ As a result the nested sampling algorithm can be performed perfectly; we term th
 
 ``perfectns`` performs perfect nested sampling for spherically symmetric likelihoods and priors.
 This provides a rich source of test cases for assessing the capacity of other software implementations to perform the nested sampling algorithm accurately, and for use statistical research into nested sampling.
-``perfectns`` can also be used when calculations with spherically symmetric likelihoods and priors are required, but, as this is unusual in practice, the software's primary use case is nested sampling research and testing.
-In fact, Section 3 of [@Higson2017a] shows that any perfect nested sampling calculation can in principle be transformed into a spherically symmetric form compatible with ``perfectns`` while retaining its statistical properties, although this can be mathematically challenging and is not feasible for most practical problems.
+``perfectns`` can also be used when calculations with spherically symmetric likelihoods and priors are required.
+In fact, Section 3 of [@Higson2017a] shows that any perfect nested sampling calculation can in principle be transformed into a spherically symmetric form compatible with ``perfectns`` while retaining its statistical properties.
+This can be used to generate a wider range of test cases, although it can be mathematically challenging and is not feasible for most practical problems.
 
 ``perfectns`` requires ``mpmath`` [@mpmath], ``matplotlib`` [@matplotlib], ``nestcheck`` [@Higson2018nestcheck; @Higson2018a; @Higson2017a], ``pandas`` [@pandas], ``numpy`` [@numpy] and ``scipy`` [@scipy].
 
