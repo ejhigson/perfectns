@@ -14,10 +14,15 @@ perfectns
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/perfectns/blob/master/LICENSE
 
+Nested sampling (`Skilling, 2006 <https://projecteuclid.org/euclid.ba/1340370944>`_) is a popular numerical method for Bayesian computation, which simultaneously generates samples from the posterior distribution and an estimate of the Bayesian evidence for a given likelihood and prior.
+Dynamic nested sampling (`Higson et al., 2017 <https://arxiv.org/abs/1704.03459>`_) is a generalisation of the nested sampling algorithm which can provide order-of-magnitude increases in computational efficiency.
+
 ``perfectns`` performs dynamic nested sampling and standard nested sampling for spherically symmetric likelihoods and priors, and analyses the samples produced.
-The spherical symmetry allows the nested sampling algorithm to be followed "perfectly" - i.e. without implementation-specific errors correlations between samples.
-``perfectns`` is intended for use in research into the statistical properties of nested sampling, and to provide a benchmark for testing the performance of nested sampling software packages used for practical problems - which rely on numerical techniques to produce approximately uncorrelated samples.
-For details of the theory behind the software and of how it performs perfect nested sampling, see the `theory section <http://perfectns.readthedocs.io/en/latest/theory.html>`_ of the documentation.
+The spherical symmetry allows the nested sampling algorithm to be followed "perfectly" - i.e. without additional errors due to correlations between samples, which are present in other nested sampling software.
+
+The specialised methods used by ``perfectns`` make it highly effective and reliable for spherically symmetric calculations.
+The software is also intended for use in research into the statistical properties of nested sampling, and to provide a benchmark for testing the performance of nested sampling software packages used for practical problems - which rely on numerical techniques to produce approximately uncorrelated samples.
+For details of the theory behind the software and of how it performs perfect nested sampling, see the see the `theory section <http://perfectns.readthedocs.io/en/latest/theory.html>`_ of the documentation.
 
 To get started, see the `installation instructions <http://perfectns.readthedocs.io/en/latest/install.html>`_ and the `demo <http://perfectns.readthedocs.io/en/latest/demo.html>`_.
 For more examples of ``perfectns``'s use, see the code used to make the results and figures in the dynamic nested sampling paper (https://github.com/ejhigson/dns).
