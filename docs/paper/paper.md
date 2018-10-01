@@ -30,7 +30,7 @@ In order to test the statistical properties of the nested sampling algorithm or 
 As a result the nested sampling algorithm can be performed perfectly; we term this *perfect nested sampling*.
 
 ``perfectns`` performs perfect nested sampling for spherically symmetric likelihoods and priors; its specialised design and ability to produce perfectly uncorrelated samples makes it highly effective for use with spherically symmetric problems.
-Furthermore, such problems provides a rich source of test cases for assessing the capacity of other software implementations to perform the nested sampling algorithm accurately, and for use statistical research into nested sampling.
+Furthermore, such problems provide a rich source of test cases for assessing the capacity of other software implementations to perform the nested sampling algorithm accurately, and for use in statistical research into nested sampling.
 In fact, Section 3 of [@Higson2017a] shows that any perfect nested sampling calculation can in principle be transformed into a spherically symmetric form compatible with ``perfectns`` while retaining its statistical properties.
 Such transformations can be used to generate a wider range of test cases, although it can be mathematically challenging and is not feasible for most practical problems.
 
