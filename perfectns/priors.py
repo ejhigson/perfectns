@@ -32,7 +32,11 @@ class Uniform(object):
     """Spherically symmetric uniform prior."""
 
     def __init__(self, prior_scale):
-        """Save input prior size."""
+        """Save the radius of the spherically symmetric uniform prior.
+
+        prior_scale: float
+            Radius of the uniform prior.
+        """
         self.prior_scale = prior_scale
 
     def r_given_logx(self, logx, n_dim):
@@ -66,10 +70,15 @@ class Uniform(object):
 
 class Gaussian(object):
 
-    """Spherically symmetric uniform prior."""
+    """Spherically symmetric Gaussian prior."""
 
     def __init__(self, prior_scale):
-        """Save input prior size."""
+        """Save the input sigma for the prior. This is the (shared) standard
+        deviation of each parameter.
+
+        prior_scale: float
+            Sigma for every parameter
+        """
         self.prior_scale = prior_scale
 
     def r_given_logx(self, logx, n_dim):
@@ -113,7 +122,31 @@ class GaussianCached(object):
 
     def __init__(self, prior_scale, **kwargs):
         """Save input prior size, as well as parameters defining
-        interpolation arrays and their caching."""
+        interpolation arrays and their caching.
+
+        Parameters
+        ----------
+        prior_scale: float
+            Sigma for every parameter.
+        n_dim: int or None, optional
+            Number of dimensions. Used to allow the prior to be calculated and
+            cached before it is called.
+        logx_min: float, optional
+            See the cached_gaussian_prior.interp_r_logx_dict docstring for more
+            information.
+        save_dict: bool, optional
+            See the cached_gaussian_prior.interp_r_logx_dict docstring for more
+            information.
+        cache_dir: str, optional
+            See the cached_gaussian_prior.interp_r_logx_dict docstring for more
+            information.
+        interp_density: float, optional
+            See the cached_gaussian_prior.interp_r_logx_dict docstring for more
+            information.
+        logx_max: float, optional
+            See the cached_gaussian_prior.interp_r_logx_dict docstring for more
+            information.
+        """
         save_dict = kwargs.pop('save_dict', True)
         n_dim = kwargs.pop('n_dim', None)
         interp_density = kwargs.pop('interp_density', 10)
@@ -179,6 +212,11 @@ class GaussianCached(object):
         """
         Helper function which checks that the input dimension matches that of
         the cached interpolation function, and if needed recalculates it.
+
+        Parameters
+        ----------
+        n_dim: int
+            Number of dimensions
         """
         if (n_dim != self.interp_d['n_dim']) or (self.prior_scale !=
                                                  self.interp_d['prior_scale']):
