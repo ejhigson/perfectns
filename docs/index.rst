@@ -7,10 +7,10 @@ perfectns
    :target: https://coveralls.io/github/ejhigson/perfectns?branch=master&service=github
 .. image:: https://readthedocs.org/projects/perfectns/badge/?version=latest
    :target: http://perfectns.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
+.. image:: http://joss.theoj.org/papers/10.21105/joss.00985/status.svg
+   :target: https://doi.org/10.21105/joss.00985
 .. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
    :target: https://codeclimate.com/github/ejhigson/perfectns/maintainability
-   :alt: Maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/perfectns/blob/master/LICENSE
 
@@ -42,9 +42,19 @@ Documentation contents
 Attribution
 -----------
 
-If this code is useful for your academic research, please cite the dynamic nested sampling paper. The BibTeX is:
+If ``perfectns`` is useful for your academic research, please cite the two papers introducing the software and the dynamic nested sampling algorithm. The BibTeX is:
 
 .. code-block:: tex
+
+    @article{Higson2018perfectns,
+    author = {Higson, Edward},
+    title = {perfectns: perfect dynamic and standard nested sampling for spherically symmetric likelihoods and priors},
+    doi = {10.21105/joss.00985},
+    journal = {Journal of Open Source Software},
+    number = {30},
+    pages = {985},
+    volume = {3},
+    year = {2018}}
 
     @article{Higson2017,
     author={Higson, Edward and Handley, Will and Hobson, Mike and Lasenby, Anthony},
