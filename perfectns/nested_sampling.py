@@ -271,7 +271,7 @@ def generate_dynamic_run(settings):
     Generate a dynamic nested sampling run.
     For details of the dynamic nested sampling algorithm, see 'Dynamic nested
     sampling: an improved algorithm for nested sampling parameter estimation
-    and evidence calculation' (Higson et al., 2017).
+    and evidence calculation' (Higson et al., 2019).
 
     The run terminates when the number of samples reaches some limit
     settings.n_samples_max. If this is not set, the function will estimate the
@@ -424,7 +424,7 @@ def point_importance(samples, thread_min_max, settings, simulate=False):
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation' (Higson et
-    al., 2017).
+    al., 2019).
 
     Parameters
     ----------
@@ -466,7 +466,7 @@ def z_importance(w_relative, nlive):
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation'
-    (Higson et al., 2017).
+    (Higson et al., 2019).
 
     Parameters
     ----------
@@ -494,7 +494,7 @@ def p_importance(theta, w_relative, tuned_dynamic_p=False,
 
     For more details see 'Dynamic nested sampling: an improved algorithm for
     nested sampling parameter estimation and evidence calculation' (Higson et
-    al., 2017).
+    al., 2019).
 
     Parameters
     ----------

@@ -21,10 +21,9 @@ class PerfectNSSettings(object):
     sampling algorithms see:
 
     1) 'Dynamic nested sampling: an improved algorithm for nested  sampling
-    parameter estimation and evidence calculation' (Higson et al.
-    2017).
+    parameter estimation and evidence calculation' (Higson et al. 2019).
     2) 'Sampling errors in nested sampling parameter estimation' (Higson et al.
-    2018)
+    2018).
 
     Parameters
     ----------
