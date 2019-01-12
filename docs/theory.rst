@@ -4,8 +4,8 @@ Theory
 Nested sampling is a method for Bayesian computation which given some likelihood :math:`\mathcal{L}(\boldsymbol{\theta})` and prior :math:`\pi(\boldsymbol{\theta})` will generate posterior samples and an estimate of the Bayesian evidence :math:`\mathcal{Z}`. The algorithm works by sampling some number of points randomly from the prior then iteratively replacing the point with the lowest likelihood with another point sampled from the region of the prior with a higher likelihood.
 
 Generating uncorrelated samples within the likelihood constraint is computationally challenging and can only be done approximately by software such as ``MultiNest`` and ``PolyChord``.
-This can lead to additional errors; for example due to correlated samples or missing a mode in a multimodal posterior (see `Higson et al., (2018), <http://arxiv.org/abs/1804.06406>`_ for a detailed discussion).
-``perfectns`` uses specially symmetric cases where uncorrelated samples can be easily drawn from within some iso-likelihood contour to perform nested sampling perfectly in the manner described by `Keeton (2010) <https://academic.oup.com/mnras/article/414/2/1418/977810>`_.
+This can lead to additional errors; for example due to correlated samples or missing a mode in a multimodal posterior (see `Higson et al., (2019), <https://doi.org/10.1093/mnras/sty3090>`_ for a detailed discussion).
+``perfectns`` uses specially symmetric cases where uncorrelated samples can be easily drawn from within some iso-likelihood contour to perform nested sampling perfectly in the manner described by `Keeton (2011) <https://doi.org/10.1111/j.1365-2966.2011.18474.x>`_.
 
 Likelihoods and Priors
 ----------------------
