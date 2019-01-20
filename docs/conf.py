@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'perfectns'
-copyright = '2018, Edward Higson'
+copyright = '2018-Present Edward Higson and contributors (MIT license).'
 author = 'Edward Higson'
 
 # The short X.Y version
@@ -161,7 +161,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'perfectns', 'perfectns Documentation',
-     author, 'perfectns', 'One line description of project.',
+     author, 'perfectns', 'Perfect nested sampling.',
      'Miscellaneous'),
 ]
 
