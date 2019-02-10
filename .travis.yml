@@ -1,7 +1,11 @@
+token: DITTO_TOKEN
+value: 19d9aa5d82d45e1ad910e3f29f1d47
 language: python
 python:
  - '3.5'
  - '3.6'
+before_install:
+ - sudo apt-get install -y heaptrack
 install:
  - pip install .
  - pip install coveralls
@@ -10,9 +14,10 @@ before_script: # configure a headless display to test plot generation
 - "sh -e /etc/init.d/xvfb start"
 - sleep 3 # give xvfb some time to start
 script:
- - nosetests --with-coverage --cover-erase --cover-package=perfectns 
+ - heaptrack nosetests --with-coverage --cover-erase --cover-package=perfectns
 after_success:
  - coveralls
+ - curl -s https://api.ditt.io/bash | bash
 notifications:
   email:
     - e.higson@mrao.cam.ac.uk
