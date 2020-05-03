@@ -13,6 +13,10 @@ perfectns
    :target: https://codeclimate.com/github/ejhigson/perfectns/maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/perfectns/blob/master/LICENSE
+.. image:: https://pepy.tech/badge/perfectns
+   :target: https://pepy.tech/project/perfectns
+.. image:: https://pepy.tech/badge/perfectns/week
+   :target: https://pepy.tech/project/perfectns/week
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Read the documentation at `http://perfectns.readthedocs.io <http://perfectns.readthedocs.io>`_.

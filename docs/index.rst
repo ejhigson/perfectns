@@ -13,6 +13,10 @@ perfectns
    :target: https://codeclimate.com/github/ejhigson/perfectns/maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/perfectns/blob/master/LICENSE
+.. image:: https://pepy.tech/badge/perfectns
+   :target: https://pepy.tech/project/perfectns
+.. image:: https://pepy.tech/badge/perfectns/week
+   :target: https://pepy.tech/project/perfectns/week
 
 Nested sampling (`Skilling, 2006 <https://projecteuclid.org/euclid.ba/1340370944>`_) is a popular numerical method for Bayesian computation, which simultaneously generates samples from the posterior distribution and an estimate of the Bayesian evidence for a given likelihood and prior.
 Dynamic nested sampling (`Higson et al., 2019a <https://doi.org/10.1007/s11222-018-9844-0>`_) is a generalisation of the nested sampling algorithm which can provide order-of-magnitude increases in computational efficiency.
